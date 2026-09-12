@@ -232,7 +232,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`image`|string|Có|Path ảnh đã lưu|
 |`reading`|integer|Có|Reading user đã gửi|
 |`capturedAt`|timestamp|Có|Thời điểm ghi|
-|`correspondingCost`|integer|Có|`reading × electricityUnitPrice`|
+|`correspondingCost`|integer|Có|`consumpAmount(tự tính dựa trên reading này và reading gần nhất) × electricityUnitPrice`|
 |`createDate`|date-only|Có|`REQUEST.createDate`|
 |`resolveDate`|date-only, nullable|Không|`REQUEST.resolveDate`|
 |`status`|enum|Có|Request status|
@@ -241,7 +241,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 # 5. Tenant / Invoices
 
-> **ERD note:** Dùng `INVOICE.isRequestLate`, không dùng `isRequestDelay`. Electricity chỉ có `meterReading`; `electricalBill = meterReading × electricityUnitPrice`.
+> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`.
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
@@ -297,11 +297,9 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`meterReading`|integer|Có|Join `CONSUMPTION.meterReading`|
 |`breakdown`|object|Có|room/electrical/water/wifi/parking/other bill|
 |`totalBill`|integer|Có|ERD|
-|`received`|integer|Có|`totalBill` nếu paid, ngược lại `0`|
-|`stillOwed`|integer|Có|`totalBill - received`|
 
 ```json
-{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000,"received":0,"stillOwed":4093000},"message":null}
+{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000},"message":null}
 ```
 
 ## #10 — POST `/api/user/invoices/:invoiceID/paid-request`
@@ -479,12 +477,12 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 
 # 7. Tenant / Profile & Lease
 
-> **ERD note:** Cần bổ sung `CONTRACT.signedAt DATETIME` để hiển thị thời điểm ký. `CONTRACT.signature` lưu path ảnh chữ ký; không lưu cả contract document.
+> **ERD note:** Cần bổ sung `CONTRACT.signedAt DATETIME` để hiển thị thời điểm ký. `CONTRACT.signature` lưu path ảnh chữ ký; không lưu cả contract document. -> Đã thêm
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |17|GET|`/api/user/profile`|Personal details|Tenant / Profile & Lease|
-|18|PATCH|`/api/user/profile`|Tenant sửa personal details|Edit profile|
+|~~18~~|~~PATCH~~|~~`/api/user/profile`~~|~~Tenant sửa personal details~~|~~Edit profile~~|
 |19|GET|`/api/user/contract`|Active lease|Tenant / Profile & Lease|
 |20|GET|`/api/user/contract/signature`|Xem chữ ký đã lưu|View signature|
 |21|POST|`/api/user/moveout-requests`|Gửi notice ngày dự kiến rời đi|Request flow|
@@ -509,8 +507,8 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`nationality`|string|Có|`USER.nationality`|
 |`por`|string|Có|`USER.PoR`|
 
-## #18 — PATCH `/api/user/profile`
-
+## #18 — PATCH `/api/user/profile` BỎ CÁI NÀY
+<!-- 
 **Input — JSON**
 
 |Field|Type|Required|Description|
@@ -540,7 +538,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`identityNo`|string|Có|Số CCCD|
 |`sex`|enum|Có|`male`, `female`, `other`|
 |`nationality`|string|Có|Quốc tịch|
-|`por`|string|Có|Place of residence|
+|`por`|string|Có|Place of residence| -->
 
 ## #19 — GET `/api/user/contract`
 
@@ -697,17 +695,18 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 
 # 9. Admin / Rooms & Leases
 
-> **ERD note:** `stillOwed` là aggregate từ invoice, không thêm vào ROOM. Reset room account là nghiệp vụ trên `ACCOUNT`, không cần field mới. Cần bổ sung `CONTRACT.rent INTEGER` — snapshot giá thuê tại thời điểm ký, độc lập với `ROOM.price`; đổi `ROOM.price` sau này không hồi tố các contract đang chạy.
+> **ERD note:** `stillOwed` là aggregate từ invoice (tổng mấy invoice not paid), không thêm vào ROOM. Reset room account là nghiệp vụ trên `ACCOUNT`, không cần field mới. Cần bổ sung `CONTRACT.rent INTEGER` — snapshot giá thuê tại thời điểm ký, độc lập với `ROOM.price`; đổi `ROOM.price` sau này không hồi tố các contract đang chạy. -> Đã cập nhật
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |26|GET|`/api/admin/areas/options`|Area options cho form/filter|Rooms & Leases|
 |27|GET|`/api/admin/rooms`|Danh sách room/lease|Rooms & Leases|
 |28|GET|`/api/admin/rooms/:roomID`|Room, active lease, tenant, account|Details drawer|
+|28b|PATCH|`/api/admin/rooms/:roomID`|Update ROOM in4|Details drawer|
 |29|POST|`/api/admin/rooms`|Thêm phòng|Add room popup|
-|30|PATCH|`/api/admin/rooms/:roomID/account/reset`|Reset room account|Details drawer|
+|~~30~~|~~PATCH~~|~~`/api/admin/rooms/:roomID/account/reset`~~|~~Reset room account~~|~~Details drawer~~|
 |31|PATCH|`/api/admin/rooms/:roomID/account/password`|Admin đặt mật khẩu mới|Details drawer|
-|32|PATCH|`/api/admin/rooms/:roomID/contract/rent`|Sửa rent snapshot của active contract|Details drawer|
+|~~32~~|~~PATCH~~|~~`/api/admin/rooms/:roomID/contract/rent`~~|~~Sửa rent snapshot của active contract~~|~~Details drawer~~|
 
 ## #26 — GET `/api/admin/areas/options`
 
@@ -769,6 +768,60 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`account`|object, nullable|Không|`accountID`, `username`, `status`, `role`, `startDate`|
 |`stillOwed`|integer|Có|Tổng invoice chưa trả|
 
+## #28b — PATCH `/api/admin/rooms/:roomID`
+
+**Input**
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|`roomID`|integer (path)|Có|Room cần sửa|
+|`price`|integer|Không|Giá phòng mới; không truyền thì giữ nguyên|
+|`deposit`|integer|Không|Tiền deposit mới; không truyền thì giữ nguyên|
+|`images`|array[string]|Không|Danh sách URL/path ảnh mới của phòng; không truyền thì giữ nguyên|
+
+**Output**
+
+|Field|Type|Required|Description|
+|---|---|---|---|
+|`room`|object|Có|Thông tin ROOM sau khi cập nhật, gồm `price`, `deposit`, `images`|
+|`message`|string|Có|Thông báo cập nhật thành công|
+
+**Example Request**
+
+```json
+{
+  "price": 3500000,
+  "deposit": 7000000,
+  "images": [
+    "/uploads/rooms/101-1.jpg",
+    "/uploads/rooms/101-2.jpg",
+    "/uploads/rooms/101-3.jpg"
+  ]
+}
+```
+
+**Example Response**
+
+```json
+{
+  "success": true,
+  "data": {
+    "room": {
+      "roomID": 101,
+      "roomCode": "A101",
+      "price": 3500000,
+      "deposit": 7000000,
+      "images": [
+        "/uploads/rooms/101-1.jpg",
+        "/uploads/rooms/101-2.jpg",
+        "/uploads/rooms/101-3.jpg"
+      ]
+    }
+  },
+  "message": null
+}
+```
+
 ## #29 — POST `/api/admin/rooms`
 
 **Input — multipart/form-data**
@@ -808,8 +861,8 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`availableFrom`|date-only, nullable|Không|Ngày available|
 |`images`|string[]|Có|Path ảnh đã lưu|
 
-## #30 — PATCH `/api/admin/rooms/:roomID/account/reset`
-
+## #30 — PATCH `/api/admin/rooms/:roomID/account/reset` - BỎ CÁI NÀY
+<!-- 
 **Input**
 
 |Field|Type|Required|Description|
@@ -828,7 +881,7 @@ Không có body.
 |`roomID`|integer|Có|Room liên quan|
 |`username`|string|Có|Username được giữ/tạo lại|
 |`temporaryPassword`|string|Có|Chỉ trả một lần|
-|`status`|enum|Có|Account status sau reset|
+|`status`|enum|Có|Account status sau reset| -->
 
 ## #31 — PATCH `/api/admin/rooms/:roomID/account/password`
 
@@ -852,9 +905,9 @@ Không có body.
 |`username`|string|Có|Username|
 |`status`|enum|Có|Account status; không trả password/hash|
 
-## #32 — PATCH `/api/admin/rooms/:roomID/contract/rent`
+## #32 — PATCH `/api/admin/rooms/:roomID/contract/rent` - BỎ CÁI NÀY: sửa ROOM, ảnh hưởng rent CONTRACT mới, không ảnh hưởng CONTRACT cũ
 
-Sửa `CONTRACT.rent` (giá thuê đã snapshot lúc ký) của active contract gắn với room. Không đụng `ROOM.price` — đổi `ROOM.price` chỉ ảnh hưởng phòng còn trống/hợp đồng ký sau này, không hồi tố hợp đồng đang chạy. Invoice đã tạo trước đó giữ nguyên `roomBill` đã chốt; chỉ kỳ invoice tạo sau khi PATCH mới dùng `rent` mới.
+<!-- Sửa `CONTRACT.rent` (giá thuê đã snapshot lúc ký) của active contract gắn với room. Không đụng `ROOM.price` — đổi `ROOM.price` chỉ ảnh hưởng phòng còn trống/hợp đồng ký sau này, không hồi tố hợp đồng đang chạy. Invoice đã tạo trước đó giữ nguyên `roomBill` đã chốt; chỉ kỳ invoice tạo sau khi PATCH mới dùng `rent` mới.
 
 **Input**
 
@@ -879,7 +932,7 @@ Sửa `CONTRACT.rent` (giá thuê đã snapshot lúc ký) của active contract 
 
 ```json
 {"success":true,"data":{"contractID":501,"roomID":101,"rent":3400000},"message":null}
-```
+``` -->
 
 ---
 
@@ -1056,8 +1109,8 @@ Chỉ cho `need_action → in_progress → done`; không bỏ bước hoặc chu
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |38|GET|`/api/admin/requests`|Bảng request với common fields|Admin / Approvals|
-|39|GET|`/api/admin/requests/:requestID`|Chi tiết theo request type|Approval drawer|
-|40|PATCH|`/api/admin/requests/:requestID/approve`|Approve request theo type|Approval drawer|
+|39|GET|`/api/admin/requests/:requestID`|Chi tiết theo request id|Approval drawer|
+|40|PATCH|`/api/admin/requests/:requestID/approve`|Approve request theo id|Approval drawer|
 
 ## #38 — GET `/api/admin/requests`
 
@@ -1160,7 +1213,7 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |41|POST|`/api/auth/login`|Đăng nhập và xác định first-login|Login frame 1|
-|42|POST|`/api/auth/first-login/profile`|Lưu personal information|Login frame 2|
+|42|POST|`/api/auth/first-login/profile`|Lưu personal information và password mới|Login frame 2|
 |43|GET|`/api/auth/first-login/contract-preview`|Render digital contract|Login frame 3|
 |44|POST|`/api/auth/first-login/contract`|Lưu chữ ký, tạo contract, activate account|Login frame 3|
 
@@ -1177,17 +1230,26 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`requireFirstLogin`|boolean|Có|`true` nếu account inactive/chưa có user-contract hoàn chỉnh|
+|`requireFirstLogin`|boolean|Có|`true` nếu account inactive|
 |`onboardingToken`|string, nullable|Không|Token ngắn hạn cho bước 2–3|
 |`accessToken`|string, nullable|Không|JWT dùng khi onboarding đã hoàn tất|
 |`account`|object|Có|`accountID`, `roomID`, `username`, `role`, `status`|
 |`user`|object, nullable|Không|User khi login bình thường|
+
+- Nếu `ACCOUNT.status=inactive`: chưa cấp `accessToken`; trả `onboardingToken` để tiếp tục first-login.
+- Nếu `ACCOUNT.status=active`: trả `accessToken` và các thông tin liên quan đến user/contract.
+
+(nếu không phải first login) Thay req từ Request thành AuthRequest có chứa prop req.User.
+req.User lưu {accountID, roomID, contractID, userID, startDate(của Account)} và sau này có thể dùng trong các logic cần auth
 
 ```json
 {"username":"A101","password":"temporary-password"}
 ```
 
 ## #42 — POST `/api/auth/first-login/profile`
+**Authorization**
+
+`Bearer <onboardingToken>`
 
 **Input**
 
@@ -1200,11 +1262,10 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 |`sex`|enum|Có|`male`, `female`, `other`|
 |`nationality`|string|Có|Quốc tịch|
 |`por`|string|Có|Place of residence|
-
-Onboarding token required.
+|`password`|string|Có|Plain input; backend lưu password hash|
 
 ```json
-{"fullName":"Nguyễn Văn An","dob":"2002-06-14","phoneNumber":"0901234567","identityNo":"001202000001","sex":"male","nationality":"Vietnamese","por":"Hà Nội"}
+{"fullName":"Nguyễn Văn An","dob":"2002-06-14","phoneNumber":"0901234567","identityNo":"001202000001","sex":"male","nationality":"Vietnamese","por":"Hà Nội", "password": "my-new-pass"}
 ```
 
 **Output**
@@ -1219,22 +1280,32 @@ Onboarding token required.
 |`sex`|enum|Có|Sex|
 |`nationality`|string|Có|Quốc tịch|
 |`por`|string|Có|Place of residence|
+|`password`|string|Có|hashed value|
+
+Lưu/cập nhật thông tin `USER` và password mới cho account đang thực hiện first-login.
+Chưa cấp `accessToken`. Tiếp tục sử dụng `onboardingToken`.
 
 ## #43 — GET `/api/auth/first-login/contract-preview`
+**Authorization**
 
-**Input/Params:** Không có; onboarding token required.
+`Bearer <onboardingToken>`
+
+**Input/Params:** Không có; chưa cần auth (giả định tiếp tục).
+Backend xác định account/user/room từ `onboardingToken`.
 
 **Output**
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`renderedText`|string|Có|`contractPlaceholder` đã merge user, room và parameter|
+|`renderedText`|string|Có|`contractPlaceholder` chưa merge, lấy từ parameter|
 |`user`|object|Có|Personal info vừa nhập|
 |`room`|object|Có|Room suy ra từ account username/roomID|
 |`draftContract`|object|Có|`startDate`, `expireDate`, `propertyDeposit`|
 
 ## #44 — POST `/api/auth/first-login/contract`
+**Authorization**
 
+`Bearer <onboardingToken>`
 **Input — multipart/form-data**
 
 |Field|Type|Required|Description|
@@ -1248,8 +1319,40 @@ Onboarding token required.
 {"signature":"<file>","acceptedTerms":true}
 ```
 
-Backend lưu relative path vào `CONTRACT.signature`, set `signedAt`, snapshot `CONTRACT.rent = ROOM.price` tại thời điểm tạo, tạo/activate contract và set `ACCOUNT.status=active` trong một transaction.
+Backend thực hiện trong **một transaction**:
 
+1. Lưu relative path của signature vào `CONTRACT.signature`.
+2. Set `CONTRACT.signedAt`.
+3. Snapshot `CONTRACT.rent = ROOM.price`.
+4. Tạo `CONTRACT` mới.
+5. Set contract status = `active`.
+6. Set `ACCOUNT.status = active`.
+7. Commit transaction.
+8. Generate `accessToken`.
+
+**JWT payload** chứa:
+
+```json
+{
+  "accountID": 1,
+  "roomID": 101,
+  "contractID": 25,
+  "userID": 10,
+  "startDate": "2026-09-13"
+}
+```
+
+Sau khi middleware xác thực JWT, backend tạo:
+
+```text
+req.User = {
+    accountID,
+    roomID,
+    contractID,
+    userID,
+    startDate
+}
+```
 **Output**
 
 |Field|Type|Required|Description|
@@ -1272,11 +1375,11 @@ Backend lưu relative path vào `CONTRACT.signature`, set `signedAt`, snapshot `
 
 Chỉ có ba thay đổi lưu trữ bắt buộc được phát hiện trong toàn bộ flow:
 
-|Entity|Change|Reason|
-|---|---|---|
-|`CONTRACT`|Add `signedAt DATETIME`|Hiển thị và audit thời điểm ký|
-|`CONTRACT`|Add `rent INTEGER`|Snapshot giá thuê lúc ký; không đổi hồi tố khi `ROOM.price` đổi sau này|
-|`PARAMETER.Value`|Đổi sang `TEXT` hoặc type hỗ trợ long text|Lưu `contractPlaceholder` dài|
-|`REQUEST.type`|Replace legacy enum with 6 current request types; remove `subuser`|Đồng bộ flow Approvals hiện tại|
+|Entity|Change|Reason|State|
+|---|---|---|---|
+|`CONTRACT`|Add `signedAt DATETIME`|Hiển thị và audit thời điểm ký|Done|
+|`CONTRACT`|Add `rent INTEGER`|Snapshot giá thuê lúc ký; không đổi hồi tố khi `ROOM.price` đổi sau này|Done|
+|`PARAMETER.Value`|Đổi sang `TEXT` hoặc type hỗ trợ long text|Lưu `contractPlaceholder` dài|Done|
+|`REQUEST.type`|Replace legacy enum with 6 current request types; remove `subuser`|Đồng bộ flow Approvals hiện tại|Done|
 
 Các field như `roomCode`, `tenantName`, `isOverdue`, `stillOwed`, summaries và labels là join/derived response, không thêm vào ERD.
