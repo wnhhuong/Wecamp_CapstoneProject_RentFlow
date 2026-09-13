@@ -1,8 +1,9 @@
 import "dotenv/config";
-import express, { NextFunction, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import cors from "cors";
 import path from "path";
 import connectDB from "./config/db.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -24,13 +25,7 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 // Global Error Handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("Unhandle Error:", err);
-    res.status(500).json({
-        message: err.message || "Internal Server Error",
-        stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
-    });
-});
+app.use(errorHandler)
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
