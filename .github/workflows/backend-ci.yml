@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'docker-compose*.yml'
   pull_request:
     branches: [main, develop]
     paths:
