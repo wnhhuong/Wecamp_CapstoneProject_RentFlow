@@ -9,6 +9,7 @@ on:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'docker-compose*.yml'
 
 jobs:
   build-and-lint:
