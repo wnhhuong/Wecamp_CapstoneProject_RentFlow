@@ -1204,7 +1204,105 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 |`status`|enum|Có|`approved`|
 |`result`|object|Có|IDs/records được tạo hoặc cập nhật theo type|
 
+# 13. Admin / Setting parameters
+
+> Endpoint hiện có (`/api/guest/parameters`) chỉ là **public, read-only** cho Guest.
+> Đây là 2 endpoint còn thiếu để Admin **xem** và **cập nhật** billing parameters, đáp ứng AC1–AC5 của Story 6.
+> Chỉ cho phép update value, không update name của parameters
+> UI tham khảo để cập nhật
+
+|#|Method|Endpoint|Mô tả|Tham chiếu UI|
+|---|---|---|---|---|
+|41new|GET|`/api/admin/parameters`|Bảng parameters common fields|Admin / Setting|
+|42new|PATCH|`/api/admin/parameters/:parameterID`|Admin cập nhật các allowed parameters cho kỳ hiện tại|Admin / Setting|
+
+## #1. GET `/api/admin/parameters`
+ 
+**Mục đích:** Admin xem parameters hiện tại đang áp dụng cho kỳ hiện tại và có id để update. (AC1)
+>Đề xuất: otherFees đại diện cho tổng các chi phí không gọi tên.
+
+**Auth:** Admin only (role guard)
+ 
+```json
+{
+  "success": true, 
+  "data":
+    [
+      { "id": "param_001", "name": "electricityUnitPrice", "value": "3500" },
+      { "id": "param_002", "name": "waterPrice", "value": "15000" },
+      { "id": "param_003", "name": "wifiFee", "value": "100000" },
+      { "id": "param_004", "name": "otherFees", "value": "30000" },
+      { "id": "param_005", "name": "meterReadingStartDate", "value": "2025-01-25" },
+      { "id": "param_006", "name": "meterReadingEndDate", "value": "2025-01-31" },
+      { "id": "param_007", "name": "paymentDueDate", "value": "2025-02-10" },
+      { "id": "param_008", "name": "yearToExtend", "value": "1" },
+      { "id": "param_009", "name": "adminPhone", "value": "0901234567" },
+      { "id": "param_010", "name": "adminFacebook", "value": "https://facebook.com/rentflow" },
+      { "id": "param_011", "name": "adminZalo", "value": "0901234567" },
+      { "id": "param_012", "name": "address", "value": "123 Nguyễn Văn A, Q.1, TP.HCM" },
+      { "id": "param_013", "name": "popertyName", "value": "RentFlow House" },
+      { "id": "param_014", "name": "adminEmail", "value": "admin@rentflow.vn" },
+      { "id": "param_015", "name": "contractPlaceholder", "value": "Hợp đồng thuê phòng số {contractID} giữa Bên A và {tenantName}..." }
+    ]
+  "message": null
+}
+```
+
 ---
+ 
+## #2. PATCH `/api/admin/parameters/:parameterID`
+ 
+**Mục đích:** Admin chọn 1 row theo `id` và cập nhật `value`, áp dụng cho kì hiện tại. (AC2)
+ 
+**Auth:** Admin only
+ 
+### Request Body
+```json
+{ "value": "3700" }
+```
+Không cho sửa `id`/`name` — chỉ `value`. Field lạ khác trong body → reject (400).
+
+### Validation rules theo `name` (AC3)
+ 
+| `name` | Rule |
+|---|---|
+| `electricityUnitPrice` | số, `> 0` |
+| `waterPrice` | số, `> 0` |
+| `wifiFee` | số, `>= 0` |
+| `otherFees` | số, `>= 0` |
+| `meterReadingStartDate` | ngày hợp lệ, phải **trước** `value` hiện tại của row `meterReadingEndDate` |
+| `meterReadingEndDate` | ngày hợp lệ, phải **sau** `meterReadingStartDate` |
+| `paymentDueDate` | ngày hợp lệ, phải **sau** `meterReadingEndDate` |
+| `yearToExtend` | số nguyên, `> 0` |
+| `adminPhone` | đúng định dạng số điện thoại VN |
+| `adminEmail` | đúng định dạng email |
+| `adminFacebook` | URL hợp lệ (hoặc rỗng) |
+| `adminZalo` | số điện thoại hoặc URL, không rỗng |
+| `address` | string, không rỗng |
+| `popertyName` | string, không rỗng |
+| `contractPlaceholder` | string, không rỗng (free text, cho phép chứa placeholder `{...}` dùng khi render Contract ở Story 5) |
+| `id` không tồn tại | 404 |
+| `id` hợp lệ nhưng gửi kèm `name` khác giá trị hiện tại | reject — `name` không được đổi qua endpoint này |
+ 
+> Vì mỗi tham số update độc lập theo `id`, 3 field ngày (`meterReadingStartDate/EndDate`, `paymentDueDate`) validate **chéo** bằng cách đọc `value` hiện hành của các row liên quan khác trong lúc xử lý request.
+ 
+```json
+{ "success": true, "data": {"id": "param_001", "name": "electricityUnitPrice", "value": "3700"}, "message":null}
+```
+ 
+### Error responses
+ 
+| Status | Case |
+|---|---|
+| 400 | Sai kiểu dữ liệu theo `name` / field lạ trong body / cố sửa `name` |
+| 401 / 403 | Không phải Admin |
+| 404 | `id` không tồn tại |
+| 422 | Vi phạm rule ngày chéo (`meterReadingEndDate <= meterReadingStartDate`, `paymentDueDate <= meterReadingEndDate`) |
+ 
+---
+
+
+
 
 # 14. Login & First-login onboarding
 
