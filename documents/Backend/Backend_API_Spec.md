@@ -1383,3 +1383,116 @@ Chỉ có ba thay đổi lưu trữ bắt buộc được phát hiện trong to�
 |`REQUEST.type`|Replace legacy enum with 6 current request types; remove `subuser`|Đồng bộ flow Approvals hiện tại|Done|
 
 Các field như `roomCode`, `tenantName`, `isOverdue`, `stillOwed`, summaries và labels là join/derived response, không thêm vào ERD.
+
+---
+# 15. Backend folder structure
+
+> Giả định stack: **Node.js/Express + Mongoose (MERN)**, monorepo với thư mục `backend/` riêng. Nếu stack thực tế khác (vd. đổi sang NestJS hoặc SQL/Prisma) thì cấu trúc bên dưới cần điều chỉnh lại tương ứng — báo mình để update.
+
+**Root repo (monorepo):**
+
+```
+rentflow/
+├── .github/
+│   └── workflows/
+│       ├── backend-ci.yml      # chỉ chạy khi có thay đổi trong backend/ (path filter)
+│       └── frontend-ci.yml     # chỉ chạy khi có thay đổi trong frontend/ (path filter)
+├── backend/                    # xem cây chi tiết bên dưới
+├── frontend/
+├── docker-compose.yml          # backend + mongo + frontend, optional, tiện dev local
+└── README.md
+```
+
+**Trong `backend/`:**
+
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── db.ts                   # Kết nối MongoDB/Mongoose
+│   │   ├── env.ts                  # Load & validate biến môi trường
+│   │   └── multer.ts               # Cấu hình upload ảnh (rooms, consumption, repair, checkout, signature)
+│   │
+│   ├── models/
+│   │   ├── Parameter.ts
+│   │   ├── User.ts
+│   │   ├── Account.ts
+│   │   ├── Area.ts
+│   │   ├── Room.ts
+│   │   ├── Contract.ts
+│   │   ├── Consumption.ts
+│   │   ├── Invoice.ts              # dùng `isRequestLate` — KHÔNG dùng `isRequestDelay`
+│   │   ├── Facility.ts
+│   │   ├── FacilityType.ts
+│   │   ├── Ticket.ts
+│   │   ├── Repair.ts               # discriminator/ref của Ticket
+│   │   ├── Complain.ts             # discriminator/ref của Ticket
+│   │   └── Request.ts              # base + 6 subtype: LatePayment, Paid, Extend, Moveout, Checkout, Consump
+│   │                                 # (KHÔNG có SubUser/SubuserRequest — UI đã bỏ subuser, xem #13)
+│   │
+│   ├── routes/
+│   │   ├── index.ts                # gộp router, mount `/api`
+│   │   ├── guest.routes.ts         # #1–3
+│   │   ├── auth.routes.ts          # #40–43 login & first-login
+│   │   ├── user/
+│   │   │   ├── dashboard.routes.ts    # #4
+│   │   │   ├── consumption.routes.ts  # #5–7
+│   │   │   ├── invoice.routes.ts      # #8–11
+│   │   │   ├── ticket.routes.ts       # #12–16
+│   │   │   └── profile.routes.ts      # #17–24
+│   │   └── admin/
+│   │       ├── dashboard.routes.ts    # #25
+│   │       ├── room.routes.ts         # #26–31
+│   │       ├── user.routes.ts         # #32
+│   │       ├── invoice.routes.ts      # #33–34
+│   │       ├── ticket.routes.ts       # #35–36
+│   │       └── approval.routes.ts     # #37–39
+│   │
+│   ├── controllers/                # mirror cấu trúc routes/ ở trên (1 controller/route file)
+│   │   ├── guest.controller.ts
+│   │   ├── auth.controller.ts
+│   │   ├── user/
+│   │   └── admin/
+│   │
+│   ├── services/                   # business logic tách khỏi controller (tính bill, approve theo type, v.v.)
+│   │   ├── invoice.service.ts
+│   │   ├── request.service.ts      # switch theo 6 request type khi approve (#39)
+│   │   ├── contract.service.ts     # merge contractPlaceholder, tạo/activate contract
+│   │   └── upload.service.ts
+│   │
+│   ├── middlewares/
+│   │   ├── auth.middleware.ts      # verify JWT / onboardingToken
+│   │   ├── role.middleware.ts      # guard admin vs user
+│   │   ├── upload.middleware.ts    # wrap multer cho từng endpoint
+│   │   ├── validate.middleware.ts  # chạy schema validator
+│   │   └── error.middleware.ts     # format response lỗi chung `{success:false,...}`
+│   │
+│   ├── validators/                 # Joi/Zod schema theo từng endpoint trong spec
+│   │
+│   ├── utils/
+│   │   ├── response.ts             # helper trả `{success, data, message}`
+│   │   ├── pagination.ts           # helper `data.items` + `data.pagination`
+│   │   ├── hashPassword.ts         # hash password trước khi lưu
+│   │   ├── generateRandomPassword.ts # dùng cho reset account (#30)
+│   │   └── dateFormat.ts           # format date-only / ISO UTC / VND integer
+│   │
+│   ├── app.ts                      # khởi tạo express app, mount middlewares + routes
+│   └── server.ts                   # entrypoint, listen port
+│
+├── uploads/                        # relative path lưu file (multer disk storage)
+│   ├── rooms/
+│   ├── consumption/
+│   ├── repair/
+│   ├── checkout/
+│   └── signatures/
+│
+├── tests/
+│   ├── unit/
+│   └── integration/
+│
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── tsconfig.json
+└── package.json
+```
