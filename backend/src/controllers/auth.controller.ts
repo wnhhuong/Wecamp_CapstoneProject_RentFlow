@@ -5,9 +5,11 @@ import { sendError, sendSuccess } from "../utils/response.js";
 import Account from "../models/Account.js";
 import Contract from "../models/Contract.js";
 import User from "../models/User.js";
-import { AccountRole, AccountStatus, ContractStatus } from "../models/enums.js";
+import { AccountRole, AccountStatus, ContractStatus, ParameterName } from "../models/enums.js";
 import hashFunction from "../utils/hashPassword.js";
 import { OnboardingRequest } from "../middlewares/auth.middleware.js";
+import Room from "../models/Room.js";
+import Parameter from "../models/Parameter.js";
 
 // Authenticate a user and get token
 // POST /api/auth/login
@@ -150,12 +152,62 @@ export const firstLoginProfile = async (req: OnboardingRequest, res: Response, n
         }
 
         account.password = await hashFunction(password);
-        account.status = AccountStatus.ACTIVE
+        //account.status = AccountStatus.ACTIVE
         await account.save();
 
         const onboardingToken = generateOnboardingToken(account._id.toString(), user._id.toString());
         sendSuccess(res, { onboardingToken, user });
     } catch (error) {
         next(error);
+    }
+}
+
+// First login: preview contract
+// POST /api/auth/first-login/contract-preview
+export const contractPreview = async (req: OnboardingRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const {accountID, userID} = req.onboarding!;
+        // get account
+        const account = await Account.findById(accountID)
+        if(!account){ sendError(res, 404, "Account not found"); return; }
+
+        // check exist active contract of this room. if exist -> can not create new contract
+        const existing = await Contract.findOne({ roomID: account.roomID, status: ContractStatus.ACTIVE });
+        if (existing) {
+            sendError(res, 409, "This room already has an active contract");
+            return;
+        }
+
+        // get room and user in4
+        const room = await Room.findById(account.roomID);
+        if (!room) { sendError(res, 404, "Room not found"); return; }
+        const user = await User.findById(userID);
+        if (!user) { sendError(res, 404, "User not found"); return; }
+
+        // get param in4
+        const durationParam = await Parameter.findOne({ name: ParameterName.YEAR_TO_EXTEND });
+        const durationYears = Number(durationParam?.value);
+        if (!durationYears || durationYears <= 0) {
+            sendError(res, 500, "Contract duration is not configured");
+            return;
+        }
+        const templateParam = await Parameter.findOne({ name: ParameterName.CONTRACT_PLACEHOLDER });
+        if (!templateParam) { sendError(res, 500, "Contract template is not configured"); return; }
+        const startDate = new Date();
+        const expireDate = new Date(startDate);
+        expireDate.setFullYear(expireDate.getFullYear() + durationYears);
+        
+        sendSuccess(res, {
+            renderedText: templateParam.value, // chưa merge, giữ nguyên {placeholder}
+            user,
+            room,
+            draftContract: {
+                startDate,
+                expireDate,
+                propertyDeposit: room.deposit,
+            },
+        });
+    } catch (error) {
+        next(error)
     }
 }
