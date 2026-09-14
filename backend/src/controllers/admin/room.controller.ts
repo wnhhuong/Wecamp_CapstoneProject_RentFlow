@@ -109,4 +109,44 @@ export class AdminRoomController {
       next(error);
     }
   }
+
+  public static async prepareRoomAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rawRoomID = req.params.roomID;
+      const roomID = Array.isArray(rawRoomID) ? rawRoomID[0] : rawRoomID;
+      const rawPassword = req.body.newPassword ?? req.body.password;
+      
+      // 1. Validate roomID
+      if (!roomID || !mongoose.Types.ObjectId.isValid(roomID)) {
+        sendError(res, 400, 'Invalid or missing roomID in request parameters.');
+        return;
+      }
+
+      // 2. Validate bắt buộc Admin phải nhập mật khẩu
+      if (!rawPassword || typeof rawPassword !== 'string' || rawPassword.trim().length === 0) {
+        sendError(res, 400, 'newPassword is required. Admin must provide a temporary password.');
+        return;
+      }
+
+      // 3. Validate độ dài mật khẩu (tối thiểu 6 ký tự)
+      if (rawPassword.trim().length < 6) {
+        sendError(res, 400, 'newPassword must be at least 6 characters long.');
+        return;
+      }
+
+      const result = await RoomService.prepareRoomAccount({
+        roomID,
+        newPassword: rawPassword.trim(),
+      });
+
+      // Output theo chuẩn API Spec #31: { success: true, data: { accountID, roomID, username, status }, message: null }
+      sendSuccess(res, result, 200);
+    } catch (error: any) {
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
 }
