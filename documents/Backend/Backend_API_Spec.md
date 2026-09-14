@@ -1443,7 +1443,7 @@ Backend thực hiện trong **một transaction**:
 Sau khi middleware xác thực JWT, backend tạo:
 
 ```text
-req.User = {
+req.auth = {
     accountID,
     roomID,
     contractID,
@@ -1462,7 +1462,7 @@ req.User = {
 |`contract.startDate`|date-only|Có|Ngày bắt đầu|
 |`contract.expireDate`|date-only|Có|Ngày hết hạn|
 |`contract.propertyDeposit`|integer|Có|Tiền cọc snapshot|
-|`contract.rent`|integer|Có|Giá thuê snapshot từ `ROOM.price` lúc tạo contract|
+|`contract.rentPrice`|integer|Có|Giá thuê snapshot từ `ROOM.price` lúc tạo contract|
 |`contract.status`|enum|Có|`active`|
 |`contract.signature`|string|Có|Path PNG|
 |`contract.signedAt`|timestamp|Có|Thời điểm ký|
