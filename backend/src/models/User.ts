@@ -8,7 +8,7 @@ export interface IUser extends Document {
   fullName: string;
   DoB: Date;
   phoneNumber: string;
-  indentityNo: string; // CMND/CCCD (giữ nguyên tên field theo ERD)
+  identityNo: string; // CMND/CCCD (giữ nguyên tên field theo ERD)
   sex: Sex;
   nationality: string;
   PoR: string; // Place of Residence - nơi thường trú
@@ -21,7 +21,7 @@ const UserSchema = new Schema<IUser>(
     fullName: { type: String, required: true, trim: true },
     DoB: { type: Date, required: true },
     phoneNumber: { type: String, required: true, trim: true },
-    indentityNo: { type: String, required: true, unique: true, trim: true },
+    identityNo: { type: String, required: true, unique: true, trim: true },
     sex: { type: String, enum: Object.values(Sex), required: true },
     nationality: { type: String, required: true, trim: true },
     PoR: { type: String, required: true, trim: true },

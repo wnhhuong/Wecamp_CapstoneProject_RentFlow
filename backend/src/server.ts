@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "path";
 import connectDB from "./config/db.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import authRouter from "./routes/auth.routes.js";
 
 const app = express();
 
@@ -23,6 +24,10 @@ const port = process.env.PORT || 3000;
 app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
 });
+
+// use route
+app.use(`/api/auth`, authRouter)
+
 
 // Global Error Handler
 app.use(errorHandler)
