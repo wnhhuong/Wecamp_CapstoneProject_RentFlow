@@ -5,6 +5,7 @@ import path from "path";
 import connectDB from "./config/db.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import authRouter from "./routes/auth.routes.js";
+import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 
 const app = express();
 
@@ -19,6 +20,8 @@ app.use(
     express.static(path.join(process.cwd(), "uploads"))
 );
 
+app.use(`/api/admin/parameters`, adminParameterRoutes)
+
 const port = process.env.PORT || 3000;
 
 app.get('/', (_req: Request, res: Response) => {
@@ -27,7 +30,6 @@ app.get('/', (_req: Request, res: Response) => {
 
 // use route
 app.use(`/api/auth`, authRouter)
-
 
 // Global Error Handler
 app.use(errorHandler)
