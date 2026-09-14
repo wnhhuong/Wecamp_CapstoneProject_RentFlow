@@ -14,4 +14,9 @@ router.post(
   AdminRoomController.createRoom
 );
 
+router.patch(
+  '/:roomID/account/password',
+  AdminRoomController.prepareRoomAccount
+);
+
 export default router;

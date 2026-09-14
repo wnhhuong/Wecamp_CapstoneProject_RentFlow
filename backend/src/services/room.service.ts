@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
-import fs from 'fs';
-import path from 'path';
 import Room from '../models/Room.js';
 import Account from '../models/Account.js';
 import Area from '../models/Area.js';
@@ -18,11 +16,15 @@ export interface ICreateRoomDTO {
   images: string[];
 }
 
+export interface IPrepareAccountDTO {
+  roomID: string;
+  newPassword: string;
+}
+
 export class RoomService {
   public static async createRoomWithAccount(dto: ICreateRoomDTO) {
     const areaExists = await Area.findById(dto.areaID);
     if (!areaExists) {
-      this.cleanupImages(dto.images);
       const error: any = new Error('Selected Area does not exist.');
       error.statusCode = 404;
       throw error;
@@ -30,7 +32,6 @@ export class RoomService {
 
     const existingRoom = await Room.findOne({ roomCode: dto.roomCode });
     if (existingRoom) {
-      this.cleanupImages(dto.images);
       const error: any = new Error(`Room with code "${dto.roomCode}" already exists.`);
       error.statusCode = 409;
       throw error;
@@ -39,7 +40,6 @@ export class RoomService {
     const normalizedUsername = dto.roomCode.replace(/\s+/g, '');
     const existingAccount = await Account.findOne({ username: normalizedUsername });
     if (existingAccount) {
-      this.cleanupImages(dto.images);
       const error: any = new Error(`An account with username "${normalizedUsername}" already exists.`);
       error.statusCode = 409;
       throw error;
@@ -103,22 +103,55 @@ export class RoomService {
       // Rollback toàn bộ nếu Account creation hoặc bất kỳ bước nào fail
       await session.abortTransaction();
       session.endSession();
-      this.cleanupImages(dto.images);
       throw err;
     }
   }
+  // Task: Admin prepares Room Account for Tenant (#31)
+  public static async prepareRoomAccount(dto: IPrepareAccountDTO) {
+    const { roomID, newPassword } = dto;
 
-  private static cleanupImages(imagePaths: string[]) {
-    if (!imagePaths || imagePaths.length === 0) return;
-    imagePaths.forEach((relPath) => {
-      try {
-        const fullPath = path.resolve(process.cwd(), relPath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      } catch (e) {
-        console.error(`Failed to delete file: ${relPath}`, e);
-      }
-    });
+    // 1. Kiểm tra Room có tồn tại không
+    const room = await Room.findById(roomID);
+    if (!room) {
+      const error: any = new Error('Room not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // 2. Tìm Account gắn với roomID
+    const account = await Account.findOne({ roomID: new mongoose.Types.ObjectId(roomID) });
+    if (!account) {
+      const error: any = new Error('Room Account not found for this room.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // 3. AC: Chỉ Room Account đang BANNED mới được chuẩn bị
+    if (account.status !== AccountStatus.BANNED) {
+      const error: any = new Error(
+        `Only room accounts with BANNED status can be prepared for a new tenant. Current status is "${account.status}".`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // 4. Hash mật khẩu do Admin nhập
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), salt);
+
+    // 5. Cập nhật mật khẩu, chuyển BANNED -> INACTIVE và reset startDate
+    account.password = hashedPassword;
+    account.status = AccountStatus.INACTIVE;
+    account.startDate = new Date();
+
+    await account.save();
+
+    // 6. Trả về đúng schema spec #31 (không trả password)
+    return {
+      accountID: String(account._id),
+      roomID: String(room._id),
+      username: account.username,
+      status: account.status, // "inactive"
+    };
   }
 }
