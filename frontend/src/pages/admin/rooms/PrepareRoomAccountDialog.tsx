@@ -136,17 +136,26 @@ function PrepareRoomAccountDialog({
             {room ? (
               <div className="grid gap-3 rounded-md border border-hairline bg-surface p-4 sm:grid-cols-2">
                 <AccountDetail label="Room" value={room.roomCode} />
-                <AccountDetail label="Username" value={room.account.username} />
+                <AccountDetail
+                  label="Username"
+                  value={room.account?.username ?? 'No account'}
+                />
                 <div className="sm:col-span-2">
                   <span className="mb-1.5 block text-xs text-muted-foreground">
                     Current account status
                   </span>
-                  <StatusBadge domain="account" status={room.account.status} />
+                  {room.account ? (
+                    <StatusBadge domain="account" status={room.account.status} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No account
+                    </span>
+                  )}
                 </div>
               </div>
             ) : null}
 
-            {room?.account.status !== 'banned' ? (
+            {room?.account?.status !== 'banned' ? (
               <div
                 role="alert"
                 className="rounded-md border border-[#e0c2bc] bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
@@ -179,7 +188,7 @@ function PrepareRoomAccountDialog({
                   autoComplete="new-password"
                   spellCheck={false}
                   aria-invalid={Boolean(error)}
-                  disabled={room?.account.status !== 'banned' || isSubmitting}
+                  disabled={room?.account?.status !== 'banned' || isSubmitting}
                   className="font-mono"
                 />
                 <Button
@@ -187,7 +196,7 @@ function PrepareRoomAccountDialog({
                   variant="outline"
                   size="icon-lg"
                   onClick={handleGeneratePassword}
-                  disabled={room?.account.status !== 'banned' || isSubmitting}
+                  disabled={room?.account?.status !== 'banned' || isSubmitting}
                   aria-label="Generate another temporary password"
                   title="Generate another temporary password"
                 >
@@ -214,7 +223,7 @@ function PrepareRoomAccountDialog({
               <Button
                 type="submit"
                 variant="dark"
-                disabled={room?.account.status !== 'banned' || isSubmitting}
+                disabled={room?.account?.status !== 'banned' || isSubmitting}
               >
                 {isSubmitting ? <Spinner /> : <KeyIcon />}
                 {isSubmitting ? 'Preparing...' : 'Prepare account'}

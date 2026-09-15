@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  getAreasFromRooms,
   getAdminRooms,
   type AdminRoom,
 } from '@/shared/api/admin/rooms.api'
@@ -32,7 +33,7 @@ function RoomsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false)
-  const [selectedRoomID, setSelectedRoomID] = useState<number | null>(null)
+  const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null)
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [preparedUsername, setPreparedUsername] = useState('')
   const [search, setSearch] = useState('')
@@ -81,7 +82,7 @@ function RoomsPage() {
         !normalizedSearch ||
         room.roomCode.toLowerCase().includes(normalizedSearch) ||
         room.tenantName?.toLowerCase().includes(normalizedSearch)
-      const matchesArea = areaID === 'all' || room.areaID === Number(areaID)
+      const matchesArea = areaID === 'all' || room.areaID === areaID
       const matchesStatus = status === 'all' || room.status === status
       const matchesCapacity =
         capacity === 'all' || room.maxPeople === Number(capacity)
@@ -99,6 +100,8 @@ function RoomsPage() {
     })
   }, [areaID, capacity, owed, rooms, search, status])
 
+  const areas = useMemo(() => getAreasFromRooms(rooms), [rooms])
+
   const selectedRoom =
     rooms.find((room) => room.roomID === selectedRoomID) ?? null
 
@@ -113,7 +116,7 @@ function RoomsPage() {
         room.roomID === preparedRoom.roomID ? preparedRoom : room,
       ),
     )
-    setPreparedUsername(preparedRoom.account.username)
+    setPreparedUsername(preparedRoom.account?.username ?? preparedRoom.roomCode)
   }
 
   return (
@@ -198,10 +201,7 @@ function RoomsPage() {
           onChange={setAreaID}
           options={[
             ['all', 'All areas'],
-            ['1', 'Block A'],
-            ['2', 'Block B'],
-            ['3', 'Block C'],
-            ['4', 'Block D'],
+            ...areas.map((area) => [area.areaID, area.areaName] as [string, string]),
           ]}
         />
         <FilterSelect
@@ -293,12 +293,14 @@ function RoomsPage() {
                   <TableCell>
                     <div className="flex flex-col items-start gap-1.5">
                       <span className="text-xs text-muted-foreground">
-                        {room.account.username}
+                        {room.account?.username ?? 'No account'}
                       </span>
-                      <StatusBadge
-                        domain="account"
-                        status={room.account.status}
-                      />
+                      {room.account ? (
+                        <StatusBadge
+                          domain="account"
+                          status={room.account.status}
+                        />
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -323,7 +325,7 @@ function RoomsPage() {
                     {formatCurrency(room.price)}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
-                    {room.account.status === 'banned' ? (
+                    {room.account?.status === 'banned' ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -335,7 +337,9 @@ function RoomsPage() {
                       </Button>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        {room.account.status === 'inactive'
+                        {!room.account
+                          ? 'No account'
+                          : room.account.status === 'inactive'
                           ? 'Prepared'
                           : 'In use'}
                       </span>
@@ -354,6 +358,7 @@ function RoomsPage() {
 
       <AddRoomDialog
         open={isAddRoomOpen}
+        areas={areas}
         onOpenChange={setIsAddRoomOpen}
         onRoomCreated={handleRoomCreated}
       />

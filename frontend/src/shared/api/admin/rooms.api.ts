@@ -9,9 +9,14 @@ export type CreateRoomStatus = Exclude<RoomStatus, 'rented'>
 export type RoomAccountStatus = 'banned' | 'inactive' | 'active'
 
 export interface RoomAccount {
-  accountID: number
+  accountID: string
   username: string
   status: RoomAccountStatus
+}
+
+export interface AdminArea {
+  areaID: string
+  areaName: string
 }
 
 export type ElectricityState =
@@ -21,8 +26,8 @@ export type ElectricityState =
   | 'not_applicable'
 
 export interface AdminRoom {
-  roomID: number
-  areaID: number
+  roomID: string
+  areaID: string
   areaName: string
   roomCode: string
   floor: number
@@ -34,13 +39,13 @@ export interface AdminRoom {
   availableFrom: string | null
   images: string[]
   tenantName: string | null
-  account: RoomAccount
+  account: RoomAccount | null
   electricityState: ElectricityState
   stillOwed: number
 }
 
 export interface CreateRoomInput {
-  areaID: number
+  areaID: string
   roomCode: string
   floor: number
   maxPeople: number
@@ -53,218 +58,265 @@ export interface CreateRoomInput {
 }
 
 export interface PrepareRoomAccountInput {
-  roomID: number
+  roomID: string
   temporaryPassword: string
 }
 
 export interface PreparedRoomCredential {
-  accountID: number
-  roomID: number
+  accountID: string
+  roomID: string
   username: string
   status: 'inactive'
   temporaryPassword: string
 }
 
-const areaNames: Record<number, string> = {
-  1: 'Block A',
-  2: 'Block B',
-  3: 'Block C',
-  4: 'Block D',
+interface ApiResponse<T> {
+  success: boolean
+  data: T | null
+  message: string | null
 }
 
-let rooms: AdminRoom[] = [
-  {
-    roomID: 101,
-    areaID: 1,
-    areaName: 'Block A',
-    roomCode: 'A-101',
-    floor: 1,
-    maxPeople: 2,
-    roomDetail: 'Bright corner room with a private bathroom.',
-    price: 3200000,
-    deposit: 3200000,
-    status: 'available now',
-    availableFrom: null,
-    images: ['room-a-101.jpg'],
-    tenantName: null,
-    account: {
-      accountID: 1001,
-      username: 'A-101',
-      status: 'banned',
-    },
-    electricityState: 'not_applicable',
-    stillOwed: 0,
-  },
-  {
-    roomID: 102,
-    areaID: 1,
-    areaName: 'Block A',
-    roomCode: 'A-102',
-    floor: 1,
-    maxPeople: 2,
-    roomDetail: 'Furnished room near the shared kitchen.',
-    price: 3000000,
-    deposit: 3000000,
-    status: 'rented',
-    availableFrom: null,
-    images: ['room-a-102.jpg'],
-    tenantName: 'Trần Minh Quân',
-    account: {
-      accountID: 1002,
-      username: 'A-102',
-      status: 'active',
-    },
-    electricityState: 'checked',
-    stillOwed: 0,
-  },
-  {
-    roomID: 105,
-    areaID: 2,
-    areaName: 'Block B',
-    roomCode: 'B-201',
-    floor: 2,
-    maxPeople: 3,
-    roomDetail: 'Large room with natural light.',
-    price: 3600000,
-    deposit: 3600000,
-    status: 'available soon',
-    availableFrom: '2026-10-15',
-    images: ['room-b-201.jpg'],
-    tenantName: 'Lê Thị Ngọc',
-    account: {
-      accountID: 1005,
-      username: 'B-201',
-      status: 'active',
-    },
-    electricityState: 'waiting_admin',
-    stillOwed: 3600000,
-  },
-  {
-    roomID: 109,
-    areaID: 3,
-    areaName: 'Block C',
-    roomCode: 'C-301',
-    floor: 3,
-    maxPeople: 1,
-    roomDetail: 'Compact room for one tenant.',
-    price: 2600000,
-    deposit: 2600000,
-    status: 'not available',
-    availableFrom: null,
-    images: ['room-c-301.jpg'],
-    tenantName: null,
-    account: {
-      accountID: 1009,
-      username: 'C-301',
-      status: 'inactive',
-    },
-    electricityState: 'not_applicable',
-    stillOwed: 0,
-  },
-]
-
-let nextRoomID = 110
-let nextAccountID = 1010
-
-function wait(duration = 450) {
-  return new Promise((resolve) => window.setTimeout(resolve, duration))
+interface AdminRoomsResponse {
+  items: BackendAdminRoom[]
 }
+
+interface BackendAdminRoom {
+  roomID: string
+  areaID?: string
+  areaName?: string
+  roomCode: string
+  floor?: number
+  maxPeople?: number
+  roomDetail?: string
+  price?: number
+  deposit?: number
+  status?: string
+  availableFrom?: string | null
+  images?: string[]
+  tenantName?: string | null
+  account?: BackendRoomAccount | null
+  electricityState?: ElectricityState
+  stillOwed?: number
+}
+
+interface BackendRoomAccount {
+  accountID: string
+  username: string
+  status: string
+}
+
+interface LoginResponse {
+  accessToken: string | null
+}
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
+  'http://localhost:5000/api'
+
+const ACCESS_TOKEN_KEY = 'rentflow_access_token'
 
 export async function getAdminRooms(): Promise<AdminRoom[]> {
-  await wait(250)
-  return rooms.map(cloneRoom)
+  const response = await apiRequest<AdminRoomsResponse>('/admin/rooms')
+  return response.items.map(mapAdminRoom)
+}
+
+export function getAreasFromRooms(rooms: AdminRoom[]): AdminArea[] {
+  const areas = new Map<string, string>()
+
+  rooms.forEach((room) => {
+    if (room.areaID && room.areaName) areas.set(room.areaID, room.areaName)
+  })
+
+  return Array.from(areas, ([areaID, areaName]) => ({ areaID, areaName })).sort(
+    (left, right) => left.areaName.localeCompare(right.areaName),
+  )
 }
 
 export async function createAdminRoom(
   input: CreateRoomInput,
 ): Promise<AdminRoom> {
-  await wait()
+  const body = new FormData()
 
-  const roomCode = input.roomCode.trim().toUpperCase()
-  const hasDuplicate = rooms.some(
-    (room) => room.roomCode.toUpperCase() === roomCode,
-  )
+  body.append('areaID', input.areaID)
+  body.append('roomCode', input.roomCode.trim().toUpperCase())
+  body.append('floor', String(input.floor))
+  body.append('maxPeople', String(input.maxPeople))
+  body.append('roomDetail', input.roomDetail.trim())
+  body.append('price', String(input.price))
+  body.append('deposit', String(input.deposit))
 
-  if (hasDuplicate) {
-    throw new Error(`Room code ${roomCode} already exists.`)
-  }
+  input.images.forEach((image) => body.append('images', image))
 
-  const createdRoom: AdminRoom = {
-    roomID: nextRoomID++,
-    areaID: input.areaID,
-    areaName: areaNames[input.areaID] ?? `Area ${input.areaID}`,
-    roomCode,
-    floor: input.floor,
-    maxPeople: input.maxPeople,
-    roomDetail: input.roomDetail.trim(),
-    price: input.price,
-    deposit: input.deposit,
-    status: input.status,
-    availableFrom:
-      input.status === 'available soon' ? input.availableFrom : null,
-    images: input.images.map((image) => image.name),
-    tenantName: null,
-    account: {
-      accountID: nextAccountID++,
-      username: roomCode.replace(/\s+/g, ''),
-      status: 'banned',
-    },
-    electricityState: 'not_applicable',
-    stillOwed: 0,
-  }
+  const createdRoom = await apiRequest<BackendAdminRoom>('/admin/rooms', {
+    method: 'POST',
+    body,
+  })
 
-  rooms = [createdRoom, ...rooms]
-  return cloneRoom(createdRoom)
+  return mapAdminRoom(createdRoom)
 }
 
 export async function prepareRoomAccount(
   input: PrepareRoomAccountInput,
 ): Promise<{ room: AdminRoom; credential: PreparedRoomCredential }> {
-  await wait()
-
-  const roomIndex = rooms.findIndex((room) => room.roomID === input.roomID)
-  if (roomIndex === -1) {
-    throw new Error('Room account could not be found.')
-  }
-
-  const room = rooms[roomIndex]
-  if (room.account.status !== 'banned') {
-    throw new Error('Only BANNED room accounts can be prepared.')
-  }
-
-  const temporaryPassword = input.temporaryPassword.trim()
-  if (temporaryPassword.length < 6) {
-    throw new Error('Temporary password must contain at least 6 characters.')
-  }
-
-  const preparedRoom: AdminRoom = {
-    ...room,
-    account: {
-      ...room.account,
-      status: 'inactive',
+  const credential = await apiRequest<Omit<PreparedRoomCredential, 'temporaryPassword'>>(
+    `/admin/rooms/${input.roomID}/account/password`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        newPassword: input.temporaryPassword,
+      }),
     },
-  }
-
-  rooms = rooms.map((currentRoom, index) =>
-    index === roomIndex ? preparedRoom : currentRoom,
   )
 
+  const rooms = await getAdminRooms()
+  const preparedRoom = rooms.find((room) => room.roomID === credential.roomID)
+
+  if (!preparedRoom) {
+    throw new Error('The prepared room could not be refreshed.')
+  }
+
   return {
-    room: cloneRoom(preparedRoom),
+    room: preparedRoom,
     credential: {
-      accountID: preparedRoom.account.accountID,
-      roomID: preparedRoom.roomID,
-      username: preparedRoom.account.username,
-      status: 'inactive',
-      temporaryPassword,
+      ...credential,
+      temporaryPassword: input.temporaryPassword,
     },
   }
 }
 
-function cloneRoom(room: AdminRoom): AdminRoom {
+async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const token = await getAccessToken()
+  const headers = new Headers(options.headers)
+
+  headers.set('Authorization', `Bearer ${token}`)
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  })
+
+  const payload = (await response.json().catch(() => null)) as
+    | ApiResponse<T>
+    | { message?: string }
+    | null
+
+  if (!response.ok) {
+    const message =
+      payload && 'message' in payload && payload.message
+        ? payload.message
+        : 'The request could not be completed.'
+    throw new Error(message)
+  }
+
+  if (!payload || !('success' in payload) || !payload.success) {
+    throw new Error('The backend returned an invalid response.')
+  }
+
+  return payload.data as T
+}
+
+async function getAccessToken() {
+  const storedToken = window.localStorage.getItem(ACCESS_TOKEN_KEY)
+  if (storedToken) return storedToken
+
+  const token = await loginWithSeedAdmin()
+  window.localStorage.setItem(ACCESS_TOKEN_KEY, token)
+  return token
+}
+
+async function loginWithSeedAdmin() {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: import.meta.env.VITE_DEV_ADMIN_USERNAME ?? 'admin',
+      password: import.meta.env.VITE_DEV_ADMIN_PASSWORD ?? 'Admin@123',
+    }),
+  })
+
+  const payload = (await response.json().catch(() => null)) as
+    | ApiResponse<LoginResponse>
+    | { message?: string }
+    | null
+
+  if (!response.ok || !payload || !('success' in payload) || !payload.success) {
+    const message =
+      payload && 'message' in payload && payload.message
+        ? payload.message
+        : 'Admin login failed.'
+    throw new Error(message)
+  }
+
+  if (!payload.data?.accessToken) {
+    throw new Error('Admin login did not return an access token.')
+  }
+
+  return payload.data.accessToken
+}
+
+function mapAdminRoom(room: BackendAdminRoom): AdminRoom {
   return {
-    ...room,
-    account: { ...room.account },
-    images: [...room.images],
+    roomID: room.roomID,
+    areaID: room.areaID ?? '',
+    areaName: room.areaName ?? 'Unknown area',
+    roomCode: room.roomCode,
+    floor: room.floor ?? 0,
+    maxPeople: room.maxPeople ?? 1,
+    roomDetail: room.roomDetail ?? '',
+    price: room.price ?? 0,
+    deposit: room.deposit ?? 0,
+    status: mapRoomStatus(room.status),
+    availableFrom: room.availableFrom ?? null,
+    images: room.images ?? [],
+    tenantName: room.tenantName ?? null,
+    account: room.account ? mapRoomAccount(room.account) : null,
+    electricityState: room.electricityState ?? 'not_applicable',
+    stillOwed: room.stillOwed ?? 0,
+  }
+}
+
+function mapRoomAccount(account: BackendRoomAccount): RoomAccount {
+  return {
+    accountID: account.accountID,
+    username: account.username,
+    status: mapAccountStatus(account.status),
+  }
+}
+
+function mapRoomStatus(status?: string): RoomStatus {
+  switch (status) {
+    case 'available_now':
+    case 'available now':
+      return 'available now'
+    case 'available_soon':
+    case 'available soon':
+      return 'available soon'
+    case 'not_available':
+    case 'not available':
+      return 'not available'
+    case 'rented':
+      return 'rented'
+    default:
+      return 'not available'
+  }
+}
+
+function mapAccountStatus(status?: string): RoomAccountStatus {
+  switch (status) {
+    case 'banned':
+      return 'banned'
+    case 'active':
+      return 'active'
+    case 'inactive':
+    default:
+      return 'inactive'
   }
 }
