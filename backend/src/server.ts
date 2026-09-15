@@ -34,9 +34,9 @@ app.use(`/api/auth`, authRouter)
 
 // user route
 // consumrequest route
-app.use(`/api/user`, consumpRequestRouter)
+app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
-app.use(`/api/user`, userInvoiceRouter)
+app.use(`/api/user/invoices`, userInvoiceRouter)
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 

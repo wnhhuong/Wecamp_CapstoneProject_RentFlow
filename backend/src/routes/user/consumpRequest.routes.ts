@@ -7,8 +7,8 @@ const consumpRequestRouter = Router();
 consumpRequestRouter.use(protect);
 consumpRequestRouter.use(userOnly);
 
-consumpRequestRouter.get('/consumption-requests/context', withUserAuth(consumpContext));
-consumpRequestRouter.post('/consumption-requests', upload("consumption").single("image"), withUserAuth(createConsumpRequest));
-consumpRequestRouter.get('/consumption-requests/:requestID', withUserAuth(viewConsumpRequest));
+consumpRequestRouter.get('/context', withUserAuth(consumpContext));
+consumpRequestRouter.post('/', upload("consumption").single("image"), withUserAuth(createConsumpRequest));
+consumpRequestRouter.get('/:requestID', withUserAuth(viewConsumpRequest));
 
 export default consumpRequestRouter;
