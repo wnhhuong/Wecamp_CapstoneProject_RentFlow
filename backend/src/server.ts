@@ -7,6 +7,7 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 import authRouter from "./routes/auth.routes.js";
 import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 import adminRoomRoutes from './routes/admin/room.routes.js';
+import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
 
 const app = express();
 
@@ -21,12 +22,6 @@ app.use(
     express.static(path.join(process.cwd(), "uploads"))
 );
 
-//Parameter routes
-app.use(`/api/admin/parameters`, adminParameterRoutes)
-
-//Room routes
-app.use(`/api/admin/rooms`, adminRoomRoutes)
-
 const port = process.env.PORT || 3000;
 
 app.get('/', (_req: Request, res: Response) => {
@@ -35,6 +30,16 @@ app.get('/', (_req: Request, res: Response) => {
 
 // use route
 app.use(`/api/auth`, authRouter)
+
+// user route
+// consumrequest rout
+app.use(`/api/user`, consumpRequestRouter)
+
+//Parameter routes
+app.use(`/api/admin/parameters`, adminParameterRoutes)
+
+//Room routes
+app.use(`/api/admin/rooms`, adminRoomRoutes)
 
 // Global Error Handler
 app.use(errorHandler)

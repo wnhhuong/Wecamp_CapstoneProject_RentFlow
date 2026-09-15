@@ -1,5 +1,5 @@
 // middlewares/auth.middleware.ts
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler  } from "express";
 import jwt from "jsonwebtoken";
 import { sendError } from "../utils/response.js";
 
@@ -12,14 +12,21 @@ type OnboardingPayload = {
   accountID: string;
   userID?: string;
 };
+export type UserAccessPayload = Extract<AccessPayload, { role: "user" }>;
+export type AdminAccessPayload = Extract<AccessPayload, { role: "admin" }>;
 
 // ---- request đã "gắn thêm" field ----
 export interface AuthRequest extends Request {
   auth?: AccessPayload;
 }
-
 export interface OnboardingRequest extends Request {
   onboarding?: OnboardingPayload;
+}
+export interface UserAuthRequest extends Request {
+  auth: UserAccessPayload;
+}
+export interface AdminAuthRequest extends Request {
+  auth: AdminAccessPayload;
 }
 
 function extractBearer(req: Request): string | null {
@@ -34,8 +41,12 @@ function verify(token: string): any {
 
 // ---- access token: đã login xong ----
 export const protect = (req: AuthRequest, res: Response, next: NextFunction): void => {
-    const token = extractBearer(req);
-    if (!token) { sendError(res, 401, "Not authorized, not token"); return; }
+  
+  const token = extractBearer(req);
+    if (!token) { 
+      sendError(res, 401, "Not authorized, not token"); 
+      return; 
+    }
 
     try {
         const payload = verify(token);
@@ -84,9 +95,27 @@ export const onboardingOnly = (req: OnboardingRequest, res: Response, next: Next
 };
 
 export const requireProfileDone = (req: OnboardingRequest, res: Response, next: NextFunction): void => {
-  if (!req.onboarding?.userID) {
-    sendError(res, 400, "Please complete your profile first");
-    return;
-  }
-  next();
+    if (!req.onboarding?.userID) {
+      sendError(res, 400, "Please complete your profile first");
+      return;
+    }
+    next();
+};
+
+// Bọc 1 controller nhận UserAuthRequest thành đúng RequestHandler chuẩn Express
+export const withUserAuth = (
+  handler: (req: UserAuthRequest, res: Response, next: NextFunction) => Promise<void> | void
+): RequestHandler => {
+  return (req, res, next) => {
+    handler(req as UserAuthRequest, res, next);
+  };
+};
+
+// Tương tự cho admin
+export const withAdminAuth = (
+  handler: (req: AdminAuthRequest, res: Response, next: NextFunction) => Promise<void> | void
+): RequestHandler => {
+  return (req, res, next) => {
+    handler(req as AdminAuthRequest, res, next);
+  };
 };
