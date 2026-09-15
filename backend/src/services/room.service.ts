@@ -423,7 +423,7 @@ export class RoomService {
 
     const unpaidInvoices = await Invoice.find({
       roomID: room._id,
-      status: { $in: [InvoiceStatus.NOT_PAID, InvoiceStatus.PENDING] },
+      status: { $in: [InvoiceStatus.NOT_PAID] },
     }).lean();
 
     const stillOwed = unpaidInvoices.reduce((sum, inv) => sum + (inv.totalBill || 0), 0);
