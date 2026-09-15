@@ -78,6 +78,12 @@ interface ApiResponse<T> {
 
 interface AdminRoomsResponse {
   items: BackendAdminRoom[]
+  pagination?: {
+    page: number
+    limit: number
+    totalItems: number
+    totalPages: number
+  }
 }
 
 interface BackendAdminRoom {
@@ -114,10 +120,24 @@ const API_BASE_URL =
   'http://localhost:5000/api'
 
 const ACCESS_TOKEN_KEY = 'rentflow_access_token'
+const ROOMS_PAGE_SIZE = 100
 
 export async function getAdminRooms(): Promise<AdminRoom[]> {
-  const response = await apiRequest<AdminRoomsResponse>('/admin/rooms')
-  return response.items.map(mapAdminRoom)
+  const rooms: BackendAdminRoom[] = []
+  let currentPage = 1
+
+  while (true) {
+    const response = await apiRequest<AdminRoomsResponse>(
+      `/admin/rooms?page=${currentPage}&limit=${ROOMS_PAGE_SIZE}`,
+    )
+
+    rooms.push(...response.items)
+    const totalPages = response.pagination?.totalPages ?? currentPage
+    if (currentPage >= totalPages) break
+    currentPage += 1
+  }
+
+  return rooms.map(mapAdminRoom)
 }
 
 export function getAreasFromRooms(rooms: AdminRoom[]): AdminArea[] {
@@ -158,6 +178,7 @@ export async function createAdminRoom(
 export async function prepareRoomAccount(
   input: PrepareRoomAccountInput,
 ): Promise<{ room: AdminRoom; credential: PreparedRoomCredential }> {
+  const temporaryPassword = input.temporaryPassword.trim()
   const credential = await apiRequest<Omit<PreparedRoomCredential, 'temporaryPassword'>>(
     `/admin/rooms/${input.roomID}/account/password`,
     {
@@ -166,7 +187,7 @@ export async function prepareRoomAccount(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        newPassword: input.temporaryPassword,
+        newPassword: temporaryPassword,
       }),
     },
   )
@@ -182,7 +203,7 @@ export async function prepareRoomAccount(
     room: preparedRoom,
     credential: {
       ...credential,
-      temporaryPassword: input.temporaryPassword,
+      temporaryPassword,
     },
   }
 }
@@ -190,6 +211,7 @@ export async function prepareRoomAccount(
 async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
+  canRetry = true,
 ): Promise<T> {
   const token = await getAccessToken()
   const headers = new Headers(options.headers)
@@ -205,6 +227,11 @@ async function apiRequest<T>(
     | ApiResponse<T>
     | { message?: string }
     | null
+
+  if (response.status === 401 && canRetry) {
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY)
+    return apiRequest<T>(path, options, false)
+  }
 
   if (!response.ok) {
     const message =

@@ -79,9 +79,10 @@ function PrepareRoomAccountDialog({
     setError('')
 
     try {
+      const normalizedPassword = temporaryPassword.trim()
       const result = await prepareRoomAccount({
         roomID: room.roomID,
-        temporaryPassword,
+        temporaryPassword: normalizedPassword,
       })
       setCredential(result.credential)
       onAccountPrepared(result.room)
