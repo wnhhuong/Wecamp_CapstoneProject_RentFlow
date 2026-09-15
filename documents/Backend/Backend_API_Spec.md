@@ -211,6 +211,8 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`type`|enum|Có|`CONSUMP_REQUEST`|
 |`image`|string|Có|Path ảnh đã lưu|
 |`reading`|integer|Có|Reading đã gửi|
+|`previousReading`|integer|Có|Reading trước đó|
+|`usage`|integer|Có|Hiệu số sử dụng|
 |`capturedAt`|timestamp|Có|Thời điểm ghi|
 |`correspondingCost`|integer|Có|`reading × electricityUnitPrice`|
 |`status`|enum|Có|`pending`|
@@ -231,6 +233,8 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`type`|enum|Có|`CONSUMP_REQUEST`|
 |`image`|string|Có|Path ảnh đã lưu|
 |`reading`|integer|Có|Reading user đã gửi|
+|`previousReading`|integer|Có|Reading trước đó|
+|`usage`|integer|Có|Hiệu số sử dụng|
 |`capturedAt`|timestamp|Có|Thời điểm ghi|
 |`correspondingCost`|integer|Có|`consumpAmount(tự tính dựa trên reading này và reading gần nhất) × electricityUnitPrice`|
 |`createDate`|date-only|Có|`REQUEST.createDate`|
