@@ -102,7 +102,7 @@ function RoomsPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5">
+    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground">

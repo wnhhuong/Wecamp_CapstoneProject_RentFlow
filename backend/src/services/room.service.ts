@@ -36,7 +36,96 @@ export interface IGetRoomsQuery {
   limit?: number;
 }
 
+export interface IUpdateRoomDTO {
+  roomCode?: string;
+  floor?: number;
+  maxPeople?: number;
+  roomDetail?: string;
+  price?: number;
+  deposit?: number;
+  images?: string[];
+}
+
 export class RoomService {
+
+  public static async updateRoom(roomID: string, dto: IUpdateRoomDTO) {
+    if (!mongoose.Types.ObjectId.isValid(roomID)) {
+      const error: any = new Error('Invalid roomID format.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const room = await Room.findById(roomID);
+    if (!room) {
+      const error: any = new Error('Room not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // 1. Kiểm tra unique roomCode nếu có yêu cầu đổi mã phòng (AC2)
+    if (dto.roomCode && dto.roomCode.trim() !== room.roomCode) {
+      const trimmedCode = dto.roomCode.trim();
+      const duplicate = await Room.findOne({
+        roomCode: trimmedCode,
+        _id: { $ne: room._id },
+      });
+
+      if (duplicate) {
+        const error: any = new Error(`Room with code "${trimmedCode}" already exists.`);
+        error.statusCode = 409;
+        throw error;
+      }
+
+      // Cập nhật cả roomCode và đồng bộ username của Account phòng
+      room.roomCode = trimmedCode;
+      const normalizedUsername = trimmedCode.replace(/\s+/g, '');
+      await Account.updateOne({ roomID: room._id }, { username: normalizedUsername });
+    }
+
+    // 2. Cập nhật các trường thông tin cho phép (AC1)
+    if (dto.floor !== undefined && !isNaN(dto.floor)) {
+      room.floor = dto.floor;
+    }
+    if (dto.maxPeople !== undefined && !isNaN(dto.maxPeople)) {
+      room.maxPeople = dto.maxPeople;
+    }
+    if (dto.roomDetail !== undefined && dto.roomDetail.trim().length > 0) {
+      room.roomDetail = dto.roomDetail.trim();
+    }
+    // AC4: Cập nhật room.price nhưng tuyệt đối KHÔNG đụng vào Contract
+    if (dto.price !== undefined && !isNaN(dto.price)) {
+      room.price = dto.price;
+    }
+    if (dto.deposit !== undefined && !isNaN(dto.deposit)) {
+      room.deposit = dto.deposit;
+    }
+    if (dto.images && Array.isArray(dto.images) && dto.images.length > 0) {
+      room.images = dto.images;
+    }
+
+    // Lưu lại Room (status giữ nguyên tuyệt đối theo AC3)
+    await room.save();
+
+    return {
+      room: {
+        roomID: String(room._id),
+        areaID: String(room.areaID),
+        roomCode: room.roomCode,
+        floor: room.floor,
+        maxPeople: room.maxPeople,
+        roomDetail: room.roomDetail,
+        price: room.price,
+        deposit: room.deposit,
+        status: room.status,
+        availableFrom: room.availableFrom
+          ? new Date(room.availableFrom).toISOString().split('T')[0]
+          : null,
+        images: room.images,
+      },
+      message: 'Room updated successfully',
+    };
+  }
+  
   public static async getAdminRooms(query: IGetRoomsQuery) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 12));
@@ -62,8 +151,15 @@ export class RoomService {
     ]);
 
     const now = new Date();
-    const startDate = paramStart ? new Date(paramStart.value) : null;
-    const endDate = paramEnd ? new Date(paramEnd.value) : null;
+    const toCurrentMonthDate = (value?: string): Date | null => {
+      const day = Number(value);
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+      if (!Number.isInteger(day) || day < 1 || day > lastDayOfMonth) return null;
+      return new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0);
+    };
+    const startDate = toCurrentMonthDate(paramStart?.value);
+    const endDate = toCurrentMonthDate(paramEnd?.value);
 
     const pipeline: any[] = [];
 
@@ -143,10 +239,18 @@ export class RoomService {
           let: { rId: '$_id' },
           pipeline: [
             {
+              $lookup: {
+                from: 'consumptions',
+                localField: 'comsumptionID',
+                foreignField: '_id',
+                as: 'consumptionData',
+              },
+            },
+            {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$roomID', '$$rId'] },
+                    { $eq: [{ $arrayElemAt: ['$consumptionData.roomID', 0] }, '$$rId'] },
                     { $in: ['$status', ['not_paid', 'pending']] },
                   ],
                 },
