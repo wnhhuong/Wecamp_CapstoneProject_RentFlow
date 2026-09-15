@@ -34,6 +34,7 @@ const ROUTES = {
       rooms: '/admin/rooms',
       users: '/admin/users',
       invoices: '/admin/invoices',
+      parameters: '/admin/parameters',
       tickets: '/admin/tickets',
       approvals: '/admin/approvals',
     },

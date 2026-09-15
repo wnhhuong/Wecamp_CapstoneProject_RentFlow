@@ -73,6 +73,11 @@ const adminNavigation: SidebarNavItem[] = [
     to: ROUTES.admin.invoices,
   },
   {
+    id: "parameters",
+    label: "Parameters",
+    to: ROUTES.admin.parameters,
+  },
+  {
     id: "tickets",
     label: "Tickets",
     to: ROUTES.admin.tickets,

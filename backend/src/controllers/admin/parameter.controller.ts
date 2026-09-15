@@ -20,15 +20,9 @@ const validateParameterValue = (name: ParameterName | string, rawValue: unknown)
 
   switch (name) {
     case ParameterName.ELECTRICITY_UNIT_PRICE:
-    case ParameterName.WATER_PRICE: {
-      const num = Number(value);
-      if (isNaN(num) || num <= 0) {
-        return { isValid: false, message: `${name} must be a valid number greater than 0.` };
-      }
-      return { isValid: true };
-    }
-
+    case ParameterName.WATER_PRICE:
     case ParameterName.WIFI_FEE:
+    case ParameterName.PARKING_FEE:
     case ParameterName.OTHER_FEES: {
       const num = Number(value);
       if (isNaN(num) || num < 0) {
@@ -181,24 +175,13 @@ export const updateParameter = async (req: Request, res: Response, next: NextFun
 
       const startDay = daysMap[ParameterName.METER_READING_START_DAY];
       const endDay = daysMap[ParameterName.METER_READING_END_DAY];
-      const dueDay = daysMap[ParameterName.PAYMENT_DUE_DAY];
 
-      // Kiểm tra: StartDay < EndDay
-      if (startDay !== undefined && endDay !== undefined && startDay >= endDay) {
+      // Kiểm tra: StartDay <= EndDay
+      if (startDay !== undefined && endDay !== undefined && startDay > endDay) {
         sendError(
           res,
           422,
-          `Cross-date validation failed: meterReadingStartDay (${startDay}) must be strictly earlier than meterReadingEndDay (${endDay}).`
-        );
-        return;
-      }
-
-      // Kiểm tra: EndDay < DueDay
-      if (endDay !== undefined && dueDay !== undefined && endDay >= dueDay) {
-        sendError(
-          res,
-          422,
-          `Cross-date validation failed: paymentDueDate (${dueDay}) must be strictly later than meterReadingEndDate (${endDay}).`
+          `Cross-date validation failed: meterReadingStartDay (${startDay}) must be earlier than or equal to meterReadingEndDay (${endDay}).`
         );
         return;
       }
