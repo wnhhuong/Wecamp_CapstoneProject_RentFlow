@@ -2,6 +2,7 @@ export enum ParameterName {
   ELECTRICITY_UNIT_PRICE = 'electricityUnitPrice',
   WATER_PRICE = 'waterPrice',
   WIFI_FEE = 'wifiFee',
+  PARKING_FEE = 'parkingFee',
   OTHER_FEES = 'otherFees',
   METER_READING_START_DAY = 'meterReadingStartDay',
   METER_READING_END_DAY = 'meterReadingEndDay',

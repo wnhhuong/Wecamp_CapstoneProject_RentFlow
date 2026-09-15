@@ -5,8 +5,11 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
+
+// Dùng cùng cấu hình với backend khi chạy từ local development.
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const seedPath = path.join(__dirname, 'seed.json');
 const validatePath = path.join(__dirname, 'validate-seed.cjs');

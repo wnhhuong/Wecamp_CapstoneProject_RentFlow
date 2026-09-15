@@ -151,8 +151,15 @@ export class RoomService {
     ]);
 
     const now = new Date();
-    const startDate = paramStart ? new Date(paramStart.value) : null;
-    const endDate = paramEnd ? new Date(paramEnd.value) : null;
+    const toCurrentMonthDate = (value?: string): Date | null => {
+      const day = Number(value);
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+      if (!Number.isInteger(day) || day < 1 || day > lastDayOfMonth) return null;
+      return new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0);
+    };
+    const startDate = toCurrentMonthDate(paramStart?.value);
+    const endDate = toCurrentMonthDate(paramEnd?.value);
 
     const pipeline: any[] = [];
 
@@ -232,10 +239,18 @@ export class RoomService {
           let: { rId: '$_id' },
           pipeline: [
             {
+              $lookup: {
+                from: 'consumptions',
+                localField: 'comsumptionID',
+                foreignField: '_id',
+                as: 'consumptionData',
+              },
+            },
+            {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$roomID', '$$rId'] },
+                    { $eq: [{ $arrayElemAt: ['$consumptionData.roomID', 0] }, '$$rId'] },
                     { $in: ['$status', ['not_paid', 'pending']] },
                   ],
                 },
