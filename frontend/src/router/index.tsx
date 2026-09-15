@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 
 import App from '@/App'
+import { RoomsPage } from '@/pages/admin/RoomsPage'
 import { RoutePlaceholder } from '@/router/route-placeholder'
 import { RouterErrorPage } from '@/router/router-error-page'
 import { ROUTES } from '@/router/routes'
@@ -81,7 +82,7 @@ const router = createBrowserRouter([
       },
       {
         path: ROUTES.admin.rooms,
-        element: <RoutePlaceholder title="Rooms and leases" />,
+        element: <RoomsPage />,
       },
       {
         path: ROUTES.admin.users,
