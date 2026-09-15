@@ -349,12 +349,26 @@ export class RoomService {
 
       return {
         roomID: String(r._id),
-        roomCode: r.roomCode,
+        areaID: String(r.areaID),
         areaName: r.areaName,
+        roomCode: r.roomCode,
         floor: r.floor,
+        roomDetail: r.roomDetail,
         price: r.price,
+        deposit: r.deposit,
         maxPeople: r.maxPeople,
         status: r.status,
+        availableFrom: r.availableFrom
+          ? new Date(r.availableFrom).toISOString().split('T')[0]
+          : null,
+        images: r.images || [],
+        account: r.roomAccount
+          ? {
+              accountID: String(r.roomAccount._id),
+              username: r.roomAccount.username,
+              status: r.roomAccount.status,
+            }
+          : null,
         electricityState,
         tenantName: r.mainTenant ? r.mainTenant.fullName : null,
         contractExpireDate: r.activeContract?.expireDate
@@ -556,6 +570,11 @@ export class RoomService {
         status: newRoom.status,
         availableFrom: newRoom.availableFrom,
         images: newRoom.images,
+        account: {
+          accountID: String(accountDoc._id),
+          username: accountDoc.username,
+          status: accountDoc.status,
+        },
       };
     } catch (err) {
       // Rollback toàn bộ nếu Account creation hoặc bất kỳ bước nào fail

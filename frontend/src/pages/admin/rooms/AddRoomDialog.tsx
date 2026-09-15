@@ -20,6 +20,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import {
   createAdminRoom,
+  type AdminArea,
   type AdminRoom,
   type CreateRoomStatus,
   type CreateRoomInput,
@@ -45,12 +46,13 @@ type RoomFormErrors = Partial<Record<keyof RoomFormValues, string>>
 
 interface AddRoomDialogProps {
   open: boolean
+  areas: AdminArea[]
   onOpenChange: (open: boolean) => void
   onRoomCreated: (room: AdminRoom) => void
 }
 
 const initialValues: RoomFormValues = {
-  areaID: '1',
+  areaID: '',
   roomCode: '',
   floor: '1',
   maxPeople: '2',
@@ -64,6 +66,7 @@ const initialValues: RoomFormValues = {
 
 function AddRoomDialog({
   open,
+  areas,
   onOpenChange,
   onRoomCreated,
 }: AddRoomDialogProps) {
@@ -134,7 +137,9 @@ function AddRoomDialog({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const nextErrors = validateRoom(values)
+    const selectedAreaID = values.areaID || areas[0]?.areaID || ''
+    const normalizedValues = { ...values, areaID: selectedAreaID }
+    const nextErrors = validateRoom(normalizedValues)
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -148,16 +153,16 @@ function AddRoomDialog({
     }
 
     const payload: CreateRoomInput = {
-      areaID: Number(values.areaID),
-      roomCode: values.roomCode,
-      floor: Number(values.floor),
-      maxPeople: Number(values.maxPeople),
-      roomDetail: values.roomDetail,
-      price: Number(values.price),
-      deposit: Number(values.deposit),
-      status: values.status,
-      availableFrom: values.availableFrom || null,
-      images: values.images,
+      areaID: normalizedValues.areaID,
+      roomCode: normalizedValues.roomCode,
+      floor: Number(normalizedValues.floor),
+      maxPeople: Number(normalizedValues.maxPeople),
+      roomDetail: normalizedValues.roomDetail,
+      price: Number(normalizedValues.price),
+      deposit: Number(normalizedValues.deposit),
+      status: normalizedValues.status,
+      availableFrom: normalizedValues.availableFrom || null,
+      images: normalizedValues.images,
     }
 
     setIsSubmitting(true)
@@ -180,6 +185,7 @@ function AddRoomDialog({
   }
 
   const isAvailableSoon = values.status === 'available soon'
+  const selectedAreaID = values.areaID || areas[0]?.areaID || ''
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -213,16 +219,17 @@ function AddRoomDialog({
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Area" error={errors.areaID} required>
               <NativeSelect
-                value={values.areaID}
+                value={selectedAreaID}
                 onChange={(event) => updateValue('areaID', event.target.value)}
                 aria-invalid={Boolean(errors.areaID)}
                 aria-label="Area"
                 className="w-full"
               >
-                <NativeSelectOption value="1">Block A</NativeSelectOption>
-                <NativeSelectOption value="2">Block B</NativeSelectOption>
-                <NativeSelectOption value="3">Block C</NativeSelectOption>
-                <NativeSelectOption value="4">Block D</NativeSelectOption>
+                {areas.map((area) => (
+                  <NativeSelectOption key={area.areaID} value={area.areaID}>
+                    {area.areaName}
+                  </NativeSelectOption>
+                ))}
               </NativeSelect>
             </FormField>
 
