@@ -1,17 +1,20 @@
 import { NextFunction, Response } from "express";
 import { UserAuthRequest } from "../../middlewares/auth.middleware.js";
-import { InvoiceStatus } from "../../models/enums.js";
+import { InvoiceStatus, RequestStatus, RequestType } from "../../models/enums.js";
 import { sendError, sendSuccess } from "../../utils/response.js";
 import Consumption from "../../models/Consumption.js";
 import Invoice from "../../models/Invoice.js";
 import Room from "../../models/Room.js";
 import mongoose from "mongoose";
+import PaidRequest from "../../models/PaidRequest.js";
+import RequestModel from "../../models/Request.js";
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
     if (!paymentDate) return now > dueDate;
     return paymentDate > dueDate;
 };
+
 // Get list invoices
 // GET /api/user/invoices
 export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -69,7 +72,7 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
                 displayID,
                 roomCode: room.roomCode,
                 createDate: inv.createdDate,
-                dueDate: inv.dueDate.toISOString().split("T")[0],
+                dueDate: inv.dueDate.toISOString(),
                 totalBill: inv.totalBill,
                 status: inv.status,
                 isOverdue: computeIsOverdue(inv.paymentDate, inv.dueDate, now),
@@ -141,7 +144,7 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
             roomCode: room.roomCode,
             createDate: invoice.createdDate,
             paymentDate: invoice.paymentDate ?? null,
-            dueDate: invoice.dueDate.toISOString().split("T")[0],
+            dueDate: invoice.dueDate.toISOString(),
             status: invoice.status,
             isOverdue: computeIsOverdue(invoice.paymentDate, invoice.dueDate, now),
             isRequestLate: invoice.isRequestLate,
@@ -158,5 +161,100 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         });
     } catch (error) {
         next(error)
+    }
+}
+
+// Create PAID request
+// POST /api/user/invoices/:invoiceID/paid-request
+export const submitPaidRequest = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID, startDate, userID } = req.auth!;
+        const { invoiceID } = req.params;
+
+        if (!mongoose.isValidObjectId(invoiceID)) {
+            sendError(res, 400, "Invalid invoiceID");
+            return;
+        }
+
+        const invoice = await Invoice.findById(invoiceID);
+        if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
+
+        // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
+        const consumption = await Consumption.findById(invoice.comsumptionID);
+        if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
+
+        const belongsToCurrentTenancy =
+            consumption.roomID.toString() === roomID &&
+            consumption.trackingTime >= new Date(startDate);
+        if (!belongsToCurrentTenancy) {
+            sendError(res, 403, "You do not have access to this invoice");
+            return;
+        }
+
+        // Invoice PAID không thể tạo PAID Request mới
+        if (invoice.status !== InvoiceStatus.NOT_PAID) {
+            sendError(res, 409, "Invoice is already paid");
+            return;
+        }
+
+        // Một Invoice chỉ có tối đa một PAID Request đang PENDING
+        const existingPaidRequests = await PaidRequest.find({ invoiceID: invoice._id }).select("requestID");
+        if (existingPaidRequests.length > 0) {
+            const requestIds = existingPaidRequests.map((pr) => pr.requestID);
+            const pendingPaidRequest = await RequestModel.findOne({
+                _id: { $in: requestIds },
+                status: RequestStatus.PENDING,
+            });
+            if (pendingPaidRequest) {
+                sendError(res, 409, "A pending paid request already exists for this invoice");
+                return;
+            }
+        }
+
+        const now = new Date();
+        const session = await mongoose.startSession();
+        let request, paidRequest;
+
+        try {
+            session.startTransaction();
+
+            const createdRequest = await RequestModel.create(
+                [{
+                    type: RequestType.PAID,
+                    roomID,
+                    userID,
+                    createDate: now,
+                    status: RequestStatus.PENDING,
+                }],
+                { session }
+            );
+            request = createdRequest[0];
+
+            const createdPaidRequest = await PaidRequest.create(
+                [{
+                    requestID: request._id,
+                    invoiceID: invoice._id,
+                }],
+                { session }
+            );
+            paidRequest = createdPaidRequest[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        sendSuccess(res, {
+            requestID: request._id,
+            invoiceID: paidRequest.invoiceID,
+            type: request.type,
+            createDate: request.createDate.toISOString(),
+            status: request.status,
+        });
+    } catch (error) {
+        next(error);
     }
 }

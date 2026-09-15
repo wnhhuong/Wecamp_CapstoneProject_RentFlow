@@ -331,8 +331,8 @@ export const createContract = async (req: OnboardingRequest, res: Response, next
             user,
             contract: {
                 contractID: contract!._id,
-                startDate: contract!.startDate.toISOString().split("T")[0],
-                expireDate: contract!.expireDate.toISOString().split("T")[0],
+                startDate: contract!.startDate.toISOString(),
+                expireDate: contract!.expireDate.toISOString(),
                 propertyDeposit: contract!.propertyDeposit,
                 rent: contract!.rentPrice,
                 status: contract!.status,
