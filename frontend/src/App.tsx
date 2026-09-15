@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { RoomsPage } from '@/pages/admin/RoomsPage'
 
 type AppRole = 'guest' | 'user' | 'admin'
 
@@ -21,8 +22,8 @@ const userNavigation: SidebarNavItem[] = [
 ]
 
 const adminNavigation: SidebarNavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', active: true },
-  { id: 'rooms', label: 'Rooms & leases' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'rooms', label: 'Rooms & leases', active: true },
   { id: 'users', label: 'Users' },
   { id: 'invoices', label: 'Invoices' },
   { id: 'tickets', label: 'Tickets' },
@@ -33,7 +34,7 @@ function App() {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false)
 
   // Temporary until authentication provides the current account and role.
-  const role = 'user' as AppRole
+  const role = 'admin' as AppRole
   const isSignedIn = role === 'user' || role === 'admin'
   const isAdmin = role === 'admin'
   const navigationItems = isAdmin ? adminNavigation : userNavigation
@@ -64,7 +65,12 @@ function App() {
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1" aria-label="Page content" />
+        <main
+          className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8"
+          aria-label="Page content"
+        >
+          {isAdmin ? <RoomsPage /> : null}
+        </main>
       </div>
 
       <Footer />
