@@ -8,7 +8,7 @@ type RoomStatus =
   | 'rented'
   | 'available soon'
   | 'not available'
-type InvoiceStatus = 'paid' | 'pending' | 'not_paid'
+type InvoiceStatus = 'paid' | 'not_paid'
 type RequestStatus = 'pending' | 'approved'
 type TicketStatus = 'need_action' | 'in_progress' | 'done'
 
