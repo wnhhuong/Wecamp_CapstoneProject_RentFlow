@@ -5,7 +5,6 @@ import { ParameterName } from '../../models/enums.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 
 const VN_PHONE_REGEX = /^(03|05|07|08|09)\d{8}$/;
-const DATE_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_REGEX = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
 
@@ -91,11 +90,12 @@ const validateParameterValue = (name: ParameterName | string, rawValue: unknown)
       return { isValid: true };
     }
 
-    case ParameterName.METER_READING_START_DATE:
-    case ParameterName.METER_READING_END_DATE:
-    case ParameterName.PAYMENT_DUE_DATE: {
-      if (!DATE_REGEX.test(value) || isNaN(Date.parse(value))) {
-        return { isValid: false, message: `${name} must be a valid date formatted as YYYY-MM-DD.` };
+    case ParameterName.METER_READING_START_DAY:
+    case ParameterName.METER_READING_END_DAY:
+    case ParameterName.PAYMENT_DUE_DAY: {
+      const day = Number(value);
+      if (isNaN(day) || !Number.isInteger(day) || day < 1 || day > 31) {
+        return { isValid: false, message: `${name} must be a valid day of the month (integer from 1 to 31).` };
       }
       return { isValid: true };
     }
@@ -160,10 +160,11 @@ export const updateParameter = async (req: Request, res: Response, next: NextFun
     }
 
     // Cross-row Date Validation (HTTP 422)
+    // Cross-row Day Validation (HTTP 422)
     const dateParamEnums: ParameterName[] = [
-      ParameterName.METER_READING_START_DATE,
-      ParameterName.METER_READING_END_DATE,
-      ParameterName.PAYMENT_DUE_DATE,
+      ParameterName.METER_READING_START_DAY,
+      ParameterName.METER_READING_END_DAY,
+      ParameterName.PAYMENT_DUE_DAY,
     ];
 
     if (dateParamEnums.includes(currentParam.name)) {
@@ -171,43 +172,35 @@ export const updateParameter = async (req: Request, res: Response, next: NextFun
         name: { $in: dateParamEnums },
       }).lean();
 
-      const datesMap: Record<string, string> = {};
+      const daysMap: Record<string, number> = {};
       relatedDateParams.forEach((p: any) => {
-        datesMap[p.name] = p.value;
+        daysMap[p.name] = Number(p.value);
       });
 
-      datesMap[currentParam.name] = (value as string).trim();
+      daysMap[currentParam.name] = Number((value as string).trim());
 
-      const startDateStr = datesMap[ParameterName.METER_READING_START_DATE];
-      const endDateStr = datesMap[ParameterName.METER_READING_END_DATE];
-      const dueDateStr = datesMap[ParameterName.PAYMENT_DUE_DATE];
+      const startDay = daysMap[ParameterName.METER_READING_START_DAY];
+      const endDay = daysMap[ParameterName.METER_READING_END_DAY];
+      const dueDay = daysMap[ParameterName.PAYMENT_DUE_DAY];
 
-      // Kiểm tra: StartDate < EndDate
-      if (startDateStr && endDateStr) {
-        const start = new Date(startDateStr).getTime();
-        const end = new Date(endDateStr).getTime();
-        if (start >= end) {
-          sendError(
-            res,
-            422,
-            `Cross-date validation failed: meterReadingStartDate (${startDateStr}) must be strictly earlier than meterReadingEndDate (${endDateStr}).`
-          );
-          return;
-        }
+      // Kiểm tra: StartDay < EndDay
+      if (startDay !== undefined && endDay !== undefined && startDay >= endDay) {
+        sendError(
+          res,
+          422,
+          `Cross-date validation failed: meterReadingStartDay (${startDay}) must be strictly earlier than meterReadingEndDay (${endDay}).`
+        );
+        return;
       }
 
-      // Kiểm tra: EndDate < DueDate
-      if (endDateStr && dueDateStr) {
-        const end = new Date(endDateStr).getTime();
-        const due = new Date(dueDateStr).getTime();
-        if (end >= due) {
-          sendError(
-            res,
-            422,
-            `Cross-date validation failed: paymentDueDate (${dueDateStr}) must be strictly later than meterReadingEndDate (${endDateStr}).`
-          );
-          return;
-        }
+      // Kiểm tra: EndDay < DueDay
+      if (endDay !== undefined && dueDay !== undefined && endDay >= dueDay) {
+        sendError(
+          res,
+          422,
+          `Cross-date validation failed: paymentDueDate (${dueDay}) must be strictly later than meterReadingEndDate (${endDay}).`
+        );
+        return;
       }
     }
 

@@ -19,6 +19,59 @@ const cleanupUploadedFiles = (files?: Express.Multer.File[]) => {
 };
 
 export class AdminRoomController {
+
+  /**
+   * GET /api/admin/rooms (#27)
+   */
+  public static async getRooms(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { search, areaID, status, maxPeople, owed, page, limit } = req.query;
+
+      const result = await RoomService.getAdminRooms({
+        search: search ? String(search) : undefined,
+        areaID: areaID ? String(areaID) : undefined,
+        status: status ? String(status) : undefined,
+        maxPeople: maxPeople ? Number(maxPeople) : undefined,
+        owed: owed === 'owed' || owed === 'not_owed' ? (owed as 'owed' | 'not_owed') : undefined,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 12,
+      });
+
+      sendSuccess(res, result, 200);
+    } catch (error: any) {
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/rooms/:roomID (#28)
+   */
+  public static async getRoomDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rawRoomID = req.params.roomID;
+      const roomID = Array.isArray(rawRoomID) ? rawRoomID[0] : rawRoomID;
+
+      if (!roomID || !mongoose.Types.ObjectId.isValid(roomID)) {
+        sendError(res, 400, 'Invalid roomID in request parameters.');
+        return;
+      }
+
+      const result = await RoomService.getAdminRoomDetail(roomID);
+
+      sendSuccess(res, result, 200);
+    } catch (error: any) {
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
+
   public static async createRoom(req: Request, res: Response, next: NextFunction): Promise<void> {
     const uploadedFiles = req.files as Express.Multer.File[];
 
