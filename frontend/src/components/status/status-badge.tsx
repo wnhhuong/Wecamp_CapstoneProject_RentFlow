@@ -11,6 +11,7 @@ type RoomStatus =
 type InvoiceStatus = 'paid' | 'not_paid'
 type RequestStatus = 'pending' | 'approved'
 type TicketStatus = 'need_action' | 'in_progress' | 'done'
+type AccountStatus = 'banned' | 'inactive' | 'active'
 
 type StatusBadgeProps = ComponentProps<typeof Badge> &
   (
@@ -18,6 +19,7 @@ type StatusBadgeProps = ComponentProps<typeof Badge> &
     | { domain: 'invoice'; status: InvoiceStatus }
     | { domain: 'request'; status: RequestStatus }
     | { domain: 'ticket'; status: TicketStatus }
+    | { domain: 'account'; status: AccountStatus }
   )
 
 type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
@@ -48,8 +50,13 @@ const statusPresentations = {
     in_progress: { label: 'IN PROGRESS', tone: 'warning' },
     done: { label: 'DONE', tone: 'info' },
   },
+  account: {
+    banned: { label: 'BANNED', tone: 'danger' },
+    inactive: { label: 'INACTIVE', tone: 'warning' },
+    active: { label: 'ACTIVE', tone: 'success' },
+  },
 } as const satisfies Record<
-  'room' | 'invoice' | 'request' | 'ticket',
+  'room' | 'invoice' | 'request' | 'ticket' | 'account',
   Record<string, StatusPresentation>
 >
 
@@ -91,11 +98,14 @@ function getStatusPresentation(props: StatusBadgeProps): StatusPresentation {
       return statusPresentations.request[props.status]
     case 'ticket':
       return statusPresentations.ticket[props.status]
+    case 'account':
+      return statusPresentations.account[props.status]
   }
 }
 
 export { StatusBadge }
 export type {
+  AccountStatus,
   InvoiceStatus,
   RequestStatus,
   RoomStatus,

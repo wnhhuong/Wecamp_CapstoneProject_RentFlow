@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.routes.js";
 import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 import adminRoomRoutes from './routes/admin/room.routes.js';
 import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
+import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
 
 const app = express();
 
@@ -32,9 +33,10 @@ app.get('/', (_req: Request, res: Response) => {
 app.use(`/api/auth`, authRouter)
 
 // user route
-// consumrequest rout
+// consumrequest route
 app.use(`/api/user`, consumpRequestRouter)
-
+// invoice route
+app.use(`/api/user`, userInvoiceRouter)
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 

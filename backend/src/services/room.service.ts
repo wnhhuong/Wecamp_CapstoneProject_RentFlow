@@ -151,8 +151,15 @@ export class RoomService {
     ]);
 
     const now = new Date();
-    const startDate = paramStart ? new Date(paramStart.value) : null;
-    const endDate = paramEnd ? new Date(paramEnd.value) : null;
+    const toCurrentMonthDate = (value?: string): Date | null => {
+      const day = Number(value);
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+      if (!Number.isInteger(day) || day < 1 || day > lastDayOfMonth) return null;
+      return new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0);
+    };
+    const startDate = toCurrentMonthDate(paramStart?.value);
+    const endDate = toCurrentMonthDate(paramEnd?.value);
 
     const pipeline: any[] = [];
 
@@ -232,10 +239,18 @@ export class RoomService {
           let: { rId: '$_id' },
           pipeline: [
             {
+              $lookup: {
+                from: 'consumptions',
+                localField: 'comsumptionID',
+                foreignField: '_id',
+                as: 'consumptionData',
+              },
+            },
+            {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$roomID', '$$rId'] },
+                    { $eq: [{ $arrayElemAt: ['$consumptionData.roomID', 0] }, '$$rId'] },
                     { $in: ['$status', ['not_paid', 'pending']] },
                   ],
                 },
@@ -334,12 +349,26 @@ export class RoomService {
 
       return {
         roomID: String(r._id),
-        roomCode: r.roomCode,
+        areaID: String(r.areaID),
         areaName: r.areaName,
+        roomCode: r.roomCode,
         floor: r.floor,
+        roomDetail: r.roomDetail,
         price: r.price,
+        deposit: r.deposit,
         maxPeople: r.maxPeople,
         status: r.status,
+        availableFrom: r.availableFrom
+          ? new Date(r.availableFrom).toISOString().split('T')[0]
+          : null,
+        images: r.images || [],
+        account: r.roomAccount
+          ? {
+              accountID: String(r.roomAccount._id),
+              username: r.roomAccount.username,
+              status: r.roomAccount.status,
+            }
+          : null,
         electricityState,
         tenantName: r.mainTenant ? r.mainTenant.fullName : null,
         contractExpireDate: r.activeContract?.expireDate
@@ -394,7 +423,7 @@ export class RoomService {
 
     const unpaidInvoices = await Invoice.find({
       roomID: room._id,
-      status: { $in: [InvoiceStatus.NOT_PAID, InvoiceStatus.PENDING] },
+      status: { $in: [InvoiceStatus.NOT_PAID] },
     }).lean();
 
     const stillOwed = unpaidInvoices.reduce((sum, inv) => sum + (inv.totalBill || 0), 0);
@@ -541,6 +570,11 @@ export class RoomService {
         status: newRoom.status,
         availableFrom: newRoom.availableFrom,
         images: newRoom.images,
+        account: {
+          accountID: String(accountDoc._id),
+          username: accountDoc.username,
+          status: accountDoc.status,
+        },
       };
     } catch (err) {
       // Rollback toàn bộ nếu Account creation hoặc bất kỳ bước nào fail
