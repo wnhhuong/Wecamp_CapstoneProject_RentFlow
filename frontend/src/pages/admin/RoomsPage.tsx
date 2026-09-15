@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmptyState, ErrorState, PageLoading } from '@/components/feedback'
 import { StatusBadge, type RoomStatus } from '@/components/status'
 import { Button } from '@/components/ui/button'
-import { CloseIcon, PlusIcon, SearchIcon } from '@/components/ui/icons'
+import { CloseIcon, KeyIcon, PlusIcon, SearchIcon } from '@/components/ui/icons'
 import { Input } from '@/components/ui/input'
 import {
   NativeSelect,
@@ -23,6 +23,7 @@ import {
 } from '@/shared/api/admin/rooms.api'
 
 import { AddRoomDialog } from './rooms/AddRoomDialog'
+import { PrepareRoomAccountDialog } from './rooms/PrepareRoomAccountDialog'
 
 type StatusFilter = RoomStatus | 'all'
 
@@ -31,7 +32,9 @@ function RoomsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false)
+  const [selectedRoomID, setSelectedRoomID] = useState<number | null>(null)
   const [createdRoomCode, setCreatedRoomCode] = useState('')
+  const [preparedUsername, setPreparedUsername] = useState('')
   const [search, setSearch] = useState('')
   const [areaID, setAreaID] = useState('all')
   const [status, setStatus] = useState<StatusFilter>('all')
@@ -96,9 +99,21 @@ function RoomsPage() {
     })
   }, [areaID, capacity, owed, rooms, search, status])
 
+  const selectedRoom =
+    rooms.find((room) => room.roomID === selectedRoomID) ?? null
+
   function handleRoomCreated(room: AdminRoom) {
     setRooms((current) => [room, ...current])
     setCreatedRoomCode(room.roomCode)
+  }
+
+  function handleAccountPrepared(preparedRoom: AdminRoom) {
+    setRooms((current) =>
+      current.map((room) =>
+        room.roomID === preparedRoom.roomID ? preparedRoom : room,
+      ),
+    )
+    setPreparedUsername(preparedRoom.account.username)
   }
 
   return (
@@ -138,6 +153,28 @@ function RoomsPage() {
             aria-label="Dismiss success message"
             className="text-status-success-fg hover:bg-black/5"
             onClick={() => setCreatedRoomCode('')}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      ) : null}
+
+      {preparedUsername ? (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        >
+          <span>
+            Account <strong>{preparedUsername}</strong> was prepared
+            successfully.
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss account success message"
+            className="text-status-success-fg hover:bg-black/5"
+            onClick={() => setPreparedUsername('')}
           >
             <CloseIcon />
           </Button>
@@ -226,16 +263,18 @@ function RoomsPage() {
 
       {!isLoading && !loadError && filteredRooms.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-          <Table className="min-w-[910px]">
+          <Table className="min-w-[1120px]">
             <TableHeader className="bg-muted">
               <TableRow className="hover:bg-muted">
                 <TableHead className="px-4">Room</TableHead>
                 <TableHead>Tenant</TableHead>
+                <TableHead>Room account</TableHead>
                 <TableHead>Capacity</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Electricity</TableHead>
                 <TableHead>Still owed</TableHead>
-                <TableHead className="pr-4">Monthly rent</TableHead>
+                <TableHead>Monthly rent</TableHead>
+                <TableHead className="pr-4 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,6 +289,17 @@ function RoomsPage() {
                     }
                   >
                     {room.tenantName ?? 'Unassigned'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1.5">
+                      <span className="text-xs text-muted-foreground">
+                        {room.account.username}
+                      </span>
+                      <StatusBadge
+                        domain="account"
+                        status={room.account.status}
+                      />
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {room.maxPeople} {room.maxPeople === 1 ? 'person' : 'people'}
@@ -269,8 +319,27 @@ function RoomsPage() {
                   >
                     {formatCurrency(room.stillOwed)}
                   </TableCell>
-                  <TableCell className="pr-4 font-medium text-body">
+                  <TableCell className="font-medium text-body">
                     {formatCurrency(room.price)}
+                  </TableCell>
+                  <TableCell className="pr-4 text-right">
+                    {room.account.status === 'banned' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedRoomID(room.roomID)}
+                      >
+                        <KeyIcon />
+                        Prepare
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {room.account.status === 'inactive'
+                          ? 'Prepared'
+                          : 'In use'}
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -287,6 +356,14 @@ function RoomsPage() {
         open={isAddRoomOpen}
         onOpenChange={setIsAddRoomOpen}
         onRoomCreated={handleRoomCreated}
+      />
+      <PrepareRoomAccountDialog
+        open={selectedRoom !== null}
+        room={selectedRoom}
+        onOpenChange={(open) => {
+          if (!open) setSelectedRoomID(null)
+        }}
+        onAccountPrepared={handleAccountPrepared}
       />
     </section>
   )
