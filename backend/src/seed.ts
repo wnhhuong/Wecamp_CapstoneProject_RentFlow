@@ -88,9 +88,9 @@ async function seed(): Promise<void> {
       { name: ParameterName.PARKING_FEE, value: '70000' },
       { name: ParameterName.OTHER_FEES, value: '30000' },
       // Existing validation requires start day < end day < payment due day.
-      { name: ParameterName.METER_READING_START_DAY, value: '10' },
-      { name: ParameterName.METER_READING_END_DAY, value: '25' },
-      { name: ParameterName.PAYMENT_DUE_DAY, value: '28' },
+      { name: ParameterName.METER_READING_START_DAY, value: '25' },
+      { name: ParameterName.METER_READING_END_DAY, value: '30' },
+      { name: ParameterName.PAYMENT_DUE_DAY, value: '05' },
       { name: ParameterName.YEAR_TO_EXTEND, value: '1' },
       { name: ParameterName.ADMIN_PHONE, value: '0901234567' },
       { name: ParameterName.ADMIN_FACEBOOK, value: 'https://facebook.com/rentflow' },
@@ -196,7 +196,7 @@ async function seed(): Promise<void> {
     const invoiceIds = new Map<string, Types.ObjectId>();
     for (const invoiceData of [
       { key: 'A-101-sep', consumptionKey: 'A-101-sep', roomBill: 3200000, electricalBill: 518000, waterBill: 125000, wifiBill: 100000, parkingBill: 150000, otherBill: 0, totalBill: 4093000, createdDate: new Date('2026-09-29T01:20:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: true, status: InvoiceStatus.NOT_PAID },
-      { key: 'A-102-sep', consumptionKey: 'A-102-sep', roomBill: 3400000, electricalBill: 406000, waterBill: 150000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 4236000, createdDate: new Date('2026-09-29T01:25:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.PENDING },
+      { key: 'A-102-sep', consumptionKey: 'A-102-sep', roomBill: 3400000, electricalBill: 406000, waterBill: 150000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 4236000, createdDate: new Date('2026-09-29T01:25:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
       { key: 'B-101-sep', consumptionKey: 'B-101-sep', roomBill: 3800000, electricalBill: 612500, waterBill: 150000, wifiBill: 100000, parkingBill: 0, otherBill: 30000, totalBill: 4692500, createdDate: new Date('2026-09-29T01:30:00.000Z'), paymentDate: new Date('2026-10-02T10:00:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.PAID },
       { key: 'C-301-aug', consumptionKey: 'C-301-aug', roomBill: 4200000, electricalBill: 665000, waterBill: 175000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 5320000, createdDate: new Date('2026-08-29T01:30:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
     ]) {

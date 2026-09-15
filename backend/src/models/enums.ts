@@ -48,7 +48,6 @@ export enum ContractStatus {
 
 export enum InvoiceStatus {
   NOT_PAID = 'not_paid',
-  PENDING = 'pending',
   PAID = 'paid',
 }
 
