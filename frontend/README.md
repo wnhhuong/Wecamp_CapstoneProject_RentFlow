@@ -1,75 +1,59 @@
-# React + TypeScript + Vite
+# RentFlow frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Features
 
-Currently, two official plugins are available:
+### Guest
+### Tenant
+### Øwner
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Folder structure
 
-## React Compiler
+frontend/
+├── public/                 # Static assets (favicon, etc.)
+├── src/
+│   ├── App.tsx             # Root shell: Header, Sidebar, Footer
+│   ├── main.tsx            # React entry
+│   ├── index.css           # Tailwind + design tokens
+│   ├── assets/             # Bundled images
+│   ├── components/
+│   │   ├── ui/             # shadcn ui components (button, input, dialog, sheet, …)
+│   │   ├── layout/         # Header, Sidebar, Footer
+│   │   ├── feedback/       # Empty, error, page loading
+│   │   └── status/         # StatusBadge (room, invoice, request, ticket)
+│   ├── pages/
+│   │   ├── auth/           # Login, first-login profile/contract
+│   │   ├── guest/          # Browse rooms, room details
+│   │   ├── user/           # Tenant dashboard, invoices, tickets, …
+│   │   └── admin/          # Owner dashboard, rooms, users, approvals, …
+│   └── shared/
+│       ├── api/            # API modules by endpoints (auth, guest, user, admin)
+│       │   ├── config.ts   # Base URL / env (placeholder)
+│       │   └── endpoints.ts
+│       ├── context/        # Global app's state (user context: who is logging in)
+│       ├── hooks/          # Reusable custom hooks
+│       └── utils/          # Reusable functions cho currency, date formatting, …
+├── components.json         # shadcn config
+├── vite.config.ts
+└── package.json
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+- React 19 + TypeScript
+- Vite 8 (`@` → `src/`)
+- Tailwind CSS 4 (`@tailwindcss/vite`)
+- shadcn/ui (New York) + Radix UI + class-variance-authority
+- IBM Plex Sans and RentFlow color tokens in `src/index.css`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Routing, auth, and API clients are not wired yet. `App.tsx` currently renders the signed-in shell with a hardcoded `user` role.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 20 (same as GitHub Actions)
+- npm (lockfile: `package-lock.json`)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Run locally
 
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+```bash
+cd frontend
+npm install
+npm run dev
