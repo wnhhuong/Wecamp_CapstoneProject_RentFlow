@@ -1,121 +1,96 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+
+import { Header, Footer, Sidebar, type SidebarNavItem } from '@/components/layout'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+
+type AppRole = 'guest' | 'user' | 'admin'
+
+const userNavigation: SidebarNavItem[] = [
+  { id: 'home', label: 'Home', active: true },
+  { id: 'electricity', label: 'Electricity' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'requests', label: 'Requests' },
+  { id: 'tickets', label: 'Tickets' },
+  { id: 'profile', label: 'Profile & lease' },
+]
+
+const adminNavigation: SidebarNavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', active: true },
+  { id: 'rooms', label: 'Rooms & leases' },
+  { id: 'users', label: 'Users' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'tickets', label: 'Tickets' },
+  { id: 'approvals', label: 'Approvals' },
+]
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false)
+
+  // Temporary until authentication provides the current account and role.
+  const role = 'user' as AppRole
+  const isSignedIn = role === 'user' || role === 'admin'
+  const isAdmin = role === 'admin'
+  const navigationItems = isAdmin ? adminNavigation : userNavigation
+  const userName = isAdmin ? 'Nguyễn Thị Bình' : 'Đỗ Minh Khoa'
+  const userDescription = isAdmin
+    ? 'Owner · full workspace access'
+    : 'Room B-204 account'
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="flex min-h-svh flex-col bg-page">
+      <Header
+        variant={isSignedIn ? 'signed-in' : 'guest'}
+        userName={isSignedIn ? userName : undefined}
+        onMenuClick={
+          isSignedIn ? () => setIsNavigationOpen(true) : undefined
+        }
+      />
 
-      <div className="ticks"></div>
+      <div className="flex flex-1 items-stretch">
+        {isSignedIn ? (
+          <div className="hidden w-[214px] shrink-0 md:block">
+            <Sidebar
+              title={isAdmin ? 'Owner' : 'Tenant'}
+              items={navigationItems}
+              userName={userName}
+              userDescription={userDescription}
+            />
+          </div>
+        ) : null}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <main className="min-w-0 flex-1" aria-label="Page content" />
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <Footer />
+
+      {isSignedIn ? (
+        <Sheet open={isNavigationOpen} onOpenChange={setIsNavigationOpen}>
+          <SheetContent
+            side="left"
+            className="w-[min(86vw,18rem)] gap-0 border-hairline bg-secondary p-0"
+          >
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation</SheetTitle>
+              <SheetDescription>RentFlow primary navigation</SheetDescription>
+            </SheetHeader>
+            <Sidebar
+              title={isAdmin ? 'Owner' : 'Tenant'}
+              items={navigationItems}
+              userName={userName}
+              userDescription={userDescription}
+              className="border-r-0 pt-16"
+              onNavigate={() => setIsNavigationOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      ) : null}
+    </div>
   )
 }
 

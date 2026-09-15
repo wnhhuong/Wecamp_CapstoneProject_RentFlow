@@ -8,6 +8,16 @@ const router = Router();
 // Middleware bảo vệ route admin
 router.use(protect, adminOnly);
 
+router.get('/', AdminRoomController.getRooms);
+
+router.get('/:roomID', AdminRoomController.getRoomDetail);
+
+router.patch(
+  '/:roomID',
+  upload('rooms').array('images', 4),
+  AdminRoomController.updateRoom
+);
+
 router.post(
   '/',
   upload("rooms").array('images', 4),

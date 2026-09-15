@@ -19,6 +19,157 @@ const cleanupUploadedFiles = (files?: Express.Multer.File[]) => {
 };
 
 export class AdminRoomController {
+
+  /**
+   * PATCH /api/admin/rooms/:roomID (#28b)
+   * SCRUM-91: Admin updates Room information
+   */
+  public static async updateRoom(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const uploadedFiles = req.files as Express.Multer.File[] | undefined;
+
+    try {
+      const rawRoomID = req.params.roomID;
+      const roomID = Array.isArray(rawRoomID) ? rawRoomID[0] : rawRoomID;
+
+      if (!roomID || !mongoose.Types.ObjectId.isValid(roomID)) {
+        cleanupUploadedFiles(uploadedFiles);
+        sendError(res, 400, 'Invalid roomID in request parameters.');
+        return;
+      }
+
+      const { roomCode, floor, maxPeople, roomDetail, price, deposit, images: bodyImages } = req.body;
+
+      // Validate các trường nếu được gửi lên
+      if (roomCode !== undefined && (typeof roomCode !== 'string' || roomCode.trim().length === 0)) {
+        cleanupUploadedFiles(uploadedFiles);
+        sendError(res, 400, 'roomCode cannot be empty.');
+        return;
+      }
+
+      let parsedFloor: number | undefined;
+      if (floor !== undefined && floor !== null && floor !== '') {
+        parsedFloor = Number(floor);
+        if (isNaN(parsedFloor) || !Number.isInteger(parsedFloor) || parsedFloor < 0) {
+          cleanupUploadedFiles(uploadedFiles);
+          sendError(res, 400, 'floor must be an integer greater than or equal to 0.');
+          return;
+        }
+      }
+
+      let parsedMaxPeople: number | undefined;
+      if (maxPeople !== undefined && maxPeople !== null && maxPeople !== '') {
+        parsedMaxPeople = Number(maxPeople);
+        if (isNaN(parsedMaxPeople) || !Number.isInteger(parsedMaxPeople) || parsedMaxPeople < 1) {
+          cleanupUploadedFiles(uploadedFiles);
+          sendError(res, 400, 'maxPeople must be an integer of at least 1 person.');
+          return;
+        }
+      }
+
+      let parsedPrice: number | undefined;
+      if (price !== undefined && price !== null && price !== '') {
+        parsedPrice = Number(price);
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+          cleanupUploadedFiles(uploadedFiles);
+          sendError(res, 400, 'price must be a positive number.');
+          return;
+        }
+      }
+
+      let parsedDeposit: number | undefined;
+      if (deposit !== undefined && deposit !== null && deposit !== '') {
+        parsedDeposit = Number(deposit);
+        if (isNaN(parsedDeposit) || parsedDeposit < 0) {
+          cleanupUploadedFiles(uploadedFiles);
+          sendError(res, 400, 'deposit must be a positive number.');
+          return;
+        }
+      }
+
+      // Thu thập ảnh mới: ưu tiên file upload từ multipart/form-data
+      let finalImages: string[] | undefined;
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        finalImages = uploadedFiles.map((file) =>
+          path.join('uploads', 'rooms', file.filename).replace(/\\/g, '/')
+        );
+      } else if (bodyImages) {
+        // Hỗ trợ truyền mảng URL ảnh qua JSON body
+        finalImages = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+      }
+
+      const result = await RoomService.updateRoom(roomID, {
+        roomCode: roomCode !== undefined ? roomCode.trim() : undefined,
+        floor: parsedFloor,
+        maxPeople: parsedMaxPeople,
+        roomDetail: roomDetail !== undefined ? String(roomDetail).trim() : undefined,
+        price: parsedPrice,
+        deposit: parsedDeposit,
+        images: finalImages,
+      });
+
+      sendSuccess(res, result.room, 200);
+    } catch (error: any) {
+      cleanupUploadedFiles(uploadedFiles);
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/rooms (#27)
+   */
+  public static async getRooms(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { search, areaID, status, maxPeople, owed, page, limit } = req.query;
+
+      const result = await RoomService.getAdminRooms({
+        search: search ? String(search) : undefined,
+        areaID: areaID ? String(areaID) : undefined,
+        status: status ? String(status) : undefined,
+        maxPeople: maxPeople ? Number(maxPeople) : undefined,
+        owed: owed === 'owed' || owed === 'not_owed' ? (owed as 'owed' | 'not_owed') : undefined,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 12,
+      });
+
+      sendSuccess(res, result, 200);
+    } catch (error: any) {
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/rooms/:roomID (#28)
+   */
+  public static async getRoomDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rawRoomID = req.params.roomID;
+      const roomID = Array.isArray(rawRoomID) ? rawRoomID[0] : rawRoomID;
+
+      if (!roomID || !mongoose.Types.ObjectId.isValid(roomID)) {
+        sendError(res, 400, 'Invalid roomID in request parameters.');
+        return;
+      }
+
+      const result = await RoomService.getAdminRoomDetail(roomID);
+
+      sendSuccess(res, result, 200);
+    } catch (error: any) {
+      if (error.statusCode) {
+        sendError(res, error.statusCode, error.message);
+        return;
+      }
+      next(error);
+    }
+  }
+
   public static async createRoom(req: Request, res: Response, next: NextFunction): Promise<void> {
     const uploadedFiles = req.files as Express.Multer.File[];
 
