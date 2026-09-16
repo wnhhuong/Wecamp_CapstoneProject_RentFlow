@@ -18,6 +18,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   hourCycle: 'h23',
 })
 
+const monthYearFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  month: 'long',
+  year: 'numeric',
+})
+
 const dateKeyFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: TIME_ZONE,
   year: 'numeric',
@@ -50,6 +56,14 @@ export function formatDate(
     withTime && !isDateOnly(value) ? dateTimeFormatter : dateFormatter
 
   return formatter.format(date)
+}
+
+// Billing periods: "September 2026".
+export function formatMonthYear(value: string | Date): string {
+  const date = parseDate(value)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  return monthYearFormatter.format(date)
 }
 
 // YYYY-MM-DD in UTC+7, for calendar-date comparisons.

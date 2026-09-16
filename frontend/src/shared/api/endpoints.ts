@@ -19,6 +19,11 @@ export const ENDPOINTS = {
     consumptionContext: '/user/consumption-requests/context',
     consumptionRequests: '/user/consumption-requests',
 
+    invoices: '/user/invoices',
+
+    invoice: (invoiceID: string) =>
+      `/user/invoices/${encodeURIComponent(invoiceID)}`,
+
     consumptionRequest: (requestID: string | number) =>
       `/user/consumption-requests/${encodeURIComponent(String(requestID))}`,
   },
