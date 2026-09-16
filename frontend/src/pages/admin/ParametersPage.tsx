@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import {
   getAdminParameters,
-  updateAdminParameter,
+  updateAdminParameters,
   type AdminParameter,
   type ParameterName,
 } from '@/shared/api/admin/parameters.api'
@@ -213,10 +213,11 @@ function ParametersPage() {
     setSaveMessage('')
 
     try {
-      const updatedParameters = await Promise.all(
-        updates.map((update) =>
-          updateAdminParameter(update.parameterID, update.value.trim()),
-        ),
+      const updatedParameters = await updateAdminParameters(
+        updates.map((update) => ({
+          parameterID: update.parameterID,
+          value: update.value.trim(),
+        })),
       )
 
       setParameters((current) =>

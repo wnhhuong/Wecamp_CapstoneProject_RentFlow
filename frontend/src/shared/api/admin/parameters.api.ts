@@ -27,10 +27,6 @@ interface ApiResponse<T> {
   message: string | null
 }
 
-interface LoginResponse {
-  accessToken: string | null
-}
-
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
   'http://localhost:5000/api'
@@ -67,32 +63,48 @@ export async function updateAdminParameter(
   parameterID: string,
   value: string,
 ): Promise<AdminParameter> {
-  const parameter = await apiRequest<BackendParameter>(
-    `/admin/parameters/${parameterID}`,
+  const parameter = await updateAdminParameters([
     {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ value }),
+      parameterID,
+      value,
     },
-  )
+  ]).then((parameters) => parameters[0])
 
-  if (!allowedParameterNames.has(parameter.name as ParameterName)) {
-    throw new Error('The updated parameter is not allowed in this flow.')
+  if (!parameter) {
+    throw new Error('The parameter could not be updated.')
   }
 
-  return {
+  return parameter
+}
+
+export async function updateAdminParameters(
+  updates: Array<{ parameterID: string; value: string }>,
+): Promise<AdminParameter[]> {
+  const parameters = await apiRequest<BackendParameter[]>('/admin/parameters', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ updates }),
+  })
+
+  const blockedParameter = parameters.find(
+    (parameter) => !allowedParameterNames.has(parameter.name as ParameterName),
+  )
+  if (blockedParameter) {
+    throw new Error('One of the updated parameters is not allowed in this flow.')
+  }
+
+  return parameters.map((parameter) => ({
     id: parameter.id,
     name: parameter.name as ParameterName,
     value: parameter.value,
-  }
+  }))
 }
 
 async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
-  canRetry = true,
 ): Promise<T> {
   const token = await getAccessToken()
   const headers = new Headers(options.headers)
@@ -109,9 +121,9 @@ async function apiRequest<T>(
     | { message?: string }
     | null
 
-  if (response.status === 401 && canRetry) {
+  if (response.status === 401) {
     window.localStorage.removeItem(ACCESS_TOKEN_KEY)
-    return apiRequest<T>(path, options, false)
+    throw new Error('Your admin session expired. Please sign in again.')
   }
 
   if (!response.ok) {
@@ -133,39 +145,5 @@ async function getAccessToken() {
   const storedToken = window.localStorage.getItem(ACCESS_TOKEN_KEY)
   if (storedToken) return storedToken
 
-  const token = await loginWithSeedAdmin()
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, token)
-  return token
-}
-
-async function loginWithSeedAdmin() {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username: import.meta.env.VITE_DEV_ADMIN_USERNAME ?? 'admin',
-      password: import.meta.env.VITE_DEV_ADMIN_PASSWORD ?? 'Admin@123',
-    }),
-  })
-
-  const payload = (await response.json().catch(() => null)) as
-    | ApiResponse<LoginResponse>
-    | { message?: string }
-    | null
-
-  if (!response.ok || !payload || !('success' in payload) || !payload.success) {
-    const message =
-      payload && 'message' in payload && payload.message
-        ? payload.message
-        : 'Admin login failed.'
-    throw new Error(message)
-  }
-
-  if (!payload.data?.accessToken) {
-    throw new Error('Admin login did not return an access token.')
-  }
-
-  return payload.data.accessToken
+  throw new Error('Please sign in as an admin before configuring parameters.')
 }
