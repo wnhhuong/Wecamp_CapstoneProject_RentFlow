@@ -1,4 +1,11 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FocusEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +25,7 @@ import {
 } from "@/components/ui/native-select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/shared/utils/cn";
 import { createAdminRoom } from "@/shared/api/admin/rooms.api";
 import type {
   AdminArea,
@@ -28,10 +36,19 @@ import type {
 
 const MAX_IMAGES = 4;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ROOM_NUMBER_LENGTH = 2;
+
+/** "Building A" -> "A", so the code prefix follows the chosen building. */
+function deriveBuildingLetter(areaName?: string) {
+  const lastWord = areaName?.trim().split(/\s+/).pop() ?? "";
+
+  return lastWord.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
 
 interface RoomFormValues {
   areaID: string;
-  roomCode: string;
+  /** Only the digits after the derived prefix, e.g. "01" in "A-101". */
+  roomNumber: string;
   floor: string;
   maxPeople: string;
   roomDetail: string;
@@ -42,7 +59,9 @@ interface RoomFormValues {
   images: File[];
 }
 
-type RoomFormErrors = Partial<Record<keyof RoomFormValues, string>>;
+type RoomFormErrors = Partial<Record<keyof RoomFormValues, string>> & {
+  roomCode?: string;
+};
 
 interface AddRoomDialogProps {
   open: boolean;
@@ -53,8 +72,8 @@ interface AddRoomDialogProps {
 
 const initialValues: RoomFormValues = {
   areaID: "",
-  roomCode: "",
-  floor: "1",
+  roomNumber: "",
+  floor: "",
   maxPeople: "2",
   roomDetail: "",
   price: "",
@@ -77,6 +96,24 @@ function AddRoomDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const selectedArea = areas.find((area) => area.areaID === values.areaID);
+  const buildingLetter = deriveBuildingLetter(selectedArea?.areaName);
+  const floorNumber = Number(values.floor);
+  const canBuildCode =
+    Boolean(buildingLetter) &&
+    Number.isInteger(floorNumber) &&
+    floorNumber >= 1;
+  const roomCodePrefix = canBuildCode
+    ? buildingLetter + "-" + String(floorNumber)
+    : "";
+  // Picking the building alone already shows "A-", so the field reads as if it
+  // fills itself in; the floor then completes the prefix.
+  const roomCode = canBuildCode
+    ? roomCodePrefix + values.roomNumber
+    : buildingLetter
+      ? buildingLetter + "-"
+      : "";
+
   function resetForm() {
     setValues(initialValues);
     setErrors({});
@@ -97,6 +134,62 @@ function AddRoomDialog({
     setValues((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
     setSubmitError("");
+  }
+
+  /**
+   * The prefix is owned by the Building and Floor fields; the admin only ever
+   * types the room number, and changing either field re-prefixes the code
+   * without losing the number already entered.
+   */
+  function handleRoomCodeChange(event: ChangeEvent<HTMLInputElement>) {
+    const nextValue = event.target.value.toUpperCase();
+
+    if (!nextValue.startsWith(roomCodePrefix)) return;
+
+    updateValue(
+      "roomNumber",
+      nextValue
+        .slice(roomCodePrefix.length)
+        .replace(/\D/g, "")
+        .slice(0, ROOM_NUMBER_LENGTH),
+    );
+
+    // The error is keyed to the code, not the number the admin edits.
+    setErrors((current) => ({ ...current, roomCode: undefined }));
+  }
+
+  function handleRoomCodeKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+    const input = event.currentTarget;
+    const start = input.selectionStart ?? 0;
+    const end = input.selectionEnd ?? 0;
+    const editsPrefix =
+      start < roomCodePrefix.length ||
+      (event.key === "Backspace" &&
+        start === end &&
+        start <= roomCodePrefix.length);
+
+    if (!editsPrefix) return;
+    if (
+      event.key.length > 1 &&
+      event.key !== "Backspace" &&
+      event.key !== "Delete"
+    ) {
+      return;
+    }
+
+    // Never let the caret eat into the derived prefix.
+    event.preventDefault();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function handleRoomCodeFocus(event: FocusEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+
+    window.requestAnimationFrame(() => {
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
   }
 
   function handleImagesChange(event: ChangeEvent<HTMLInputElement>) {
@@ -137,9 +230,8 @@ function AddRoomDialog({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const selectedAreaID = values.areaID || areas[0]?.areaID || "";
-    const normalizedValues = { ...values, areaID: selectedAreaID };
-    const nextErrors = validateRoom(normalizedValues);
+    const normalizedValues = { ...values };
+    const nextErrors = validateRoom(normalizedValues, roomCode);
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -156,7 +248,7 @@ function AddRoomDialog({
 
     const payload: CreateRoomInput = {
       areaID: normalizedValues.areaID,
-      roomCode: normalizedValues.roomCode,
+      roomCode,
       floor: Number(normalizedValues.floor),
       maxPeople: Number(normalizedValues.maxPeople),
       roomDetail: normalizedValues.roomDetail,
@@ -187,7 +279,6 @@ function AddRoomDialog({
   }
 
   const isAvailableSoon = values.status === "available soon";
-  const selectedAreaID = values.areaID || areas[0]?.areaID || "";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -218,34 +309,24 @@ function AddRoomDialog({
             </div>
           ) : null}
 
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Area" error={errors.areaID} required>
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-hairline pt-5 [&_[data-slot=native-select-wrapper]]:w-full sm:grid-cols-2">
+            <FormField label="Building" error={errors.areaID} required>
               <NativeSelect
-                value={selectedAreaID}
+                value={values.areaID}
                 onChange={(event) => updateValue("areaID", event.target.value)}
                 aria-invalid={Boolean(errors.areaID)}
-                aria-label="Area"
+                aria-label="Building"
                 className="w-full"
               >
+                <NativeSelectOption value="">
+                  Select a building
+                </NativeSelectOption>
                 {areas.map((area) => (
                   <NativeSelectOption key={area.areaID} value={area.areaID}>
                     {area.areaName}
                   </NativeSelectOption>
                 ))}
               </NativeSelect>
-            </FormField>
-
-            <FormField label="Room code" error={errors.roomCode} required>
-              <Input
-                value={values.roomCode}
-                onChange={(event) =>
-                  updateValue("roomCode", event.target.value.toUpperCase())
-                }
-                placeholder="e.g. A-104"
-                maxLength={20}
-                aria-invalid={Boolean(errors.roomCode)}
-                aria-label="Room code"
-              />
             </FormField>
 
             <FormField label="Floor" error={errors.floor} required>
@@ -255,8 +336,37 @@ function AddRoomDialog({
                 step="1"
                 value={values.floor}
                 onChange={(event) => updateValue("floor", event.target.value)}
+                placeholder="1"
                 aria-invalid={Boolean(errors.floor)}
                 aria-label="Floor"
+              />
+            </FormField>
+
+            <FormField
+              label="Room code"
+              error={errors.roomCode}
+              required
+              hint={
+                canBuildCode
+                  ? ""
+                  : buildingLetter
+                    ? "Pick a floor to finish the prefix."
+                    : "Pick a building to start the code."
+              }
+            >
+              <Input
+                value={roomCode}
+                onChange={handleRoomCodeChange}
+                onKeyDown={handleRoomCodeKeyDown}
+                onFocus={handleRoomCodeFocus}
+                disabled={!canBuildCode || isSubmitting}
+                inputMode="numeric"
+                placeholder={
+                  canBuildCode ? roomCodePrefix + "01" : "Pick a building first"
+                }
+                maxLength={roomCodePrefix.length + ROOM_NUMBER_LENGTH}
+                aria-invalid={Boolean(errors.roomCode)}
+                aria-label="Room code"
               />
             </FormField>
 
@@ -330,6 +440,11 @@ function AddRoomDialog({
               label="Available from"
               error={errors.availableFrom}
               required={isAvailableSoon}
+              hint={
+                isAvailableSoon
+                  ? undefined
+                  : "Only needed when the status is available soon."
+              }
             >
               <Input
                 type="date"
@@ -418,7 +533,7 @@ function AddRoomDialog({
               ) : null}
             </div>
             {errors.images ? (
-              <p className="mt-1.5 text-xs text-destructive">{errors.images}</p>
+              <p className="mt-1.5 text-sm text-destructive">{errors.images}</p>
             ) : null}
           </div>
 
@@ -445,39 +560,50 @@ function AddRoomDialog({
 function FormField({
   label,
   error,
+  hint,
   required = false,
+  className,
   children,
 }: {
   label: string;
   error?: string;
+  hint?: string;
   required?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
       <Label>
         {label}
         {required ? <span className="text-destructive">*</span> : null}
       </Label>
       {children}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-sm text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
 
-function validateRoom(values: RoomFormValues): RoomFormErrors {
+function validateRoom(
+  values: RoomFormValues,
+  roomCode: string,
+): RoomFormErrors {
   const errors: RoomFormErrors = {};
-  const roomCode = values.roomCode.trim();
   const floor = Number(values.floor);
   const maxPeople = Number(values.maxPeople);
   const price = Number(values.price);
   const deposit = Number(values.deposit);
 
-  if (!values.areaID) errors.areaID = "Select an area.";
-  if (!roomCode) {
-    errors.roomCode = "Enter a room code.";
-  } else if (!/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/i.test(roomCode)) {
-    errors.roomCode = "Use letters, numbers and hyphens only.";
+  if (!values.areaID) errors.areaID = "Select a building.";
+  if (values.roomNumber.length < ROOM_NUMBER_LENGTH) {
+    errors.roomCode =
+      "Enter the " + String(ROOM_NUMBER_LENGTH) + "-digit room number.";
+  } else if (!/^[A-Z0-9]+-\d+$/.test(roomCode)) {
+    errors.roomCode = "The room code is incomplete.";
   }
   if (!Number.isInteger(floor) || floor < 1) {
     errors.floor = "Enter a floor of 1 or higher.";
