@@ -24,6 +24,29 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
+interface ContextSnapshot {
+  context: ConsumptionContext;
+  existing: ConsumptionRequest | null;
+}
+
+// Kept free of React state so effects can call it without triggering
+// react-hooks/set-state-in-effect; state is applied in the promise callback.
+async function loadContextSnapshot(
+  signal?: AbortSignal,
+): Promise<ContextSnapshot | null> {
+  const context = await getConsumptionContext(signal);
+  if (signal?.aborted) return null;
+
+  if (context.existingRequestID == null) {
+    return { context, existing: null };
+  }
+
+  const existing = await getConsumptionRequest(context.existingRequestID, signal);
+  if (signal?.aborted) return null;
+
+  return { context, existing };
+}
+
 export function useConsumptionSubmission() {
   const [context, setContext] = useState<ConsumptionContext | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,15 +66,11 @@ export function useConsumptionSubmission() {
   const submissionLock = useRef(false);
   const previewUrlRef = useRef<string | null>(null);
 
-  async function refreshContext(signal?: AbortSignal) {
-    const data = await getConsumptionContext(signal);
-    if (signal?.aborted) return;
-    setContext(data);
+  function applyContextSnapshot(snapshot: ContextSnapshot) {
+    setContext(snapshot.context);
 
-    if (data.existingRequestID != null) {
-      const existing = await getConsumptionRequest(data.existingRequestID, signal);
-      if (signal?.aborted) return;
-      setResult(existing);
+    if (snapshot.existing) {
+      setResult(snapshot.existing);
       setStep("sent");
     } else {
       setResult(null);
@@ -59,10 +78,18 @@ export function useConsumptionSubmission() {
     }
   }
 
+  async function refreshContext(signal?: AbortSignal) {
+    const snapshot = await loadContextSnapshot(signal);
+    if (snapshot) applyContextSnapshot(snapshot);
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
-    refreshContext(controller.signal)
+    loadContextSnapshot(controller.signal)
+      .then((snapshot) => {
+        if (snapshot) applyContextSnapshot(snapshot);
+      })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) setLoadError(errorMessage(error));
       })
