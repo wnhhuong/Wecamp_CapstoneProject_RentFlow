@@ -9,6 +9,7 @@ import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 import adminRoomRoutes from './routes/admin/room.routes.js';
 import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
 import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
+import guessRouter from "./routes/guest.routes.js";
 
 const app = express();
 
@@ -29,7 +30,8 @@ app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-// use route
+// guess route
+app.use(`/api/guess`, guessRouter)
 app.use(`/api/auth`, authRouter)
 
 // user route

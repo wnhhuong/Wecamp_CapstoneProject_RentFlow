@@ -53,10 +53,12 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo `roomCode` hoặc `roomDetail`|
-|`areaID`|integer|Không|Lọc khu vực|
+|`search`|string|Không|Tìm theo `roomCode`, `roomDetail` hoặc `areaName`|
+|`floor`|integer|Không|Lọc theo tầng|
 |`status`|enum|Không|`available now`, `available soon`|
 |`maxPeople`|integer|Không|Lọc sức chứa tối thiểu|
+|`priceMin`|integer|Không|Lọc giá tối thiểu|
+|`priceMax`|integer|Không|Lọc giá tối đa|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -72,11 +74,12 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`floor`|integer|Có|`ROOM.floor`|
 |`maxPeople`|integer|Có|`ROOM.maxPeople`|
 |`price`|integer|Có|`ROOM.price`|
+|`description`|string|Có|`ROOM.roomDetail`|
 |`availableFrom`|date-only, nullable|Không|Chỉ cần cho `available soon`|
 |`coverImage`|string, nullable|Không|Ảnh đầu trong `ROOM.images`|
 
 ```json
-{"success":true,"data":{"items":[{"roomID":101,"roomCode":"A-101","areaID":1,"areaName":"Building A","status":"available now","floor":1,"maxPeople":2,"price":3200000,"availableFrom":null,"coverImage":"uploads/rooms/101-1.jpg"}],"pagination":{"page":1,"limit":12,"totalItems":1,"totalPages":1}},"message":null}
+{"success":true,"data":{"items":[{"roomID":101,"roomCode":"A-101","areaID":1,"areaName":"Building A","status":"available now","floor":1,"maxPeople":2,"price":3200000,"description":"Phòng thoáng mát, gần thang máy","availableFrom":null,"coverImage":"uploads/rooms/101-1.jpg"}],"pagination":{"page":1,"limit":12,"total":1,"totalPages":1}},"message":null}
 ```
 
 ---
