@@ -13,7 +13,6 @@ interface HeaderProps extends ComponentProps<'header'> {
   userName?: string
   userInitial?: string
   onLogin?: () => void
-  onBackToRooms?: () => void
   onLogout?: () => void
   onMenuClick?: () => void
 }
@@ -25,7 +24,6 @@ function Header({
   userName,
   userInitial,
   onLogin,
-  onBackToRooms,
   onLogout,
   onMenuClick,
   className,
@@ -75,18 +73,6 @@ function Header({
       {variant === 'guest' ? (
         <Button type="button" size="sm" onClick={onLogin}>
           Log in
-        </Button>
-      ) : null}
-
-      {variant === 'auth' ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
-          onClick={onBackToRooms}
-        >
-          ← Back to rooms
         </Button>
       ) : null}
 

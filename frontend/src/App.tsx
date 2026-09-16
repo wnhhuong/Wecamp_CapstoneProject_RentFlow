@@ -126,7 +126,6 @@ function App() {
         variant={headerVariant}
         userName={isSignedInRoute ? userName : undefined}
         onLogin={() => navigate(ROUTES.auth.login)}
-        onBackToRooms={() => navigate(ROUTES.guest.rooms)}
         onLogout={() => {
           signOut();
           navigate(ROUTES.auth.login, { replace: true });
