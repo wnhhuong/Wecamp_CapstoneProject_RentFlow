@@ -9,9 +9,11 @@ import { Spinner } from '@/components/ui/spinner'
 import {
   getAdminParameters,
   updateAdminParameters,
-  type AdminParameter,
-  type ParameterName,
 } from '@/shared/api/admin/parameters.api'
+import type {
+  AdminParameter,
+  ParameterName,
+} from '@/shared/types/admin/parameter'
 
 type FormValues = Record<ParameterName, string>
 type FormErrors = Partial<Record<ParameterName, string>>

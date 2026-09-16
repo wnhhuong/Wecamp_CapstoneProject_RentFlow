@@ -1,3 +1,5 @@
+import type { RequestStatus } from '@/shared/types/status'
+
 type ConsumptionID = string | number
 
 export interface ConsumptionContext {
@@ -25,5 +27,5 @@ export interface ConsumptionRequest {
   usage: number
   capturedAt: string
   correspondingCost: number
-  status: 'pending' | 'approved'
+  status: RequestStatus
 }

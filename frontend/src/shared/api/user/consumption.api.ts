@@ -1,4 +1,4 @@
-import { ApiError, apiRequest as request } from '@/shared/api/client'
+import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   ConsumptionContext,
@@ -6,13 +6,12 @@ import type {
   SubmitConsumptionInput,
 } from '@/shared/types/consumption'
 
-// Temporary seed login, remove after auth
-const ACCESS_TOKEN_KEY = 'rentflow_user_access_token'
-
-export function getConsumptionContext(signal?: AbortSignal) {
+export function getConsumptionContext(
+  signal?: AbortSignal,
+): Promise<ConsumptionContext> {
   return apiRequest<ConsumptionContext>(
     ENDPOINTS.user.consumptionContext,
-    { signal },
+    { auth: 'user', signal },
   )
 }
 
@@ -21,12 +20,14 @@ export function getConsumptionRequest(
   signal?: AbortSignal,
 ): Promise<ConsumptionRequest> {
   return apiRequest<ConsumptionRequest>(
-    `${ENDPOINTS.user.consumptionRequests}/${encodeURIComponent(String(requestID))}`,
-    { signal },
+    ENDPOINTS.user.consumptionRequest(requestID),
+    { auth: 'user', signal },
   )
 }
 
-export function submitConsumption(input: SubmitConsumptionInput) {
+export function submitConsumption(
+  input: SubmitConsumptionInput,
+): Promise<ConsumptionRequest> {
   const body = new FormData()
 
   body.append('image', input.image)
@@ -35,51 +36,10 @@ export function submitConsumption(input: SubmitConsumptionInput) {
 
   return apiRequest<ConsumptionRequest>(
     ENDPOINTS.user.consumptionRequests,
-    { method: 'POST', body },
-  )
-}
-
-async function apiRequest<T>(
-  path: string,
-  options: RequestInit = {},
-  canRetry = true,
-): Promise<T> {
-  const token = await getAccessToken()
-  const headers = new Headers(options.headers)
-
-  headers.set('Authorization', `Bearer ${token}`)
-
-  try {
-    return await request<T>(path, { ...options, headers })
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401 && canRetry) {
-      localStorage.removeItem(ACCESS_TOKEN_KEY)
-      return apiRequest<T>(path, options, false)
-    }
-
-    throw error
-  }
-}
-
-async function getAccessToken(): Promise<string> {
-  const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY)
-  if (storedToken) return storedToken
-
-  const data = await request<{ accessToken: string | null }>('/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+    {
+      auth: 'user',
+      method: 'POST',
+      body,
     },
-    body: JSON.stringify({
-      username: import.meta.env.VITE_DEV_USER_USERNAME ?? 'A-101',
-      password: import.meta.env.VITE_DEV_USER_PASSWORD ?? 'Tenant@123',
-    }),
-  })
-
-  if (!data.accessToken) {
-    throw new Error('Tenant login did not return an access token.')
-  }
-
-  localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken)
-  return data.accessToken
+  )
 }

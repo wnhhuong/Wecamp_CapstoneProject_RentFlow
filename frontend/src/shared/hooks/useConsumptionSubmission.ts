@@ -41,6 +41,7 @@ export function useConsumptionSubmission() {
   const [result, setResult] = useState<ConsumptionRequest | null>(null);
 
   const submissionLock = useRef(false);
+  const previewUrlRef = useRef<string | null>(null);
 
   async function refreshContext(signal?: AbortSignal) {
     const data = await getConsumptionContext(signal);
@@ -61,9 +62,6 @@ export function useConsumptionSubmission() {
   useEffect(() => {
     const controller = new AbortController();
 
-    setLoading(true);
-    setLoadError(null);
-
     refreshContext(controller.signal)
       .catch((error: unknown) => {
         if (!controller.signal.aborted) setLoadError(errorMessage(error));
@@ -76,16 +74,12 @@ export function useConsumptionSubmission() {
   }, [reloadKey]);
 
   useEffect(() => {
-    if (!image) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(image);
-    setPreviewUrl(url);
-
-    return () => URL.revokeObjectURL(url);
-  }, [image]);
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const numericReading = Number(reading);
   const validReading =
@@ -96,7 +90,13 @@ export function useConsumptionSubmission() {
   function selectImage(file: File | null) {
     if (!file) return;
 
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+
     setImage(null);
+    setPreviewUrl(null);
     setCapturedAt("");
     setImageError(null);
     setSubmitError(null);
@@ -111,8 +111,18 @@ export function useConsumptionSubmission() {
       return;
     }
 
+    const nextPreviewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = nextPreviewUrl;
+
     setImage(file);
+    setPreviewUrl(nextPreviewUrl);
     setCapturedAt(new Date().toISOString());
+  }
+
+  function reload() {
+    setLoading(true);
+    setLoadError(null);
+    setReloadKey((value) => value + 1);
   }
 
   async function send() {
@@ -170,7 +180,7 @@ export function useConsumptionSubmission() {
     context,
     loading,
     loadError,
-    reload: () => setReloadKey((value) => value + 1),
+    reload,
     step,
     image,
     previewUrl,

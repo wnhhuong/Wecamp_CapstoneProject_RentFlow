@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useRef, useState } from "react";
 
-import { StatusBadge } from '@/components/status'
-import { Button } from '@/components/ui/button'
+import { StatusBadge } from "@/components/status";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -10,22 +10,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { CopyIcon, KeyIcon, RefreshIcon } from '@/components/ui/icons'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
-import {
-  prepareRoomAccount,
-  type AdminRoom,
-  type PreparedRoomCredential,
-} from '@/shared/api/admin/rooms.api'
+} from "@/components/ui/dialog";
+import { CopyIcon, KeyIcon, RefreshIcon } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { prepareRoomAccount } from "@/shared/api/admin/rooms.api";
+import type {
+  AdminRoom,
+  PreparedRoomCredential,
+} from "@/shared/types/admin/room";
 
 interface PrepareRoomAccountDialogProps {
-  open: boolean
-  room: AdminRoom | null
-  onOpenChange: (open: boolean) => void
-  onAccountPrepared: (room: AdminRoom) => void
+  open: boolean;
+  room: AdminRoom | null;
+  onOpenChange: (open: boolean) => void;
+  onAccountPrepared: (room: AdminRoom) => void;
 }
 
 function PrepareRoomAccountDialog({
@@ -34,79 +34,77 @@ function PrepareRoomAccountDialog({
   onOpenChange,
   onAccountPrepared,
 }: PrepareRoomAccountDialogProps) {
-  const passwordInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null);
   const [temporaryPassword, setTemporaryPassword] = useState(
     generateTemporaryPassword,
-  )
-  const [credential, setCredential] =
-    useState<PreparedRoomCredential | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(
+  );
+  const [credential, setCredential] = useState<PreparedRoomCredential | null>(
     null,
-  )
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [copiedField, setCopiedField] = useState<
+    "username" | "password" | null
+  >(null);
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      setTemporaryPassword(generateTemporaryPassword())
-      setCredential(null)
-      setIsSubmitting(false)
-      setError('')
-      setCopiedField(null)
+      setTemporaryPassword(generateTemporaryPassword());
+      setCredential(null);
+      setIsSubmitting(false);
+      setError("");
+      setCopiedField(null);
     }
 
-    onOpenChange(nextOpen)
+    onOpenChange(nextOpen);
   }
 
   function handleGeneratePassword() {
-    setTemporaryPassword(generateTemporaryPassword())
-    setError('')
-    setCopiedField(null)
-    window.requestAnimationFrame(() => passwordInputRef.current?.focus())
+    setTemporaryPassword(generateTemporaryPassword());
+    setError("");
+    setCopiedField(null);
+    window.requestAnimationFrame(() => passwordInputRef.current?.focus());
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!room) return
+    event.preventDefault();
+    if (!room) return;
 
     if (temporaryPassword.trim().length < 6) {
-      setError('Temporary password must contain at least 6 characters.')
-      passwordInputRef.current?.focus()
-      return
+      setError("Temporary password must contain at least 6 characters.");
+      passwordInputRef.current?.focus();
+      return;
     }
 
-    setIsSubmitting(true)
-    setError('')
+    setIsSubmitting(true);
+    setError("");
 
     try {
-      const normalizedPassword = temporaryPassword.trim()
+      const normalizedPassword = temporaryPassword.trim();
       const result = await prepareRoomAccount({
         roomID: room.roomID,
         temporaryPassword: normalizedPassword,
-      })
-      setCredential(result.credential)
-      onAccountPrepared(result.room)
+      });
+      setCredential(result.credential);
+      onAccountPrepared(result.room);
     } catch (submitError) {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'The room account could not be prepared.',
-      )
+          : "The room account could not be prepared.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
-  async function copyCredential(
-    field: 'username' | 'password',
-    value: string,
-  ) {
+  async function copyCredential(field: "username" | "password", value: string) {
     try {
-      await navigator.clipboard.writeText(value)
-      setCopiedField(field)
-      setError('')
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setError("");
     } catch {
-      setError('Copy failed. Select the value and copy it manually.')
+      setError("Copy failed. Select the value and copy it manually.");
     }
   }
 
@@ -115,7 +113,7 @@ function PrepareRoomAccountDialog({
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[560px]">
         {credential ? (
           <CredentialResult
-            roomCode={room?.roomCode ?? ''}
+            roomCode={room?.roomCode ?? ""}
             credential={credential}
             copiedField={copiedField}
             error={error}
@@ -139,14 +137,17 @@ function PrepareRoomAccountDialog({
                 <AccountDetail label="Room" value={room.roomCode} />
                 <AccountDetail
                   label="Username"
-                  value={room.account?.username ?? 'No account'}
+                  value={room.account?.username ?? "No account"}
                 />
                 <div className="sm:col-span-2">
                   <span className="mb-1.5 block text-xs text-muted-foreground">
                     Current account status
                   </span>
                   {room.account ? (
-                    <StatusBadge domain="account" status={room.account.status} />
+                    <StatusBadge
+                      domain="account"
+                      status={room.account.status}
+                    />
                   ) : (
                     <span className="text-sm text-muted-foreground">
                       No account
@@ -156,7 +157,7 @@ function PrepareRoomAccountDialog({
               </div>
             ) : null}
 
-            {room?.account?.status !== 'banned' ? (
+            {room?.account?.status !== "banned" ? (
               <div
                 role="alert"
                 className="rounded-md border border-[#e0c2bc] bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
@@ -182,14 +183,14 @@ function PrepareRoomAccountDialog({
                   id="temporary-password"
                   value={temporaryPassword}
                   onChange={(event) => {
-                    setTemporaryPassword(event.target.value)
-                    setError('')
+                    setTemporaryPassword(event.target.value);
+                    setError("");
                   }}
                   minLength={6}
                   autoComplete="new-password"
                   spellCheck={false}
                   aria-invalid={Boolean(error)}
-                  disabled={room?.account?.status !== 'banned' || isSubmitting}
+                  disabled={room?.account?.status !== "banned" || isSubmitting}
                   className="font-mono"
                 />
                 <Button
@@ -197,7 +198,7 @@ function PrepareRoomAccountDialog({
                   variant="outline"
                   size="icon-lg"
                   onClick={handleGeneratePassword}
-                  disabled={room?.account?.status !== 'banned' || isSubmitting}
+                  disabled={room?.account?.status !== "banned" || isSubmitting}
                   aria-label="Generate another temporary password"
                   title="Generate another temporary password"
                 >
@@ -224,17 +225,17 @@ function PrepareRoomAccountDialog({
               <Button
                 type="submit"
                 variant="dark"
-                disabled={room?.account?.status !== 'banned' || isSubmitting}
+                disabled={room?.account?.status !== "banned" || isSubmitting}
               >
                 {isSubmitting ? <Spinner /> : <KeyIcon />}
-                {isSubmitting ? 'Preparing...' : 'Prepare account'}
+                {isSubmitting ? "Preparing..." : "Prepare account"}
               </Button>
             </DialogFooter>
           </form>
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function CredentialResult({
@@ -244,11 +245,11 @@ function CredentialResult({
   error,
   onCopy,
 }: {
-  roomCode: string
-  credential: PreparedRoomCredential
-  copiedField: 'username' | 'password' | null
-  error: string
-  onCopy: (field: 'username' | 'password', value: string) => Promise<void>
+  roomCode: string;
+  credential: PreparedRoomCredential;
+  copiedField: "username" | "password" | null;
+  error: string;
+  onCopy: (field: "username" | "password", value: string) => Promise<void>;
 }) {
   return (
     <div className="grid gap-5">
@@ -280,14 +281,14 @@ function CredentialResult({
         <CredentialField
           label="Username"
           value={credential.username}
-          copied={copiedField === 'username'}
-          onCopy={() => onCopy('username', credential.username)}
+          copied={copiedField === "username"}
+          onCopy={() => onCopy("username", credential.username)}
         />
         <CredentialField
           label="Temporary password"
           value={credential.temporaryPassword}
-          copied={copiedField === 'password'}
-          onCopy={() => onCopy('password', credential.temporaryPassword)}
+          copied={copiedField === "password"}
+          onCopy={() => onCopy("password", credential.temporaryPassword)}
         />
         <div className="flex items-center justify-between gap-3 border-t border-hairline pt-3">
           <span className="text-sm text-muted-foreground">Account status</span>
@@ -308,7 +309,7 @@ function CredentialResult({
         </DialogClose>
       </DialogFooter>
     </div>
-  )
+  );
 }
 
 function CredentialField({
@@ -317,10 +318,10 @@ function CredentialField({
   copied,
   onCopy,
 }: {
-  label: string
-  value: string
-  copied: boolean
-  onCopy: () => Promise<void>
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => Promise<void>;
 }) {
   return (
     <div className="grid gap-1.5">
@@ -341,10 +342,10 @@ function CredentialField({
         </Button>
       </div>
       <span className="h-4 text-xs text-status-success-fg" aria-live="polite">
-        {copied ? 'Copied' : ''}
+        {copied ? "Copied" : ""}
       </span>
     </div>
-  )
+  );
 }
 
 function AccountDetail({ label, value }: { label: string; value: string }) {
@@ -353,44 +354,44 @@ function AccountDetail({ label, value }: { label: string; value: string }) {
       <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </div>
-  )
+  );
 }
 
 function generateTemporaryPassword(length = 12) {
-  const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
-  const lowercase = 'abcdefghijkmnopqrstuvwxyz'
-  const numbers = '23456789'
-  const symbols = '!@#$%'
-  const allCharacters = uppercase + lowercase + numbers + symbols
+  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowercase = "abcdefghijkmnopqrstuvwxyz";
+  const numbers = "23456789";
+  const symbols = "!@#$%";
+  const allCharacters = uppercase + lowercase + numbers + symbols;
   const requiredCharacters = [uppercase, lowercase, numbers, symbols].map(
     randomCharacter,
-  )
+  );
   const remainingCharacters = Array.from(
     { length: length - requiredCharacters.length },
     () => randomCharacter(allCharacters),
-  )
+  );
 
-  return shuffle([...requiredCharacters, ...remainingCharacters]).join('')
+  return shuffle([...requiredCharacters, ...remainingCharacters]).join("");
 }
 
 function randomCharacter(characters: string) {
-  const randomValue = crypto.getRandomValues(new Uint32Array(1))[0]
-  return characters[randomValue % characters.length]
+  const randomValue = crypto.getRandomValues(new Uint32Array(1))[0];
+  return characters[randomValue % characters.length];
 }
 
 function shuffle(characters: string[]) {
-  const shuffled = [...characters]
+  const shuffled = [...characters];
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const randomValue = crypto.getRandomValues(new Uint32Array(1))[0]
-    const randomIndex = randomValue % (index + 1)
-    ;[shuffled[index], shuffled[randomIndex]] = [
+    const randomValue = crypto.getRandomValues(new Uint32Array(1))[0];
+    const randomIndex = randomValue % (index + 1);
+    [shuffled[index], shuffled[randomIndex]] = [
       shuffled[randomIndex],
       shuffled[index],
-    ]
+    ];
   }
 
-  return shuffled
+  return shuffled;
 }
 
-export { PrepareRoomAccountDialog }
+export { PrepareRoomAccountDialog };
