@@ -1,7 +1,11 @@
-<<<<<<< HEAD
 import mongoose, { ClientSession, HydratedDocument } from 'mongoose';
 import RequestModel, { IRequest } from '../models/Request.js';
 import ConsumpRequest from '../models/ConsumpRequest.js';
+import CheckoutRequest from "../models/CheckoutRequest.js";
+import ExtendRequest from "../models/ExtendRequest.js";
+import LatePaymentRequest from "../models/LatePaymentRequest.js";
+import MoveoutRequest from "../models/MoveoutRequest.js";
+import PaidRequest from "../models/PaidRequest.js";
 import Contract from '../models/Contract.js';
 import Consumption from '../models/Consumption.js';
 import User from '../models/User.js';
@@ -46,15 +50,7 @@ export interface ApproveRequestResult {
 /**
  * #40 — PATCH /api/admin/requests/:requestID/approve
  *
- * Implement đầy đủ cho type = CONSUMP (task "Approve Consumption") và type = PAID
- * (task "Approve PAID Request"). 4 type còn lại (DELAY/EXTEND/MOVEOUT/CHECKOUT) là TODO
- * — task khác sẽ bổ sung case riêng, KHÔNG tự ý code ở đây.
- *
- * ATOMIC: toàn bộ transition Request PENDING->APPROVED + side-effect (tạo Consumption/Invoice,
- * hoặc update Invoice PAID) nằm trong 1 Mongo transaction. Chốt chặn double-approve nằm ở
- * `findOneAndUpdate` với filter `status: PENDING` — 2 request approve cùng lúc, chỉ đúng 1 cái
- * match được điều kiện này, cái còn lại nhận về `null` ngay lập tức (không có race window).
- */
+**/
 export const approveRequest = async (requestID: string): Promise<ApproveRequestResult> => {
   if (!mongoose.Types.ObjectId.isValid(requestID)) {
     throw new RequestServiceError(404, `Request with ID ${requestID} not found.`);
@@ -343,14 +339,7 @@ export const getRequestDetail = async (requestID: string) => {
     status: request.status,
     details,
   };
-=======
-import CheckoutRequest from "../models/CheckoutRequest.js";
-import ConsumpRequest from "../models/ConsumpRequest.js";
-import { RequestType } from "../models/enums.js";
-import ExtendRequest from "../models/ExtendRequest.js";
-import LatePaymentRequest from "../models/LatePaymentRequest.js";
-import MoveoutRequest from "../models/MoveoutRequest.js";
-import PaidRequest from "../models/PaidRequest.js";
+};
 
 export const DETAIL_MODEL_MAP: Record<RequestType, any> = {
     [RequestType.CHECKOUT]: CheckoutRequest,
@@ -407,5 +396,4 @@ export const buildDetails = (type: RequestType, doc: any): Record<string, any> |
         default:
             return null;
     }
->>>>>>> origin/develop
 };

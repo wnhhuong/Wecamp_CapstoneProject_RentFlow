@@ -61,7 +61,7 @@ export const getRequestDetailController = async (
 
 /**
  * #40 — PATCH /api/admin/requests/:requestID/approve
- * Xử lý atomic cho type=consump (task 1) và type=paid (task 3). Xem chi tiết trong request.service.ts.
+ * Xử lý atomic cho type=consump. Xem chi tiết trong request.service.ts.
  */
 export const approveRequestController = async (
   req: Request,
