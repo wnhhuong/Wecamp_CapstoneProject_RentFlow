@@ -1,14 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from "react";
 
-import { EmptyState, ErrorState, PageLoading } from '@/components/feedback'
-import { StatusBadge, type RoomStatus } from '@/components/status'
-import { Button } from '@/components/ui/button'
-import { CloseIcon, KeyIcon, PlusIcon, SearchIcon } from '@/components/ui/icons'
-import { Input } from '@/components/ui/input'
+import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { StatusBadge } from "@/components/status";
+import type { RoomStatus } from "@/shared/types/status";
+import { Button } from "@/components/ui/button";
+import {
+  CloseIcon,
+  KeyIcon,
+  PlusIcon,
+  SearchIcon,
+} from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
 import {
   NativeSelect,
   NativeSelectOption,
-} from '@/components/ui/native-select'
+} from "@/components/ui/native-select";
 import {
   Table,
   TableBody,
@@ -16,79 +22,77 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import {
-  getAreasFromRooms,
-  getAdminRooms,
-  type AdminRoom,
-} from '@/shared/api/admin/rooms.api'
+} from "@/components/ui/table";
+import { getAdminRooms } from "@/shared/api/admin/rooms.api";
+import type { AdminRoom } from "@/shared/types/admin/room";
 
-import { AddRoomDialog } from './rooms/AddRoomDialog'
-import { PrepareRoomAccountDialog } from './rooms/PrepareRoomAccountDialog'
+import { AddRoomDialog } from "./rooms/AddRoomDialog";
+import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
+import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
 
-type StatusFilter = RoomStatus | 'all'
+type StatusFilter = RoomStatus | "all";
 
 function RoomsPage() {
-  const [rooms, setRooms] = useState<AdminRoom[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
-  const [isAddRoomOpen, setIsAddRoomOpen] = useState(false)
-  const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null)
-  const [createdRoomCode, setCreatedRoomCode] = useState('')
-  const [preparedUsername, setPreparedUsername] = useState('')
-  const [search, setSearch] = useState('')
-  const [areaID, setAreaID] = useState('all')
-  const [status, setStatus] = useState<StatusFilter>('all')
-  const [capacity, setCapacity] = useState('all')
-  const [owed, setOwed] = useState('all')
+  const [rooms, setRooms] = useState<AdminRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
+  const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null);
+  const [createdRoomCode, setCreatedRoomCode] = useState("");
+  const [preparedUsername, setPreparedUsername] = useState("");
+  const [search, setSearch] = useState("");
+  const [areaID, setAreaID] = useState("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [capacity, setCapacity] = useState("all");
+  const [owed, setOwed] = useState("all");
 
   async function loadRooms() {
-    setIsLoading(true)
-    setLoadError('')
+    setIsLoading(true);
+    setLoadError("");
 
     try {
-      setRooms(await getAdminRooms())
+      setRooms(await getAdminRooms());
     } catch {
-      setLoadError('The room list could not be loaded.')
+      setLoadError("The room list could not be loaded.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    let isActive = true
+    let isActive = true;
 
     getAdminRooms()
       .then((loadedRooms) => {
-        if (isActive) setRooms(loadedRooms)
+        if (isActive) setRooms(loadedRooms);
       })
       .catch(() => {
-        if (isActive) setLoadError('The room list could not be loaded.')
+        if (isActive) setLoadError("The room list could not be loaded.");
       })
       .finally(() => {
-        if (isActive) setIsLoading(false)
-      })
+        if (isActive) setIsLoading(false);
+      });
 
     return () => {
-      isActive = false
-    }
-  }, [])
+      isActive = false;
+    };
+  }, []);
 
   const filteredRooms = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
+    const normalizedSearch = search.trim().toLowerCase();
 
     return rooms.filter((room) => {
       const matchesSearch =
         !normalizedSearch ||
         room.roomCode.toLowerCase().includes(normalizedSearch) ||
-        room.tenantName?.toLowerCase().includes(normalizedSearch)
-      const matchesArea = areaID === 'all' || room.areaID === areaID
-      const matchesStatus = status === 'all' || room.status === status
+        room.tenantName?.toLowerCase().includes(normalizedSearch);
+      const matchesArea = areaID === "all" || room.areaID === areaID;
+      const matchesStatus = status === "all" || room.status === status;
       const matchesCapacity =
-        capacity === 'all' || room.maxPeople === Number(capacity)
+        capacity === "all" || room.maxPeople === Number(capacity);
       const matchesOwed =
-        owed === 'all' ||
-        (owed === 'owed' ? room.stillOwed > 0 : room.stillOwed === 0)
+        owed === "all" ||
+        (owed === "owed" ? room.stillOwed > 0 : room.stillOwed === 0);
 
       return (
         matchesSearch &&
@@ -96,18 +100,18 @@ function RoomsPage() {
         matchesStatus &&
         matchesCapacity &&
         matchesOwed
-      )
-    })
-  }, [areaID, capacity, owed, rooms, search, status])
+      );
+    });
+  }, [areaID, capacity, owed, rooms, search, status]);
 
-  const areas = useMemo(() => getAreasFromRooms(rooms), [rooms])
+  const areas = useMemo(() => getAreasFromRooms(rooms), [rooms]);
 
   const selectedRoom =
-    rooms.find((room) => room.roomID === selectedRoomID) ?? null
+    rooms.find((room) => room.roomID === selectedRoomID) ?? null;
 
   function handleRoomCreated(room: AdminRoom) {
-    setRooms((current) => [room, ...current])
-    setCreatedRoomCode(room.roomCode)
+    setRooms((current) => [room, ...current]);
+    setCreatedRoomCode(room.roomCode);
   }
 
   function handleAccountPrepared(preparedRoom: AdminRoom) {
@@ -115,8 +119,10 @@ function RoomsPage() {
       current.map((room) =>
         room.roomID === preparedRoom.roomID ? preparedRoom : room,
       ),
-    )
-    setPreparedUsername(preparedRoom.account?.username ?? preparedRoom.roomCode)
+    );
+    setPreparedUsername(
+      preparedRoom.account?.username ?? preparedRoom.roomCode,
+    );
   }
 
   return (
@@ -155,7 +161,7 @@ function RoomsPage() {
             size="icon-xs"
             aria-label="Dismiss success message"
             className="text-status-success-fg hover:bg-black/5"
-            onClick={() => setCreatedRoomCode('')}
+            onClick={() => setCreatedRoomCode("")}
           >
             <CloseIcon />
           </Button>
@@ -177,7 +183,7 @@ function RoomsPage() {
             size="icon-xs"
             aria-label="Dismiss account success message"
             className="text-status-success-fg hover:bg-black/5"
-            onClick={() => setPreparedUsername('')}
+            onClick={() => setPreparedUsername("")}
           >
             <CloseIcon />
           </Button>
@@ -200,8 +206,10 @@ function RoomsPage() {
           value={areaID}
           onChange={setAreaID}
           options={[
-            ['all', 'All areas'],
-            ...areas.map((area) => [area.areaID, area.areaName] as [string, string]),
+            ["all", "All areas"],
+            ...areas.map(
+              (area) => [area.areaID, area.areaName] as [string, string],
+            ),
           ]}
         />
         <FilterSelect
@@ -209,11 +217,11 @@ function RoomsPage() {
           value={status}
           onChange={(value) => setStatus(value as StatusFilter)}
           options={[
-            ['all', 'All statuses'],
-            ['available now', 'Available now'],
-            ['rented', 'Rented'],
-            ['available soon', 'Available soon'],
-            ['not available', 'Not available'],
+            ["all", "All statuses"],
+            ["available now", "Available now"],
+            ["rented", "Rented"],
+            ["available soon", "Available soon"],
+            ["not available", "Not available"],
           ]}
         />
         <FilterSelect
@@ -221,11 +229,11 @@ function RoomsPage() {
           value={capacity}
           onChange={setCapacity}
           options={[
-            ['all', 'All capacities'],
-            ['1', '1 person'],
-            ['2', '2 people'],
-            ['3', '3 people'],
-            ['4', '4 people'],
+            ["all", "All capacities"],
+            ["1", "1 person"],
+            ["2", "2 people"],
+            ["3", "3 people"],
+            ["4", "4 people"],
           ]}
         />
         <FilterSelect
@@ -233,16 +241,16 @@ function RoomsPage() {
           value={owed}
           onChange={setOwed}
           options={[
-            ['all', 'All balances'],
-            ['owed', 'Still owed'],
-            ['not_owed', 'No balance'],
+            ["all", "All balances"],
+            ["owed", "Still owed"],
+            ["not_owed", "No balance"],
           ]}
         />
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filteredRooms.length} {filteredRooms.length === 1 ? 'room' : 'rooms'}
-        {' '}matching
+        {filteredRooms.length} {filteredRooms.length === 1 ? "room" : "rooms"}{" "}
+        matching
       </p>
 
       {isLoading ? (
@@ -285,15 +293,15 @@ function RoomsPage() {
                   </TableCell>
                   <TableCell
                     className={
-                      room.tenantName ? 'text-body' : 'text-muted-foreground'
+                      room.tenantName ? "text-body" : "text-muted-foreground"
                     }
                   >
-                    {room.tenantName ?? 'Unassigned'}
+                    {room.tenantName ?? "Unassigned"}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col items-start gap-1.5">
                       <span className="text-xs text-muted-foreground">
-                        {room.account?.username ?? 'No account'}
+                        {room.account?.username ?? "No account"}
                       </span>
                       {room.account ? (
                         <StatusBadge
@@ -304,7 +312,8 @@ function RoomsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {room.maxPeople} {room.maxPeople === 1 ? 'person' : 'people'}
+                    {room.maxPeople}{" "}
+                    {room.maxPeople === 1 ? "person" : "people"}
                   </TableCell>
                   <TableCell>
                     <StatusBadge domain="room" status={room.status} />
@@ -315,8 +324,8 @@ function RoomsPage() {
                   <TableCell
                     className={
                       room.stillOwed > 0
-                        ? 'font-medium text-destructive'
-                        : 'text-muted-foreground'
+                        ? "font-medium text-destructive"
+                        : "text-muted-foreground"
                     }
                   >
                     {formatCurrency(room.stillOwed)}
@@ -325,7 +334,7 @@ function RoomsPage() {
                     {formatCurrency(room.price)}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
-                    {room.account?.status === 'banned' ? (
+                    {room.account?.status === "banned" ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -338,10 +347,10 @@ function RoomsPage() {
                     ) : (
                       <span className="text-xs text-muted-foreground">
                         {!room.account
-                          ? 'No account'
-                          : room.account.status === 'inactive'
-                          ? 'Prepared'
-                          : 'In use'}
+                          ? "No account"
+                          : room.account.status === "inactive"
+                            ? "Prepared"
+                            : "In use"}
                       </span>
                     )}
                   </TableCell>
@@ -366,12 +375,12 @@ function RoomsPage() {
         open={selectedRoom !== null}
         room={selectedRoom}
         onOpenChange={(open) => {
-          if (!open) setSelectedRoomID(null)
+          if (!open) setSelectedRoomID(null);
         }}
         onAccountPrepared={handleAccountPrepared}
       />
     </section>
-  )
+  );
 }
 
 function FilterSelect({
@@ -380,10 +389,10 @@ function FilterSelect({
   onChange,
   options,
 }: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: [string, string][]
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: [string, string][];
 }) {
   return (
     <NativeSelect
@@ -398,22 +407,22 @@ function FilterSelect({
         </NativeSelectOption>
       ))}
     </NativeSelect>
-  )
+  );
 }
 
 const electricityLabels = {
-  checked: 'Checked',
-  waiting_admin: 'Waiting admin',
-  late: 'Late',
-  not_applicable: 'Not applicable',
-} as const
+  checked: "Checked",
+  waiting_admin: "Waiting admin",
+  late: "Late",
+  not_applicable: "Not applicable",
+} as const;
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value);
 }
 
-export { RoomsPage }
+export { RoomsPage };

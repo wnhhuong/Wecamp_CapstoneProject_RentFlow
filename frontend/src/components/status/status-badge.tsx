@@ -1,17 +1,13 @@
 import type { ComponentProps } from 'react'
-
+import type {
+  AccountStatus,
+  InvoiceStatus,
+  RequestStatus,
+  RoomStatus,
+  TicketStatus,
+} from '@/shared/types/status'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/shared/utils/cn'
-
-type RoomStatus =
-  | 'available now'
-  | 'rented'
-  | 'available soon'
-  | 'not available'
-type InvoiceStatus = 'paid' | 'not_paid'
-type RequestStatus = 'pending' | 'approved'
-type TicketStatus = 'need_action' | 'in_progress' | 'done'
-type AccountStatus = 'banned' | 'inactive' | 'active'
 
 type StatusBadgeProps = ComponentProps<typeof Badge> &
   (
@@ -38,7 +34,6 @@ const statusPresentations = {
   },
   invoice: {
     paid: { label: 'PAID', tone: 'success' },
-    pending: { label: 'PENDING', tone: 'warning' },
     not_paid: { label: 'NOT PAID', tone: 'danger' },
   },
   request: {
@@ -104,11 +99,4 @@ function getStatusPresentation(props: StatusBadgeProps): StatusPresentation {
 }
 
 export { StatusBadge }
-export type {
-  AccountStatus,
-  InvoiceStatus,
-  RequestStatus,
-  RoomStatus,
-  StatusBadgeProps,
-  TicketStatus,
-}
+export type { StatusBadgeProps }
