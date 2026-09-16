@@ -16,7 +16,12 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 - Tiền là integer VND, ví dụ `3200000`; UI hiển thị `₫ 3.200.000`.
 - Ảnh/file là multipart khi upload; DB lưu relative path, API có thể trả relative path hoặc URL.
 - `Required = Có` nghĩa là field luôn có trong input hoặc response. Field nullable được đánh dấu trong Type và có `Required = Không`.
-
+- Với các tính năng cần hiển thị ID, cần trả về readable ID thay vì _id gốc của mongodb, quy ước như sau:  
+  - invoice: roomcode-ddmmyy với ddmmyy là ngày tạo invoice. eg: `A-101-290926`
+  - request: [3 ký tự đầu viết hoa của request type]-roomcode-ddmmyy với ddmmyy là ngày tạo. eg: DEL-A-101-300926 hay `EXT-A-101-200926`
+  - contract: roomcode-ddmmyy với ddmmyy là startDate của invoice. eg: `A-101-010926`
+- Các hàm để tạo displayID có thể được lấy từ `backend/src/utils/displayId.ts`
+- Các API bên dưới vẫn chưa được chỉnh sửa, linh hoạt thay đổi theo quy ước chung và thống nhất với FE-BE.
 ---
 
 # 1. Guest / Browse rooms
@@ -653,7 +658,7 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo request ID hoặc related ID|
+|`search`|string|Không|Tìm theo request ID (displayID)|
 |`type`|enum|Không|Một trong 6 request types|
 |`status`|enum|Không|`pending`, `approved`|
 |`page`|integer|Không|Mặc định `1`|
@@ -664,6 +669,8 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`requestID`|integer|Có|`REQUEST.requestID`|
+|`displayID`|string|Có|quy tắc chung|
+|`roomCode`|string|Có|room code của `REQUEST.roomID`|
 |`type`|enum|Có|Một trong 6 request types|
 |`createDate`|date-only|Có|ERD|
 |`resolveDate`|date-only, nullable|Không|ERD|
@@ -677,7 +684,7 @@ Lấy thông tin chi tiết của một yêu cầu (Request) cụ thể theo `id
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `id` | string (ObjectId) | Có | ID của bản ghi `Request` gốc |
+| `requestID` | string (ObjectId) | Có | ID của bản ghi `Request` gốc |
 
 ---
 
@@ -688,8 +695,9 @@ Lấy thông tin chi tiết của một yêu cầu (Request) cụ thể theo `id
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `requestID` | string (ObjectId) | Có | ID của bản ghi `Request` gốc |
+|`displayID`|string|Có|quy tắc chung|
 | `type` | enum | Có | Một trong 6 loại: `checkout`, `consump`, `extend`, `delay`, `moveout`, `paid` |
-| `status` | enum | Có | Trạng thái xử lý: `pending`, `approved`, `rejected` |
+| `status` | enum | Có | Trạng thái xử lý: `pending`, `approved` |
 | `createDate` | date-only / datetime | Có | Ngày/thời gian tạo yêu cầu |
 | `resolveDate` | date-only / datetime, nullable | Không | Ngày/thời gian phê duyệt hoặc từ chối |
 | `details` | object | Có | Dữ liệu chi tiết tương ứng với từng loại `type` bên dưới |
@@ -704,6 +712,7 @@ Chi tiết yêu cầu chốt số điện cuối & trả phòng.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `contractID` | string (ObjectId) | Có | ID hợp đồng liên quan |
+| `contractDisplayID` | string (ObjectId) | Có | display id theo quy tắc chung |
 | `finalImage` | string | Có | URL hình ảnh chỉ số điện chốt lần cuối |
 | `finalReading` | number | Có | Chỉ số điện chốt lần cuối |
 | `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |

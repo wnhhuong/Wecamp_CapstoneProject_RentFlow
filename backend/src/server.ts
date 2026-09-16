@@ -11,6 +11,7 @@ import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
 import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
 import guessRouter from "./routes/guest.routes.js";
 import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
+import userRequestRouter from "./routes/user/request.routes.js";
 const app = express();
 
 // Connect to MongoDB
@@ -39,6 +40,7 @@ app.use(`/api/auth`, authRouter)
 app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
 app.use(`/api/user/invoices`, userInvoiceRouter)
+app.use(`/api/user/requests`, userRequestRouter)
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 

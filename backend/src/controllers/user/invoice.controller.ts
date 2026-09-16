@@ -9,8 +9,8 @@ import mongoose from "mongoose";
 import PaidRequest from "../../models/PaidRequest.js";
 import RequestModel from "../../models/Request.js";
 import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js";
+import { formatVNShortDate } from "../../utils/dateFormat.js";
 
-const pad2 = (n: number) => n.toString().padStart(2, "0");
 const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
     if (!paymentDate) return now > dueDate;
     return paymentDate > dueDate;
@@ -66,8 +66,7 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
         const allInvoices = await Invoice.find(filter).sort({ createdDate: -1 });
         const now = new Date();
         let mapped = allInvoices.map((inv) => {
-            const d = new Date(inv.createdDate);
-            const displayID = `${room.roomCode}-${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${pad2(d.getFullYear() % 100)}`;
+            const displayID = `${room.roomCode}-${formatVNShortDate(new Date(inv.createdDate))}`;
             return {
                 invoiceID: inv._id,
                 displayID,
@@ -132,8 +131,7 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         if (!room) { sendError(res, 404, "Room not found"); return; }
  
         const now = new Date();
-        const d = new Date(invoice.createdDate);
-        const displayID = `${room.roomCode}-${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${pad2(d.getFullYear() % 100)}`;
+        const displayID = `${room.roomCode}-${formatVNShortDate(new Date(invoice.createdDate))}`;
         
         sendSuccess(res, {
             invoiceID: displayID,
