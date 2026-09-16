@@ -11,6 +11,7 @@
 ### 2. Homepage, request page list - tenant
 - Toàn bộ dữ liệu trang Home (`/api/user/dashboard`) — tham khảo tenant DASHBOARD trong backlog
 - Danh sách 6 loại request (`/api/user/requests`)
+- Chi tiết của request (`/api/user/requests/:id`)
 
 ### 3. Electricity - tenant
 - Dữ liệu form và kỳ ghi điện (`/api/user/consumption-requests/context`)

@@ -53,10 +53,12 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo `roomCode` hoặc `roomDetail`|
-|`areaID`|integer|Không|Lọc khu vực|
+|`search`|string|Không|Tìm theo `roomCode`, `roomDetail` hoặc `areaName`|
+|`floor`|integer|Không|Lọc theo tầng|
 |`status`|enum|Không|`available now`, `available soon`|
 |`maxPeople`|integer|Không|Lọc sức chứa tối thiểu|
+|`priceMin`|integer|Không|Lọc giá tối thiểu|
+|`priceMax`|integer|Không|Lọc giá tối đa|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -72,11 +74,12 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`floor`|integer|Có|`ROOM.floor`|
 |`maxPeople`|integer|Có|`ROOM.maxPeople`|
 |`price`|integer|Có|`ROOM.price`|
+|`description`|string|Có|`ROOM.roomDetail`|
 |`availableFrom`|date-only, nullable|Không|Chỉ cần cho `available soon`|
 |`coverImage`|string, nullable|Không|Ảnh đầu trong `ROOM.images`|
 
 ```json
-{"success":true,"data":{"items":[{"roomID":101,"roomCode":"A-101","areaID":1,"areaName":"Building A","status":"available now","floor":1,"maxPeople":2,"price":3200000,"availableFrom":null,"coverImage":"uploads/rooms/101-1.jpg"}],"pagination":{"page":1,"limit":12,"totalItems":1,"totalPages":1}},"message":null}
+{"success":true,"data":{"items":[{"roomID":101,"roomCode":"A-101","areaID":1,"areaName":"Building A","status":"available now","floor":1,"maxPeople":2,"price":3200000,"description":"Phòng thoáng mát, gần thang máy","availableFrom":null,"coverImage":"uploads/rooms/101-1.jpg"}],"pagination":{"page":1,"limit":12,"total":1,"totalPages":1}},"message":null}
 ```
 
 ---
@@ -665,8 +668,132 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`createDate`|date-only|Có|ERD|
 |`resolveDate`|date-only, nullable|Không|ERD|
 |`status`|enum|Có|ERD|
-|`summary`|string|Có|Label composed từ child request|
 
+## #24b — GET `/api/user/requests/:id`
+
+Lấy thông tin chi tiết của một yêu cầu (Request) cụ thể theo `id`. Kết quả trả về gồm thông tin chung của Request và object `details` chứa dữ liệu riêng biệt tương ứng với từng loại `type`.
+
+**Params**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | string (ObjectId) | Có | ID của bản ghi `Request` gốc |
+
+---
+
+**Output Object**
+
+1. Thông tin dùng chung (Common Request Info)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `requestID` | string (ObjectId) | Có | ID của bản ghi `Request` gốc |
+| `type` | enum | Có | Một trong 6 loại: `checkout`, `consump`, `extend`, `delay`, `moveout`, `paid` |
+| `status` | enum | Có | Trạng thái xử lý: `pending`, `approved`, `rejected` |
+| `createDate` | date-only / datetime | Có | Ngày/thời gian tạo yêu cầu |
+| `resolveDate` | date-only / datetime, nullable | Không | Ngày/thời gian phê duyệt hoặc từ chối |
+| `details` | object | Có | Dữ liệu chi tiết tương ứng với từng loại `type` bên dưới |
+
+---
+
+2. Cấu trúc của field `details` theo từng `type`
+
+Case 1: `type = "checkout"` (Trả về từ `CheckoutRequest`)
+Chi tiết yêu cầu chốt số điện cuối & trả phòng.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `contractID` | string (ObjectId) | Có | ID hợp đồng liên quan |
+| `finalImage` | string | Có | URL hình ảnh chỉ số điện chốt lần cuối |
+| `finalReading` | number | Có | Chỉ số điện chốt lần cuối |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+Case 2: `type = "consump"` (Trả về từ `ConsumpRequest`)
+Chi tiết yêu cầu người thuê tự báo chỉ số điện.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `image` | string | Có | URL hình ảnh công tơ điện |
+| `reading` | number | Có | Chỉ số điện tự báo |
+| `capturedAt` | datetime | Có | Thời điểm chụp ảnh/báo số |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+Case 3: `type = "extend"` (Trả về từ `ExtendRequest`)
+Chi tiết yêu cầu xin gia hạn hợp đồng.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `contractID` | string (ObjectId) | Có | ID hợp đồng xin gia hạn |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+Case 4: `type = "delay"` (Trả về từ `LatePaymentRequest`)
+Chi tiết yêu cầu xin khất/hoãn thanh toán 1 hóa đơn.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `invoiceID` | string (ObjectId) | Có | ID hóa đơn xin khất thanh toán |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+Case 5: `type = "moveout"` (Trả về từ `MoveoutRequest`)
+Chi tiết yêu cầu báo trước ngày trả phòng.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `contractID` | string (ObjectId) | Có | ID hợp đồng xin trả phòng |
+| `requestMoveoutDate` | date-only / datetime | Có | Ngày dự kiến trả phòng do người thuê đề xuất |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+Case 6: `type = "paid"` (Trả về từ `PaidRequest`)
+Chi tiết yêu cầu báo đã thanh toán 1 hóa đơn.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `invoiceID` | string (ObjectId) | Có | ID hóa đơn đã thanh toán |
+| `createdAt` | datetime | Có | Ngày tạo bản ghi chi tiết |
+| `updatedAt` | datetime | Có | Ngày cập nhật bản ghi chi tiết |
+
+---
+
+**Response Examples**
+
+Response: `type = "consump"`
+```json
+{
+  "requestID": "65f123456789abcdef000101",
+  "type": "consump",
+  "status": "pending",
+  "createDate": "2026-03-15T08:30:00.000Z",
+  "resolveDate": null,
+  "details": {
+    "image": "[https://storage.example.com/meters/2026-03.jpg](https://storage.example.com/meters/2026-03.jpg)",
+    "reading": 1250,
+    "capturedAt": "2026-03-15T08:25:00.000Z",
+    "createdAt": "2026-03-15T08:30:00.000Z",
+    "updatedAt": "2026-03-15T08:30:00.000Z"
+  }
+}
+```
+Response: `type = "moveout"`
+```json
+{
+  "requestID": "65f123456789abcdef000102",
+  "type": "moveout",
+  "status": "approved",
+  "createDate": "2026-03-10T10:00:00.000Z",
+  "resolveDate": "2026-03-11T14:20:00.000Z",
+  "details": {
+    "contractID": "65a987654321fedcba000088",
+    "requestMoveoutDate": "2026-04-01T00:00:00.000Z",
+    "createdAt": "2026-03-10T10:00:00.000Z",
+    "updatedAt": "2026-03-11T14:20:00.000Z"
+  }
+}
+```
 ---
 
 # 8. Admin / Dashboard

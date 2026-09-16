@@ -8,6 +8,7 @@ import Room from "../../models/Room.js";
 import mongoose from "mongoose";
 import PaidRequest from "../../models/PaidRequest.js";
 import RequestModel from "../../models/Request.js";
+import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js";
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
@@ -30,8 +31,8 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
             return;
         }
         // validate + clamp pagination
-        const pageNum = Math.max(1, Number(page) || 1);
-        const limitNum = Math.min(100, Math.max(1, Number(limit) || 12));
+        const { page: pageNum, limit: limitNum } = parsePagination(page, limit);
+
         // validate year
         let yearNum: number | undefined;
         if (year !== undefined) {
@@ -92,12 +93,7 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
  
         sendSuccess(res, {
             items: data,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                totalPages: Math.ceil(total / limitNum),
-            },
+            pagination: buildPaginationMeta(total, pageNum, limitNum),
         });
 
     } catch (error) {

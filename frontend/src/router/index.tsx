@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 
 import App from '@/App'
+import { ParametersPage } from '@/pages/admin/ParametersPage'
 import { RoomsPage } from '@/pages/admin/RoomsPage'
 import { RoutePlaceholder } from '@/router/route-placeholder'
 import { RouterErrorPage } from '@/router/router-error-page'
@@ -92,6 +93,10 @@ const router = createBrowserRouter([
       {
         path: ROUTES.admin.invoices,
         element: <RoutePlaceholder title="Invoices" />,
+      },
+      {
+        path: ROUTES.admin.parameters,
+        element: <ParametersPage />,
       },
       {
         path: ROUTES.admin.tickets,
