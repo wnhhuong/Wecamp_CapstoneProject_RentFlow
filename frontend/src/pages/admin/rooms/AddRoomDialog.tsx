@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,61 +8,61 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { CloseIcon, UploadIcon } from '@/components/ui/icons'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { CloseIcon, UploadIcon } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   NativeSelect,
   NativeSelectOption,
-} from '@/components/ui/native-select'
-import { Spinner } from '@/components/ui/spinner'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  createAdminRoom,
-  type AdminArea,
-  type AdminRoom,
-  type CreateRoomStatus,
-  type CreateRoomInput,
-} from '@/shared/api/admin/rooms.api'
+} from "@/components/ui/native-select";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import { createAdminRoom } from "@/shared/api/admin/rooms.api";
+import type {
+  AdminArea,
+  AdminRoom,
+  CreateRoomInput,
+  CreateRoomStatus,
+} from "@/shared/types/admin/room";
 
-const MAX_IMAGES = 4
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+const MAX_IMAGES = 4;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 interface RoomFormValues {
-  areaID: string
-  roomCode: string
-  floor: string
-  maxPeople: string
-  roomDetail: string
-  price: string
-  deposit: string
-  status: CreateRoomStatus
-  availableFrom: string
-  images: File[]
+  areaID: string;
+  roomCode: string;
+  floor: string;
+  maxPeople: string;
+  roomDetail: string;
+  price: string;
+  deposit: string;
+  status: CreateRoomStatus;
+  availableFrom: string;
+  images: File[];
 }
 
-type RoomFormErrors = Partial<Record<keyof RoomFormValues, string>>
+type RoomFormErrors = Partial<Record<keyof RoomFormValues, string>>;
 
 interface AddRoomDialogProps {
-  open: boolean
-  areas: AdminArea[]
-  onOpenChange: (open: boolean) => void
-  onRoomCreated: (room: AdminRoom) => void
+  open: boolean;
+  areas: AdminArea[];
+  onOpenChange: (open: boolean) => void;
+  onRoomCreated: (room: AdminRoom) => void;
 }
 
 const initialValues: RoomFormValues = {
-  areaID: '',
-  roomCode: '',
-  floor: '1',
-  maxPeople: '2',
-  roomDetail: '',
-  price: '',
-  deposit: '',
-  status: 'available now',
-  availableFrom: '',
+  areaID: "",
+  roomCode: "",
+  floor: "1",
+  maxPeople: "2",
+  roomDetail: "",
+  price: "",
+  deposit: "",
+  status: "available now",
+  availableFrom: "",
   images: [],
-}
+};
 
 function AddRoomDialog({
   open,
@@ -70,86 +70,88 @@ function AddRoomDialog({
   onOpenChange,
   onRoomCreated,
 }: AddRoomDialogProps) {
-  const [values, setValues] = useState<RoomFormValues>(initialValues)
-  const [errors, setErrors] = useState<RoomFormErrors>({})
-  const [submitError, setSubmitError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [values, setValues] = useState<RoomFormValues>(initialValues);
+  const [errors, setErrors] = useState<RoomFormErrors>({});
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function resetForm() {
-    setValues(initialValues)
-    setErrors({})
-    setSubmitError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    setValues(initialValues);
+    setErrors({});
+    setSubmitError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    if (isSubmitting) return
-    if (!nextOpen) resetForm()
-    onOpenChange(nextOpen)
+    if (isSubmitting) return;
+    if (!nextOpen) resetForm();
+    onOpenChange(nextOpen);
   }
 
   function updateValue<Key extends keyof RoomFormValues>(
     key: Key,
     value: RoomFormValues[Key],
   ) {
-    setValues((current) => ({ ...current, [key]: value }))
-    setErrors((current) => ({ ...current, [key]: undefined }))
-    setSubmitError('')
+    setValues((current) => ({ ...current, [key]: value }));
+    setErrors((current) => ({ ...current, [key]: undefined }));
+    setSubmitError("");
   }
 
   function handleImagesChange(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(event.target.files ?? [])
-    const combinedFiles = [...values.images, ...selectedFiles]
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const combinedFiles = [...values.images, ...selectedFiles];
     const invalidFile = combinedFiles.find(
-      (file) => !file.type.startsWith('image/') || file.size > MAX_IMAGE_SIZE,
-    )
+      (file) => !file.type.startsWith("image/") || file.size > MAX_IMAGE_SIZE,
+    );
 
     if (invalidFile) {
       setErrors((current) => ({
         ...current,
-        images: 'Use image files up to 5 MB each.',
-      }))
-      event.target.value = ''
-      return
+        images: "Use image files up to 5 MB each.",
+      }));
+      event.target.value = "";
+      return;
     }
 
     if (combinedFiles.length > MAX_IMAGES) {
       setErrors((current) => ({
         ...current,
         images: `You can upload up to ${MAX_IMAGES} images.`,
-      }))
-      event.target.value = ''
-      return
+      }));
+      event.target.value = "";
+      return;
     }
 
-    updateValue('images', combinedFiles)
-    event.target.value = ''
+    updateValue("images", combinedFiles);
+    event.target.value = "";
   }
 
   function removeImage(index: number) {
     updateValue(
-      'images',
+      "images",
       values.images.filter((_, imageIndex) => imageIndex !== index),
-    )
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const selectedAreaID = values.areaID || areas[0]?.areaID || ''
-    const normalizedValues = { ...values, areaID: selectedAreaID }
-    const nextErrors = validateRoom(normalizedValues)
+    event.preventDefault();
+    const selectedAreaID = values.areaID || areas[0]?.areaID || "";
+    const normalizedValues = { ...values, areaID: selectedAreaID };
+    const nextErrors = validateRoom(normalizedValues);
 
     if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors)
-      setSubmitError('Please complete all required fields before adding the room.')
+      setErrors(nextErrors);
+      setSubmitError(
+        "Please complete all required fields before adding the room.",
+      );
       window.requestAnimationFrame(() => {
         formRef.current
           ?.querySelector<HTMLElement>('[aria-invalid="true"]')
-          ?.focus()
-      })
-      return
+          ?.focus();
+      });
+      return;
     }
 
     const payload: CreateRoomInput = {
@@ -163,39 +165,39 @@ function AddRoomDialog({
       status: normalizedValues.status,
       availableFrom: normalizedValues.availableFrom || null,
       images: normalizedValues.images,
-    }
+    };
 
-    setIsSubmitting(true)
-    setSubmitError('')
+    setIsSubmitting(true);
+    setSubmitError("");
 
     try {
-      const createdRoom = await createAdminRoom(payload)
-      onRoomCreated(createdRoom)
-      resetForm()
-      onOpenChange(false)
+      const createdRoom = await createAdminRoom(payload);
+      onRoomCreated(createdRoom);
+      resetForm();
+      onOpenChange(false);
     } catch (error) {
       setSubmitError(
         error instanceof Error
           ? error.message
-          : 'The room could not be created. Please try again.',
-      )
+          : "The room could not be created. Please try again.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
-  const isAvailableSoon = values.status === 'available soon'
-  const selectedAreaID = values.areaID || areas[0]?.areaID || ''
+  const isAvailableSoon = values.status === "available soon";
+  const selectedAreaID = values.areaID || areas[0]?.areaID || "";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="max-h-[calc(100svh-2rem)] w-[min(44rem,calc(100%-2rem))] max-w-none overflow-y-auto rounded-lg bg-field p-5 sm:p-6"
         onEscapeKeyDown={(event) => {
-          if (isSubmitting) event.preventDefault()
+          if (isSubmitting) event.preventDefault();
         }}
         onPointerDownOutside={(event) => {
-          if (isSubmitting) event.preventDefault()
+          if (isSubmitting) event.preventDefault();
         }}
       >
         <form ref={formRef} onSubmit={handleSubmit} noValidate>
@@ -220,7 +222,7 @@ function AddRoomDialog({
             <FormField label="Area" error={errors.areaID} required>
               <NativeSelect
                 value={selectedAreaID}
-                onChange={(event) => updateValue('areaID', event.target.value)}
+                onChange={(event) => updateValue("areaID", event.target.value)}
                 aria-invalid={Boolean(errors.areaID)}
                 aria-label="Area"
                 className="w-full"
@@ -237,7 +239,7 @@ function AddRoomDialog({
               <Input
                 value={values.roomCode}
                 onChange={(event) =>
-                  updateValue('roomCode', event.target.value.toUpperCase())
+                  updateValue("roomCode", event.target.value.toUpperCase())
                 }
                 placeholder="e.g. A-104"
                 maxLength={20}
@@ -252,21 +254,17 @@ function AddRoomDialog({
                 min="1"
                 step="1"
                 value={values.floor}
-                onChange={(event) => updateValue('floor', event.target.value)}
+                onChange={(event) => updateValue("floor", event.target.value)}
                 aria-invalid={Boolean(errors.floor)}
                 aria-label="Floor"
               />
             </FormField>
 
-            <FormField
-              label="Maximum people"
-              error={errors.maxPeople}
-              required
-            >
+            <FormField label="Maximum people" error={errors.maxPeople} required>
               <NativeSelect
                 value={values.maxPeople}
                 onChange={(event) =>
-                  updateValue('maxPeople', event.target.value)
+                  updateValue("maxPeople", event.target.value)
                 }
                 aria-invalid={Boolean(errors.maxPeople)}
                 aria-label="Maximum people"
@@ -274,7 +272,7 @@ function AddRoomDialog({
               >
                 {[1, 2, 3, 4].map((capacity) => (
                   <NativeSelectOption key={capacity} value={capacity}>
-                    {capacity} {capacity === 1 ? 'person' : 'people'}
+                    {capacity} {capacity === 1 ? "person" : "people"}
                   </NativeSelectOption>
                 ))}
               </NativeSelect>
@@ -286,7 +284,7 @@ function AddRoomDialog({
                 min="1"
                 step="1000"
                 value={values.price}
-                onChange={(event) => updateValue('price', event.target.value)}
+                onChange={(event) => updateValue("price", event.target.value)}
                 placeholder="3,200,000"
                 aria-invalid={Boolean(errors.price)}
                 aria-label="Monthly rent"
@@ -299,7 +297,7 @@ function AddRoomDialog({
                 min="1"
                 step="1000"
                 value={values.deposit}
-                onChange={(event) => updateValue('deposit', event.target.value)}
+                onChange={(event) => updateValue("deposit", event.target.value)}
                 placeholder="3,200,000"
                 aria-invalid={Boolean(errors.deposit)}
                 aria-label="Deposit"
@@ -310,7 +308,7 @@ function AddRoomDialog({
               <NativeSelect
                 value={values.status}
                 onChange={(event) =>
-                  updateValue('status', event.target.value as CreateRoomStatus)
+                  updateValue("status", event.target.value as CreateRoomStatus)
                 }
                 aria-invalid={Boolean(errors.status)}
                 aria-label="Status"
@@ -337,7 +335,7 @@ function AddRoomDialog({
                 type="date"
                 value={values.availableFrom}
                 onChange={(event) =>
-                  updateValue('availableFrom', event.target.value)
+                  updateValue("availableFrom", event.target.value)
                 }
                 disabled={!isAvailableSoon}
                 aria-invalid={Boolean(errors.availableFrom)}
@@ -347,16 +345,12 @@ function AddRoomDialog({
           </div>
 
           <div className="mt-4">
-            <FormField
-              label="Room details"
-              error={errors.roomDetail}
-              required
-            >
+            <FormField label="Room details" error={errors.roomDetail} required>
               <Textarea
                 rows={3}
                 value={values.roomDetail}
                 onChange={(event) =>
-                  updateValue('roomDetail', event.target.value)
+                  updateValue("roomDetail", event.target.value)
                 }
                 placeholder="Describe the room..."
                 maxLength={500}
@@ -374,7 +368,7 @@ function AddRoomDialog({
               aria-invalid={Boolean(errors.images)}
               tabIndex={-1}
               className={`mt-2 rounded-lg border border-dashed p-3 ${
-                errors.images ? 'border-destructive' : 'border-input'
+                errors.images ? "border-destructive" : "border-input"
               } bg-surface`}
             >
               <div className="flex flex-wrap items-center gap-3">
@@ -439,13 +433,13 @@ function AddRoomDialog({
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Spinner /> : null}
-              {isSubmitting ? 'Adding room...' : 'Add room'}
+              {isSubmitting ? "Adding room..." : "Add room"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function FormField({
@@ -454,10 +448,10 @@ function FormField({
   required = false,
   children,
 }: {
-  label: string
-  error?: string
-  required?: boolean
-  children: React.ReactNode
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -468,46 +462,46 @@ function FormField({
       {children}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
-  )
+  );
 }
 
 function validateRoom(values: RoomFormValues): RoomFormErrors {
-  const errors: RoomFormErrors = {}
-  const roomCode = values.roomCode.trim()
-  const floor = Number(values.floor)
-  const maxPeople = Number(values.maxPeople)
-  const price = Number(values.price)
-  const deposit = Number(values.deposit)
+  const errors: RoomFormErrors = {};
+  const roomCode = values.roomCode.trim();
+  const floor = Number(values.floor);
+  const maxPeople = Number(values.maxPeople);
+  const price = Number(values.price);
+  const deposit = Number(values.deposit);
 
-  if (!values.areaID) errors.areaID = 'Select an area.'
+  if (!values.areaID) errors.areaID = "Select an area.";
   if (!roomCode) {
-    errors.roomCode = 'Enter a room code.'
+    errors.roomCode = "Enter a room code.";
   } else if (!/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/i.test(roomCode)) {
-    errors.roomCode = 'Use letters, numbers and hyphens only.'
+    errors.roomCode = "Use letters, numbers and hyphens only.";
   }
   if (!Number.isInteger(floor) || floor < 1) {
-    errors.floor = 'Enter a floor of 1 or higher.'
+    errors.floor = "Enter a floor of 1 or higher.";
   }
   if (!Number.isInteger(maxPeople) || maxPeople < 1 || maxPeople > 4) {
-    errors.maxPeople = 'Select a capacity from 1 to 4.'
+    errors.maxPeople = "Select a capacity from 1 to 4.";
   }
   if (!Number.isInteger(price) || price <= 0) {
-    errors.price = 'Enter a valid monthly rent.'
+    errors.price = "Enter a valid monthly rent.";
   }
   if (!Number.isInteger(deposit) || deposit <= 0) {
-    errors.deposit = 'Enter a valid deposit.'
+    errors.deposit = "Enter a valid deposit.";
   }
   if (!values.roomDetail.trim()) {
-    errors.roomDetail = 'Describe the room.'
+    errors.roomDetail = "Describe the room.";
   }
-  if (values.status === 'available soon' && !values.availableFrom) {
-    errors.availableFrom = 'Select the availability date.'
+  if (values.status === "available soon" && !values.availableFrom) {
+    errors.availableFrom = "Select the availability date.";
   }
   if (values.images.length === 0) {
-    errors.images = 'Add at least one room image.'
+    errors.images = "Add at least one room image.";
   }
 
-  return errors
+  return errors;
 }
 
-export { AddRoomDialog }
+export { AddRoomDialog };

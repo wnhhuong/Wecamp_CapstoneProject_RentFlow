@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ROUTES } from "@/router/routes";
+import { useAuth } from "@/shared/auth/useAuth";
 
 const userNavigation: SidebarNavItem[] = [
   {
@@ -73,6 +74,11 @@ const adminNavigation: SidebarNavItem[] = [
     to: ROUTES.admin.invoices,
   },
   {
+    id: "parameters",
+    label: "Parameters",
+    to: ROUTES.admin.parameters,
+  },
+  {
     id: "tickets",
     label: "Tickets",
     to: ROUTES.admin.tickets,
@@ -85,6 +91,7 @@ const adminNavigation: SidebarNavItem[] = [
 ];
 
 function App() {
+  const { account, signOut } = useAuth();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
   const location = useLocation();
@@ -106,11 +113,12 @@ function App() {
 
   const navigationItems = isAdminRoute ? adminNavigation : userNavigation;
 
-  const userName = isAdminRoute ? "Nguyễn Thị Bình" : "Đỗ Minh Khoa";
-
+  const userName = account?.username ?? "";
   const userDescription = isAdminRoute
     ? "Owner · full workspace access"
-    : "Room B-204 account";
+    : account?.roomID
+      ? `Room ${account.roomID} account`
+      : "Tenant account";
 
   return (
     <div className="flex min-h-svh flex-col bg-page">
@@ -119,7 +127,10 @@ function App() {
         userName={isSignedInRoute ? userName : undefined}
         onLogin={() => navigate(ROUTES.auth.login)}
         onBackToRooms={() => navigate(ROUTES.guest.rooms)}
-        onLogout={() => navigate(ROUTES.guest.rooms, { replace: true })}
+        onLogout={() => {
+          signOut();
+          navigate(ROUTES.auth.login, { replace: true });
+        }}
         onMenuClick={
           isSignedInRoute ? () => setIsNavigationOpen(true) : undefined
         }

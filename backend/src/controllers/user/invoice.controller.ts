@@ -1,17 +1,22 @@
 import { NextFunction, Response } from "express";
 import { UserAuthRequest } from "../../middlewares/auth.middleware.js";
-import { InvoiceStatus } from "../../models/enums.js";
+import { InvoiceStatus, RequestStatus, RequestType } from "../../models/enums.js";
 import { sendError, sendSuccess } from "../../utils/response.js";
 import Consumption from "../../models/Consumption.js";
 import Invoice from "../../models/Invoice.js";
 import Room from "../../models/Room.js";
 import mongoose from "mongoose";
+import PaidRequest from "../../models/PaidRequest.js";
+import RequestModel from "../../models/Request.js";
+import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js";
+import { formatVNShortDate } from "../../utils/dateFormat.js";
+import LatePaymentRequest from "../../models/LatePaymentRequest.js";
 
-const pad2 = (n: number) => n.toString().padStart(2, "0");
 const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
     if (!paymentDate) return now > dueDate;
     return paymentDate > dueDate;
 };
+
 // Get list invoices
 // GET /api/user/invoices
 export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -27,8 +32,8 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
             return;
         }
         // validate + clamp pagination
-        const pageNum = Math.max(1, Number(page) || 1);
-        const limitNum = Math.min(100, Math.max(1, Number(limit) || 12));
+        const { page: pageNum, limit: limitNum } = parsePagination(page, limit);
+
         // validate year
         let yearNum: number | undefined;
         if (year !== undefined) {
@@ -62,14 +67,13 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
         const allInvoices = await Invoice.find(filter).sort({ createdDate: -1 });
         const now = new Date();
         let mapped = allInvoices.map((inv) => {
-            const d = new Date(inv.createdDate);
-            const displayID = `${room.roomCode}-${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${pad2(d.getFullYear() % 100)}`;
+            const displayID = `${room.roomCode}-${formatVNShortDate(new Date(inv.createdDate))}`;
             return {
                 invoiceID: inv._id,
                 displayID,
                 roomCode: room.roomCode,
                 createDate: inv.createdDate,
-                dueDate: inv.dueDate.toISOString().split("T")[0],
+                dueDate: inv.dueDate.toISOString(),
                 totalBill: inv.totalBill,
                 status: inv.status,
                 isOverdue: computeIsOverdue(inv.paymentDate, inv.dueDate, now),
@@ -89,12 +93,7 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
  
         sendSuccess(res, {
             items: data,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                totalPages: Math.ceil(total / limitNum),
-            },
+            pagination: buildPaginationMeta(total, pageNum, limitNum),
         });
 
     } catch (error) {
@@ -133,15 +132,14 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         if (!room) { sendError(res, 404, "Room not found"); return; }
  
         const now = new Date();
-        const d = new Date(invoice.createdDate);
-        const displayID = `${room.roomCode}-${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${pad2(d.getFullYear() % 100)}`;
+        const displayID = `${room.roomCode}-${formatVNShortDate(new Date(invoice.createdDate))}`;
         
         sendSuccess(res, {
             invoiceID: displayID,
             roomCode: room.roomCode,
             createDate: invoice.createdDate,
             paymentDate: invoice.paymentDate ?? null,
-            dueDate: invoice.dueDate.toISOString().split("T")[0],
+            dueDate: invoice.dueDate.toISOString(),
             status: invoice.status,
             isOverdue: computeIsOverdue(invoice.paymentDate, invoice.dueDate, now),
             isRequestLate: invoice.isRequestLate,
@@ -158,5 +156,195 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         });
     } catch (error) {
         next(error)
+    }
+}
+
+// Create PAID request
+// POST /api/user/invoices/:invoiceID/paid-request
+export const submitPaidRequest = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID, startDate, userID } = req.auth!;
+        const { invoiceID } = req.params;
+
+        if (!mongoose.isValidObjectId(invoiceID)) {
+            sendError(res, 400, "Invalid invoiceID");
+            return;
+        }
+
+        const invoice = await Invoice.findById(invoiceID);
+        if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
+
+        // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
+        const consumption = await Consumption.findById(invoice.comsumptionID);
+        if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
+
+        const belongsToCurrentTenancy =
+            consumption.roomID.toString() === roomID &&
+            consumption.trackingTime >= new Date(startDate);
+        if (!belongsToCurrentTenancy) {
+            sendError(res, 403, "You do not have access to this invoice");
+            return;
+        }
+
+        // Invoice PAID không thể tạo PAID Request mới
+        if (invoice.status !== InvoiceStatus.NOT_PAID) {
+            sendError(res, 409, "Invoice is already paid");
+            return;
+        }
+
+        // Một Invoice chỉ có tối đa một PAID Request đang PENDING
+        const existingPaidRequests = await PaidRequest.find({ invoiceID: invoice._id }).select("requestID");
+        if (existingPaidRequests.length > 0) {
+            const requestIds = existingPaidRequests.map((pr) => pr.requestID);
+            const pendingPaidRequest = await RequestModel.findOne({
+                _id: { $in: requestIds },
+                status: RequestStatus.PENDING,
+            });
+            if (pendingPaidRequest) {
+                sendError(res, 409, "A pending paid request already exists for this invoice");
+                return;
+            }
+        }
+
+        const now = new Date();
+        const session = await mongoose.startSession();
+        let request, paidRequest;
+
+        try {
+            session.startTransaction();
+
+            const createdRequest = await RequestModel.create(
+                [{
+                    type: RequestType.PAID,
+                    roomID,
+                    userID,
+                    createDate: now,
+                    status: RequestStatus.PENDING,
+                }],
+                { session }
+            );
+            request = createdRequest[0];
+
+            const createdPaidRequest = await PaidRequest.create(
+                [{
+                    requestID: request._id,
+                    invoiceID: invoice._id,
+                }],
+                { session }
+            );
+            paidRequest = createdPaidRequest[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        sendSuccess(res, {
+            requestID: request._id,
+            invoiceID: paidRequest.invoiceID,
+            type: request.type,
+            createDate: request.createDate.toISOString(),
+            status: request.status,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Create LATE_PAYMENT request
+// POST /api/user/invoices/:invoiceID/late-payment-request
+export const submitLatePaymentRequest = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID, startDate, userID } = req.auth!;
+        const { invoiceID } = req.params;
+
+        if (!mongoose.isValidObjectId(invoiceID)) {
+            sendError(res, 400, "Invalid invoiceID");
+            return;
+        }
+
+        const invoice = await Invoice.findById(invoiceID);
+        if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
+
+        // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
+        const consumption = await Consumption.findById(invoice.comsumptionID);
+        if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
+
+        const belongsToCurrentTenancy =
+            consumption.roomID.toString() === roomID &&
+            consumption.trackingTime >= new Date(startDate);
+        if (!belongsToCurrentTenancy) {
+            sendError(res, 403, "You do not have access to this invoice");
+            return;
+        }
+
+        // Invoice PAID không thể tạo LATE_PAYMENT Request mới
+        if (invoice.status !== InvoiceStatus.NOT_PAID) {
+            sendError(res, 409, "Invoice is already paid");
+            return;
+        }
+
+        // Không tạo Late Payment Request cho invoice đã có PAID request
+        const existingPaidRequest = await PaidRequest.findOne({ invoiceID: invoice._id }).lean();
+        if (existingPaidRequest) {
+            sendError(res, 409, "A paid request already exists for this invoice");
+            return;
+        }
+
+        // Một Invoice chỉ có tối đa một Late Payment Request
+        const existingLatePaymentRequest = await LatePaymentRequest.findOne({ invoiceID: invoice._id }).lean();
+        if (existingLatePaymentRequest) {
+            sendError(res, 409, "A late payment request already exists for this invoice");
+            return;
+        }
+
+        const now = new Date();
+        const session = await mongoose.startSession();
+        let request, latePaymentRequest;
+
+        try {
+            session.startTransaction();
+
+            const createdRequest = await RequestModel.create(
+                [{
+                    type: RequestType.DELAY,
+                    roomID,
+                    userID,
+                    createDate: now,
+                    status: RequestStatus.PENDING,
+                }],
+                { session }
+            );
+            request = createdRequest[0];
+
+            const createdLateRequest = await LatePaymentRequest.create(
+                [{
+                    requestID: request._id,
+                    invoiceID: invoice._id,
+                }],
+                { session }
+            );
+            latePaymentRequest = createdLateRequest[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        sendSuccess(res, {
+            requestID: request._id,
+            invoiceID: latePaymentRequest.invoiceID,
+            type: request.type,
+            createDate: request.createDate.toISOString(),
+            status: request.status,
+        });
+    } catch (error) {
+        next(error);
     }
 }

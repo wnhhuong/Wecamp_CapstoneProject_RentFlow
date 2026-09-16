@@ -9,7 +9,7 @@ import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 import adminRoomRoutes from './routes/admin/room.routes.js';
 import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
 import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
-import approvalRoutes from "./routes/admin/approval.routes.js";
+
 const app = express();
 
 // Connect to MongoDB
@@ -29,17 +29,20 @@ app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-// use route
+// guess route
+app.use(`/api/guess`, guessRouter)
 app.use(`/api/auth`, authRouter)
 
 // user route
 // consumrequest route
-app.use(`/api/user`, consumpRequestRouter)
+app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
-app.use(`/api/user`, userInvoiceRouter)
+app.use(`/api/user/invoices`, userInvoiceRouter)
+app.use(`/api/user/requests`, userRequestRouter)
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 
+app.use(`/api/admin/dashboard`, AdminDashBoardRoutes)
 //Room routes
 app.use(`/api/admin/rooms`, adminRoomRoutes)
     

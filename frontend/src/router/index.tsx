@@ -1,10 +1,14 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter, Navigate } from "react-router";
 
-import App from '@/App'
-import { RoomsPage } from '@/pages/admin/RoomsPage'
-import { RoutePlaceholder } from '@/router/route-placeholder'
-import { RouterErrorPage } from '@/router/router-error-page'
-import { ROUTES } from '@/router/routes'
+import App from "@/App";
+import { ParametersPage } from "@/pages/admin/ParametersPage";
+import { LoginPage } from "@/pages/auth/LoginPage";
+import { RequireAuth } from "@/router/require-auth";
+import { RoomsPage } from "@/pages/admin/RoomsPage";
+import { RoutePlaceholder } from "@/router/route-placeholder";
+import { RouterErrorPage } from "@/router/router-error-page";
+import { ROUTES } from "@/router/routes";
+import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 
 const router = createBrowserRouter([
   {
@@ -28,7 +32,7 @@ const router = createBrowserRouter([
 
       {
         path: ROUTES.auth.login,
-        element: <RoutePlaceholder title="Log in" />,
+        element: <LoginPage />,
       },
       {
         path: ROUTES.auth.firstLoginProfile,
@@ -41,72 +45,140 @@ const router = createBrowserRouter([
 
       {
         path: ROUTES.user.root,
-        element: <Navigate to={ROUTES.user.dashboard} replace />,
+        element: (
+          <RequireAuth role="user">
+            <Navigate to={ROUTES.user.dashboard} replace />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.dashboard,
-        element: <RoutePlaceholder title="Tenant dashboard" />,
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Tenant dashboard" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.electricity,
-        element: <RoutePlaceholder title="Electricity" />,
+        element: (
+          <RequireAuth role="user">
+            <ConsumptionPage />
+          </RequireAuth>
+        ),
       },
       {
-        path: ROUTES.user.invoices,
-        element: <RoutePlaceholder title="Invoices" />,
+        path: ROUTES.user.invoices, 
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Invoices" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.invoiceDetails,
-        element: <RoutePlaceholder title="Invoice details" />,
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Invoice details" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.requests,
-        element: <RoutePlaceholder title="Requests" />,
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Requests" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.tickets,
-        element: <RoutePlaceholder title="Tickets" />,
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Tickets" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.user.profile,
-        element: <RoutePlaceholder title="Profile and lease" />,
+        element: (
+          <RequireAuth role="user">
+            <RoutePlaceholder title="Profile and lease" />
+          </RequireAuth>
+        ),
       },
 
       {
         path: ROUTES.admin.root,
-        element: <Navigate to={ROUTES.admin.dashboard} replace />,
+        element: (
+          <RequireAuth role="admin">
+            <Navigate to={ROUTES.admin.dashboard} replace />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.dashboard,
-        element: <RoutePlaceholder title="Admin dashboard" />,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Admin dashboard" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.rooms,
-        element: <RoomsPage />,
+        element: (
+          <RequireAuth role="admin">
+            <RoomsPage />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.users,
-        element: <RoutePlaceholder title="Users" />,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Users" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.invoices,
-        element: <RoutePlaceholder title="Invoices" />,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Invoices" />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: ROUTES.admin.parameters,
+        element: (
+          <RequireAuth role="admin">
+            <ParametersPage />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.tickets,
-        element: <RoutePlaceholder title="Tickets" />,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Tickets" />
+          </RequireAuth>
+        ),
       },
       {
         path: ROUTES.admin.approvals,
-        element: <RoutePlaceholder title="Approvals" />,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Approvals" />
+          </RequireAuth>
+        ),
       },
 
       {
-        path: '*',
+        path: "*",
         element: <RoutePlaceholder title="Page not found" />,
       },
     ],
   },
-])
+]);
 
-export { router }
+export { router };
