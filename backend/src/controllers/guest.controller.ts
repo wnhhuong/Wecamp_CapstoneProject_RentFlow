@@ -5,6 +5,7 @@ import { sendError, sendSuccess } from "../utils/response.js";
 import { buildPaginationMeta, parsePagination } from "../utils/pagination.js";
 import Room from "../models/Room.js";
 import Area from "../models/Area.js";
+import mongoose from "mongoose";
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -153,10 +154,58 @@ export const getPublicRoom = async (req: Request, res: Response, next: NextFunct
 
 // Get public room details
 // GET /guest/rooms/:roomID
-// export const getPublicRoomDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//     try {
-        
-//     } catch (error) {
-//         next(error)
-//     }
-// }
+export const getPublicRoomDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const {roomID} = req.params;
+        if (!mongoose.isValidObjectId(roomID)) {
+            sendError(res, 400, "Invalid roomID");
+            return;
+        }
+
+        const room = await Room.findById(roomID)
+            .populate<{ areaID: { _id: string; areaName: string } }>("areaID", "areaName");
+        if (!room) {
+            sendError(res, 404, "Room not found");
+            return;
+        }
+
+        const allowedStatuses = [RoomStatus.AVAILABLE_NOW, RoomStatus.AVAILABLE_SOON];
+        if (!allowedStatuses.includes(room.status as RoomStatus)) {
+            sendError(res, 404, "Room not found");
+            return;
+        }
+
+        const area = room.areaID as unknown as { _id: string; areaName: string };
+        const [adminPhone, adminEmail, adminFacebook, adminZalo] = await Promise.all([
+            Parameter.findOne({ name: ParameterName.ADMIN_PHONE }).lean(),
+            Parameter.findOne({ name: ParameterName.ADMIN_EMAIL }).lean(),
+            Parameter.findOne({ name: ParameterName.ADMIN_FACEBOOK }).lean(),
+            Parameter.findOne({ name: ParameterName.ADMIN_ZALO }).lean(),
+        ]);
+
+        const data = {
+            roomID: room._id,
+            roomCode: room.roomCode,
+            areaID: area._id,
+            areaNam: area.areaName,
+            status: room.status,
+            floor: room.floor,
+            maxPeolple: room.maxPeople,
+            roomDetail: room.roomDetail,
+            price: room.price,
+            deposit: room.deposit,
+            availableFrom: room.status === RoomStatus.AVAILABLE_SOON ? room.availableFrom.toISOString() : null,
+            images: room.images,
+            contact: {
+                adminPhone: adminPhone?.value ?? null,
+                adminEmail: adminEmail?.value ?? null,
+                adminFacebook: adminFacebook?.value ?? null,
+                adminZalo: adminZalo?.value ?? null,
+            },
+        }
+        sendSuccess(res, data, 200);
+
+    } catch (error) {
+        next(error)
+    }
+}
