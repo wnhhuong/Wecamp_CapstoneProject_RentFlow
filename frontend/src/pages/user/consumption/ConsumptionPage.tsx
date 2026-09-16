@@ -2,7 +2,7 @@ import { ErrorState } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useConsumptionSubmission } from "@/shared/hooks/useConsumptionSubmission";
+import { useConsumptionSubmission } from "./hooks/useConsumptionSubmission";
 import type { ConsumptionContext } from "@/shared/types/consumption";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDate, getDateKey } from "@/shared/utils/dateFormatter";

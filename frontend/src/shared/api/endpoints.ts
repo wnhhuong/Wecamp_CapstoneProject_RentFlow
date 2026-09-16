@@ -2,6 +2,12 @@
 export const ENDPOINTS = {
   auth: {
     login: '/auth/login',
+
+    firstLogin: {
+      profile: '/auth/first-login/profile',
+      contractPreview: '/auth/first-login/contract-preview',
+      contract: '/auth/first-login/contract',
+    },
   },
 
   guest: {
