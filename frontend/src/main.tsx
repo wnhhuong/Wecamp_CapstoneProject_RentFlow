@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router/dom'
 
 import './index.css'
 import { router } from '@/router'
+import '@/shared/auth/auth-store'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

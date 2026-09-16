@@ -8,7 +8,7 @@ import {
 import type {
   ConsumptionContext,
   ConsumptionRequest,
-} from "../types/consumption";
+} from "@/shared/types/consumption";
 
 export type ConsumptionStep = "capture" | "review" | "sent";
 
