@@ -10,6 +10,7 @@ import PaidRequest from "../../models/PaidRequest.js";
 import RequestModel from "../../models/Request.js";
 import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js";
 import { formatVNShortDate } from "../../utils/dateFormat.js";
+import LatePaymentRequest from "../../models/LatePaymentRequest.js";
 
 const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
     if (!paymentDate) return now > dueDate;
@@ -244,6 +245,101 @@ export const submitPaidRequest = async (req: UserAuthRequest, res: Response, nex
         sendSuccess(res, {
             requestID: request._id,
             invoiceID: paidRequest.invoiceID,
+            type: request.type,
+            createDate: request.createDate.toISOString(),
+            status: request.status,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Create LATE_PAYMENT request
+// POST /api/user/invoices/:invoiceID/late-payment-request
+export const submitLatePaymentRequest = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID, startDate, userID } = req.auth!;
+        const { invoiceID } = req.params;
+
+        if (!mongoose.isValidObjectId(invoiceID)) {
+            sendError(res, 400, "Invalid invoiceID");
+            return;
+        }
+
+        const invoice = await Invoice.findById(invoiceID);
+        if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
+
+        // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
+        const consumption = await Consumption.findById(invoice.comsumptionID);
+        if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
+
+        const belongsToCurrentTenancy =
+            consumption.roomID.toString() === roomID &&
+            consumption.trackingTime >= new Date(startDate);
+        if (!belongsToCurrentTenancy) {
+            sendError(res, 403, "You do not have access to this invoice");
+            return;
+        }
+
+        // Invoice PAID không thể tạo LATE_PAYMENT Request mới
+        if (invoice.status !== InvoiceStatus.NOT_PAID) {
+            sendError(res, 409, "Invoice is already paid");
+            return;
+        }
+
+        // Không tạo Late Payment Request cho invoice đã có PAID request
+        const existingPaidRequest = await PaidRequest.findOne({ invoiceID: invoice._id }).lean();
+        if (existingPaidRequest) {
+            sendError(res, 409, "A paid request already exists for this invoice");
+            return;
+        }
+
+        // Một Invoice chỉ có tối đa một Late Payment Request
+        const existingLatePaymentRequest = await LatePaymentRequest.findOne({ invoiceID: invoice._id }).lean();
+        if (existingLatePaymentRequest) {
+            sendError(res, 409, "A late payment request already exists for this invoice");
+            return;
+        }
+
+        const now = new Date();
+        const session = await mongoose.startSession();
+        let request, latePaymentRequest;
+
+        try {
+            session.startTransaction();
+
+            const createdRequest = await RequestModel.create(
+                [{
+                    type: RequestType.DELAY,
+                    roomID,
+                    userID,
+                    createDate: now,
+                    status: RequestStatus.PENDING,
+                }],
+                { session }
+            );
+            request = createdRequest[0];
+
+            const createdLateRequest = await LatePaymentRequest.create(
+                [{
+                    requestID: request._id,
+                    invoiceID: invoice._id,
+                }],
+                { session }
+            );
+            latePaymentRequest = createdLateRequest[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        sendSuccess(res, {
+            requestID: request._id,
+            invoiceID: latePaymentRequest.invoiceID,
             type: request.type,
             createDate: request.createDate.toISOString(),
             status: request.status,
