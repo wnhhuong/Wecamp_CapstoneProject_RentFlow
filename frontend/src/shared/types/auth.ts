@@ -23,4 +23,6 @@ export interface AuthSession {
   onboardingToken: string | null
   requireFirstLogin: boolean
   account: AuthAccount
+  /** From the USER document a tenant login returns; null for admins. */
+  fullName: string | null
 }

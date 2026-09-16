@@ -48,7 +48,7 @@ function Sidebar({
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-[13.5px] font-medium transition-colors',
+                    'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-ink text-page'
                       : 'text-body hover:bg-ink/[0.07] hover:text-ink',
@@ -80,17 +80,25 @@ function Sidebar({
       </nav>
 
       {userName ? (
-        <div className="mt-auto border-t border-[#cfc7b6] px-2.5 pt-4">
-          <p className="text-xs text-muted-foreground">Signed in</p>
-          <p className="mt-1.5 text-sm font-medium text-foreground">
-            {userName}
-          </p>
+        <div className="mt-auto flex items-center gap-2.5 border-t border-[#cfc7b6] px-2.5 pt-4">
+          <span
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-page"
+          >
+            {userName.charAt(0).toUpperCase()}
+          </span>
 
-          {userDescription ? (
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              {userDescription}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">
+              {userName}
             </p>
-          ) : null}
+
+            {userDescription ? (
+              <p className="text-sm leading-5 text-muted-foreground">
+                {userDescription}
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </aside>

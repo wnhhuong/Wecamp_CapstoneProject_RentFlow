@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { MenuIcon } from '@/components/ui/icons'
+import { LogoutIcon, MenuIcon } from '@/components/ui/icons'
 import { cn } from '@/shared/utils/cn'
 
 type HeaderVariant = 'guest' | 'auth' | 'signed-in'
@@ -13,7 +13,6 @@ interface HeaderProps extends ComponentProps<'header'> {
   userName?: string
   userInitial?: string
   onLogin?: () => void
-  onBackToRooms?: () => void
   onLogout?: () => void
   onMenuClick?: () => void
 }
@@ -25,7 +24,6 @@ function Header({
   userName,
   userInitial,
   onLogin,
-  onBackToRooms,
   onLogout,
   onMenuClick,
   className,
@@ -54,7 +52,7 @@ function Header({
         ) : null}
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-[7px] bg-clay text-[13px] font-semibold text-white">
+          <span className="flex size-7 items-center justify-center rounded-[7px] bg-clay text-[18px] font-semibold text-white">
             R
           </span>
           <span className="text-lg font-semibold tracking-[-0.01em]">
@@ -78,21 +76,9 @@ function Header({
         </Button>
       ) : null}
 
-      {variant === 'auth' ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
-          onClick={onBackToRooms}
-        >
-          ← Back to rooms
-        </Button>
-      ) : null}
-
       {variant === 'signed-in' ? (
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-page text-[13px] font-semibold text-ink">
+          <span className="flex size-9 items-center justify-center rounded-full bg-page text-[18px] font-semibold text-ink">
             {userInitial ?? userName?.charAt(0).toUpperCase() ?? 'U'}
           </span>
           {userName ? (
@@ -102,12 +88,14 @@ function Header({
           ) : null}
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
+            variant="secondary"
+            size="icon-sm"
+            aria-label="Log out"
+            title="Log out"
+            className="border-2 border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
             onClick={onLogout}
           >
-            Log out
+            <LogoutIcon className="size-4" />
           </Button>
         </div>
       ) : null}

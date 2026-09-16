@@ -1,38 +1,37 @@
-import { Link } from 'react-router'
+import { Link } from "react-router";
 
-import { StatusBadge } from '@/components/status'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Spinner } from '@/components/ui/spinner'
-import { ROUTES } from '@/router/routes'
-import type { ConsumptionRequest } from '@/shared/types/consumption'
+import { StatusBadge } from "@/components/status";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
+import { ROUTES } from "@/router/routes";
+import type { ConsumptionRequest } from "@/shared/types/consumption";
+import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 interface SentStepProps {
-  result: ConsumptionRequest
-  onRefresh: () => void
-  refreshing: boolean
+  result: ConsumptionRequest;
+  onRefresh: () => void;
+  refreshing: boolean;
 }
 
 export function SentStep({ result, onRefresh, refreshing }: SentStepProps) {
-  const approved = result.status === 'approved'
-  const cost = new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(result.correspondingCost)
+  const approved = result.status === "approved";
+  const cost = formatCurrency(result.correspondingCost);
 
   return (
     <Card>
       <CardContent className="space-y-5">
         <div className="relative min-h-52" aria-busy={refreshing}>
           <div
-            className={`space-y-5 ${refreshing ? 'invisible' : ''}`}
+            className={`space-y-5 ${refreshing ? "invisible" : ""}`}
             aria-hidden={refreshing}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-xl font-semibold">
-                {approved ? 'Reading approved by owner' : 'Reading sent for approval'}
+                {approved
+                  ? "Reading approved by owner"
+                  : "Reading sent for approval"}
               </h2>
               <StatusBadge domain="request" status={result.status} />
             </div>
@@ -51,8 +50,8 @@ export function SentStep({ result, onRefresh, refreshing }: SentStepProps) {
 
             <p className="text-sm text-muted-foreground">
               {approved
-                ? 'Your owner has approved this meter reading.'
-                : 'Your reading is waiting for the owner’s approval.'}
+                ? "Your owner has approved this meter reading."
+                : "Your reading is waiting for the owner’s approval."}
             </p>
           </div>
 
@@ -82,5 +81,5 @@ export function SentStep({ result, onRefresh, refreshing }: SentStepProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,4 +1,5 @@
 import { ErrorState } from "@/components/feedback";
+import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,7 +67,7 @@ export default function ConsumptionPage() {
     : "";
 
   return (
-    <div className="max-w-3xl space-y-6 p-4 md:p-8">
+    <PageContainer className="gap-6">
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">
           Electricity reading
@@ -210,6 +211,6 @@ export default function ConsumptionPage() {
           Could not refresh the reading status. Please try again.
         </p>
       )}
-    </div>
+    </PageContainer>
   );
 }

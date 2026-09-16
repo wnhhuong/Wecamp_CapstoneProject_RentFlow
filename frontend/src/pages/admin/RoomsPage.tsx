@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { PageContainer } from "@/components/layout";
 import { StatusBadge } from "@/components/status";
 import type { RoomStatus } from "@/shared/types/status";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminRooms } from "@/shared/api/admin/rooms.api";
 import type { AdminRoom } from "@/shared/types/admin/room";
+import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 import { AddRoomDialog } from "./rooms/AddRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
@@ -126,7 +128,7 @@ function RoomsPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
+    <PageContainer>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground">
@@ -379,7 +381,7 @@ function RoomsPage() {
         }}
         onAccountPrepared={handleAccountPrepared}
       />
-    </section>
+    </PageContainer>
   );
 }
 
@@ -416,13 +418,5 @@ const electricityLabels = {
   late: "Late",
   not_applicable: "Not applicable",
 } as const;
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export { RoomsPage };
