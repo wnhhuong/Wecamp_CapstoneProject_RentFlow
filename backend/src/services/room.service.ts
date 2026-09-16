@@ -9,6 +9,7 @@ import Invoice from '../models/Invoice.js';
 import Consumption from '../models/Consumption.js';
 import Parameter from '../models/Parameter.js';
 import { AccountRole, AccountStatus, RoomStatus, ParameterName, ContractStatus, InvoiceStatus,} from '../models/enums.js';
+import {parsePagination, buildPaginationMeta} from '../utils/pagination.js';
 
 export interface ICreateRoomDTO {
   areaID: string;
@@ -118,7 +119,7 @@ export class RoomService {
         deposit: room.deposit,
         status: room.status,
         availableFrom: room.availableFrom
-          ? new Date(room.availableFrom).toISOString().split('T')[0]
+          ? new Date(room.availableFrom).toISOString()
           : null,
         images: room.images,
       },
@@ -127,9 +128,14 @@ export class RoomService {
   }
   
   public static async getAdminRooms(query: IGetRoomsQuery) {
-    const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(query.limit) || 12));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(
+      query.page,
+      query.limit,
+      {
+        defaultLimit: 12,
+        maxLimit: 100,
+      },
+    );
 
     const filter: Record<string, any> = {};
 
@@ -291,7 +297,7 @@ export class RoomService {
     const countPipeline = [...pipeline, { $count: 'total' }];
     const countResult = await Room.aggregate(countPipeline);
     const totalItems = countResult.length > 0 ? countResult[0].total : 0;
-    const totalPages = Math.ceil(totalItems / limit) || 1;
+    const pagination = buildPaginationMeta(totalItems, page, limit);
 
     pipeline.push(
       { $sort: { roomCode: 1 } },
@@ -359,7 +365,7 @@ export class RoomService {
         maxPeople: r.maxPeople,
         status: r.status,
         availableFrom: r.availableFrom
-          ? new Date(r.availableFrom).toISOString().split('T')[0]
+          ? new Date(r.availableFrom).toISOString()
           : null,
         images: r.images || [],
         account: r.roomAccount
@@ -372,7 +378,7 @@ export class RoomService {
         electricityState,
         tenantName: r.mainTenant ? r.mainTenant.fullName : null,
         contractExpireDate: r.activeContract?.expireDate
-          ? new Date(r.activeContract.expireDate).toISOString().split('T')[0]
+          ? new Date(r.activeContract.expireDate).toISOString()
           : null,
         stillOwed: r.stillOwed || 0,
       };
@@ -381,10 +387,10 @@ export class RoomService {
     return {
       items,
       pagination: {
-        page,
-        limit,
-        totalItems,
-        totalPages,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalItems: pagination.total,
+        totalPages: pagination.totalPages,
       },
     };
   }
@@ -439,7 +445,7 @@ export class RoomService {
         deposit: room.deposit,
         status: room.status,
         availableFrom: room.availableFrom
-          ? new Date(room.availableFrom).toISOString().split('T')[0]
+          ? new Date(room.availableFrom).toISOString()
           : null,
         images: room.images || [],
       },
@@ -455,10 +461,10 @@ export class RoomService {
             userID: String(activeContract.userID),
             roomID: String(activeContract.roomID),
             startDate: activeContract.startDate
-              ? new Date(activeContract.startDate).toISOString().split('T')[0]
+              ? new Date(activeContract.startDate).toISOString()
               : null,
             expireDate: activeContract.expireDate
-              ? new Date(activeContract.expireDate).toISOString().split('T')[0]
+              ? new Date(activeContract.expireDate).toISOString()
               : null,
             deposit: (activeContract as any).propertyDeposit ?? (activeContract as any).deposit ?? room.deposit,
             rent: (activeContract as any).rent ?? (activeContract as any).rentPrice ?? room.price,
@@ -473,7 +479,7 @@ export class RoomService {
             fullName: tenant.fullName,
             phoneNumber: tenant.phoneNumber,
             identityNo: tenant.identityNo,
-            dob: tenant.DoB ? new Date(tenant.DoB).toISOString().split('T')[0] : null,
+            dob: tenant.DoB ? new Date(tenant.DoB).toISOString() : null,
             sex: tenant.sex,
             nationality: tenant.nationality,
             por: tenant.PoR,
@@ -486,7 +492,7 @@ export class RoomService {
             role: account.role,
             status: account.status,
             startDate: account.startDate
-              ? new Date(account.startDate).toISOString().split('T')[0]
+              ? new Date(account.startDate).toISOString()
               : null,
           }
         : null,

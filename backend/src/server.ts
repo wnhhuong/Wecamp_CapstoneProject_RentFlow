@@ -10,7 +10,7 @@ import adminRoomRoutes from './routes/admin/room.routes.js';
 import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
 import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
 import guessRouter from "./routes/guest.routes.js";
-
+import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
 const app = express();
 
 // Connect to MongoDB
@@ -42,6 +42,7 @@ app.use(`/api/user/invoices`, userInvoiceRouter)
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 
+app.use(`/api/admin/dashboard`, AdminDashBoardRoutes)
 //Room routes
 app.use(`/api/admin/rooms`, adminRoomRoutes)
 
