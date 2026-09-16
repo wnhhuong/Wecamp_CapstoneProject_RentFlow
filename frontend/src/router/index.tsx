@@ -5,6 +5,7 @@ import { RoomsPage } from '@/pages/admin/RoomsPage'
 import { RoutePlaceholder } from '@/router/route-placeholder'
 import { RouterErrorPage } from '@/router/router-error-page'
 import { ROUTES } from '@/router/routes'
+import ConsumptionPage from '@/pages/user/consumption/ConsumptionPage'
 
 const router = createBrowserRouter([
   {
@@ -49,7 +50,7 @@ const router = createBrowserRouter([
       },
       {
         path: ROUTES.user.electricity,
-        element: <RoutePlaceholder title="Electricity" />,
+        Component: ConsumptionPage,
       },
       {
         path: ROUTES.user.invoices,
