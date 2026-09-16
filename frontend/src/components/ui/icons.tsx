@@ -15,6 +15,27 @@ function CloseIcon(props: IconProps) {
   )
 }
 
+function LogoutIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M15 5V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 12h10m0 0-3-3m3 3-3 3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function MenuIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -177,6 +198,7 @@ export {
   EyeIcon,
   EyeOffIcon,
   KeyIcon,
+  LogoutIcon,
   MenuIcon,
   PlusIcon,
   RefreshIcon,

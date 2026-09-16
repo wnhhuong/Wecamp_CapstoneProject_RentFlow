@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { EmptyState, ErrorState, PageLoading } from '@/components/feedback'
+import { PageContainer } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import { CloseIcon } from '@/components/ui/icons'
 import { Input } from '@/components/ui/input'
@@ -261,7 +262,7 @@ function ParametersPage() {
   )
 
   return (
-    <section className="mx-auto flex w-full max-w-[1120px] flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
+    <PageContainer>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground">
@@ -351,7 +352,7 @@ function ParametersPage() {
           />
         </>
       ) : null}
-    </section>
+    </PageContainer>
   )
 }
 

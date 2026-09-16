@@ -25,7 +25,14 @@ export function signIn(result: LoginResult) {
     onboardingToken: result.onboardingToken,
     requireFirstLogin: result.requireFirstLogin,
     account: result.account,
+    fullName: readFullName(result.user),
   })
+}
+
+function readFullName(user: LoginResult['user']): string | null {
+  const fullName = user?.fullName
+
+  return typeof fullName === 'string' && fullName.trim() ? fullName : null
 }
 
 export function signOut() {
@@ -84,6 +91,8 @@ function parseSession(value: unknown): AuthSession | null {
         ? candidate.onboardingToken
         : null,
     requireFirstLogin: candidate.requireFirstLogin === true,
+    fullName:
+      typeof candidate.fullName === 'string' ? candidate.fullName : null,
     account: {
       accountID: account.accountID,
       roomID: typeof account.roomID === 'string' ? account.roomID : null,

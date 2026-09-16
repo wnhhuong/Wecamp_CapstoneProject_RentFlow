@@ -91,7 +91,7 @@ const adminNavigation: SidebarNavItem[] = [
 ];
 
 function App() {
-  const { account, signOut } = useAuth();
+  const { account, session, signOut } = useAuth();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
   const location = useLocation();
@@ -113,15 +113,17 @@ function App() {
 
   const navigationItems = isAdminRoute ? adminNavigation : userNavigation;
 
-  const userName = account?.username ?? "";
+  // A tenant's username is their room code (the backend keeps the two in
+  // sync), so it is the useful label; roomID is an opaque database id.
+  const userName = session?.fullName ?? account?.username ?? "";
   const userDescription = isAdminRoute
-    ? "Owner · full workspace access"
-    : account?.roomID
-      ? `Room ${account.roomID} account`
-      : "Tenant account";
+    ? "Property owner"
+    : account?.username
+      ? `Room ${account.username}`
+      : "Tenant";
 
   return (
-    <div className="flex min-h-svh flex-col bg-page">
+    <div className="flex h-svh flex-col overflow-hidden bg-page">
       <Header
         variant={headerVariant}
         userName={isSignedInRoute ? userName : undefined}
@@ -135,9 +137,9 @@ function App() {
         }
       />
 
-      <div className="flex flex-1 items-stretch">
+      <div className="flex min-h-0 flex-1 items-stretch">
         {isSignedInRoute ? (
-          <div className="hidden w-[214px] shrink-0 md:block">
+          <div className="hidden w-[280px] shrink-0 md:block">
             <Sidebar
               title={isAdminRoute ? "Owner" : "Tenant"}
               items={navigationItems}
@@ -147,7 +149,7 @@ function App() {
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1" aria-label="Page content">
+        <main className="min-w-0 flex-1 overflow-y-auto" aria-label="Page content">
           <Outlet />
         </main>
       </div>
