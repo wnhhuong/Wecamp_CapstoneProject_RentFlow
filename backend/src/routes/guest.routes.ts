@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { getParameters, getPublicRoom, getPublicRoomDetails } from "../controllers/guest.controller.js";
 
-const guessRouter = Router();
+const guestRouter = Router();
 
-guessRouter.get("/parameters", getParameters)
-guessRouter.get("/rooms", getPublicRoom)
-guessRouter.get("/rooms/:roomID", getPublicRoomDetails)
+guestRouter.get("/parameters", getParameters)
+guestRouter.get("/rooms", getPublicRoom)
+guestRouter.get("/rooms/:roomID", getPublicRoomDetails)
 
-export default guessRouter;
+export default guestRouter;
