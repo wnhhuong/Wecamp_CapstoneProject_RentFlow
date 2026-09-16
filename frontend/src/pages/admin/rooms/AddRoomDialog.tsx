@@ -26,6 +26,10 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/shared/utils/cn";
+import {
+  formatAmountInput,
+  toAmountDigits,
+} from "@/shared/utils/currencyFormatter";
 import { createAdminRoom } from "@/shared/api/admin/rooms.api";
 import type {
   AdminArea,
@@ -390,12 +394,12 @@ function AddRoomDialog({
 
             <FormField label="Monthly rent (VND)" error={errors.price} required>
               <Input
-                type="number"
-                min="1"
-                step="1000"
-                value={values.price}
-                onChange={(event) => updateValue("price", event.target.value)}
-                placeholder="3,200,000"
+                inputMode="numeric"
+                value={formatAmountInput(values.price)}
+                onChange={(event) =>
+                  updateValue("price", toAmountDigits(event.target.value))
+                }
+                placeholder="3.200.000"
                 aria-invalid={Boolean(errors.price)}
                 aria-label="Monthly rent"
               />
@@ -403,12 +407,12 @@ function AddRoomDialog({
 
             <FormField label="Deposit (VND)" error={errors.deposit} required>
               <Input
-                type="number"
-                min="1"
-                step="1000"
-                value={values.deposit}
-                onChange={(event) => updateValue("deposit", event.target.value)}
-                placeholder="3,200,000"
+                inputMode="numeric"
+                value={formatAmountInput(values.deposit)}
+                onChange={(event) =>
+                  updateValue("deposit", toAmountDigits(event.target.value))
+                }
+                placeholder="3.200.000"
                 aria-invalid={Boolean(errors.deposit)}
                 aria-label="Deposit"
               />

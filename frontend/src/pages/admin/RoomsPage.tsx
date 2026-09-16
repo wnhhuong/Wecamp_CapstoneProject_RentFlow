@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminRooms } from "@/shared/api/admin/rooms.api";
 import type { AdminRoom } from "@/shared/types/admin/room";
+import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 import { AddRoomDialog } from "./rooms/AddRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
@@ -417,13 +418,5 @@ const electricityLabels = {
   late: "Late",
   not_applicable: "Not applicable",
 } as const;
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export { RoomsPage };

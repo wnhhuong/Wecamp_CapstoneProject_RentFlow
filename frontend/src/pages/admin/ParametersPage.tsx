@@ -1,219 +1,234 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from "react";
 
-import { EmptyState, ErrorState, PageLoading } from '@/components/feedback'
-import { PageContainer } from '@/components/layout'
-import { Button } from '@/components/ui/button'
-import { CloseIcon } from '@/components/ui/icons'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
+import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { PageContainer } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { CloseIcon } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   getAdminParameters,
   updateAdminParameters,
-} from '@/shared/api/admin/parameters.api'
+} from "@/shared/api/admin/parameters.api";
+import {
+  formatAmountInput,
+  toAmountDigits,
+} from "@/shared/utils/currencyFormatter";
 import type {
   AdminParameter,
   ParameterName,
-} from '@/shared/types/admin/parameter'
+} from "@/shared/types/admin/parameter";
 
-type FormValues = Record<ParameterName, string>
-type FormErrors = Partial<Record<ParameterName, string>>
+type FormValues = Record<ParameterName, string>;
+type FormErrors = Partial<Record<ParameterName, string>>;
 
 interface ParameterConfig {
-  name: ParameterName
-  label: string
-  description: string
-  unit: string
-  min: number
-  max?: number
-  step: number
-  integer?: boolean
-  group: 'fees' | 'cycle'
+  name: ParameterName;
+  label: string;
+  description: string;
+  unit: string;
+  min: number;
+  max?: number;
+  step: number;
+  integer?: boolean;
+  group: "fees" | "cycle";
 }
 
 const parameterConfigs: ParameterConfig[] = [
   {
-    name: 'electricityUnitPrice',
-    label: 'Electricity unit price',
-    description: 'Applied to electricity consumption in new invoices.',
-    unit: 'VND / kWh',
+    name: "electricityUnitPrice",
+    label: "Electricity unit price",
+    description: "Applied to electricity consumption in new invoices.",
+    unit: "VND / kWh",
     min: 0,
     step: 100,
-    group: 'fees',
+    group: "fees",
   },
   {
-    name: 'waterPrice',
-    label: 'Water fee',
-    description: 'Default water charge used when creating new invoices.',
-    unit: 'VND',
+    name: "waterPrice",
+    label: "Water fee",
+    description: "Default water charge used when creating new invoices.",
+    unit: "VND",
     min: 0,
     step: 1000,
-    group: 'fees',
+    group: "fees",
   },
   {
-    name: 'wifiFee',
-    label: 'WiFi fee',
-    description: 'Default WiFi charge used when creating new invoices.',
-    unit: 'VND',
+    name: "wifiFee",
+    label: "WiFi fee",
+    description: "Default WiFi charge used when creating new invoices.",
+    unit: "VND",
     min: 0,
     step: 1000,
-    group: 'fees',
+    group: "fees",
   },
   {
-    name: 'parkingFee',
-    label: 'Parking fee',
-    description: 'Default parking charge used when creating new invoices.',
-    unit: 'VND',
+    name: "parkingFee",
+    label: "Parking fee",
+    description: "Default parking charge used when creating new invoices.",
+    unit: "VND",
     min: 0,
     step: 1000,
-    group: 'fees',
+    group: "fees",
   },
   {
-    name: 'otherFees',
-    label: 'Other fee',
-    description: 'Default extra charge used when creating new invoices.',
-    unit: 'VND',
+    name: "otherFees",
+    label: "Other fee",
+    description: "Default extra charge used when creating new invoices.",
+    unit: "VND",
     min: 0,
     step: 1000,
-    group: 'fees',
+    group: "fees",
   },
   {
-    name: 'meterReadingStartDay',
-    label: 'Meter reading start date',
-    description: 'Day of month when meter readings can begin.',
-    unit: 'Day',
+    name: "meterReadingStartDay",
+    label: "Meter reading start date",
+    description: "Day of month when meter readings can begin.",
+    unit: "Day",
     min: 1,
     max: 31,
     step: 1,
     integer: true,
-    group: 'cycle',
+    group: "cycle",
   },
   {
-    name: 'meterReadingEndDay',
-    label: 'Meter reading end date',
-    description: 'Day of month when meter readings should end.',
-    unit: 'Day',
+    name: "meterReadingEndDay",
+    label: "Meter reading end date",
+    description: "Day of month when meter readings should end.",
+    unit: "Day",
     min: 1,
     max: 31,
     step: 1,
     integer: true,
-    group: 'cycle',
+    group: "cycle",
   },
   {
-    name: 'paymentDueDay',
-    label: 'Payment due date',
-    description: 'Day of month used as the default due date for new invoices.',
-    unit: 'Day',
+    name: "paymentDueDay",
+    label: "Payment due date",
+    description: "Day of month used as the default due date for new invoices.",
+    unit: "Day",
     min: 1,
     max: 31,
     step: 1,
     integer: true,
-    group: 'cycle',
+    group: "cycle",
   },
   {
-    name: 'yearToExtend',
-    label: 'Contract duration',
-    description: 'Default duration used for newly created contracts.',
-    unit: 'Year',
+    name: "yearToExtend",
+    label: "Contract duration",
+    description: "Default duration used for newly created contracts.",
+    unit: "Year",
     min: 1,
     step: 1,
     integer: true,
-    group: 'cycle',
+    group: "cycle",
   },
-]
+];
 
 function ParametersPage() {
-  const [parameters, setParameters] = useState<AdminParameter[]>([])
-  const [values, setValues] = useState<Partial<FormValues>>({})
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [loadError, setLoadError] = useState('')
-  const [saveError, setSaveError] = useState('')
-  const [saveMessage, setSaveMessage] = useState('')
+  const [parameters, setParameters] = useState<AdminParameter[]>([]);
+  const [values, setValues] = useState<Partial<FormValues>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
 
   async function loadParameters() {
-    setIsLoading(true)
-    setLoadError('')
+    setIsLoading(true);
+    setLoadError("");
 
     try {
-      const loadedParameters = await getAdminParameters()
-      setParameters(loadedParameters)
-      setValues(toFormValues(loadedParameters))
-      setErrors({})
-      setSaveError('')
-      setSaveMessage('')
+      const loadedParameters = await getAdminParameters();
+      setParameters(loadedParameters);
+      setValues(toFormValues(loadedParameters));
+      setErrors({});
+      setSaveError("");
+      setSaveMessage("");
     } catch {
-      setLoadError('The billing parameters could not be loaded.')
+      setLoadError("The billing parameters could not be loaded.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    let isActive = true
+    let isActive = true;
 
     getAdminParameters()
       .then((loadedParameters) => {
-        if (!isActive) return
-        setParameters(loadedParameters)
-        setValues(toFormValues(loadedParameters))
+        if (!isActive) return;
+        setParameters(loadedParameters);
+        setValues(toFormValues(loadedParameters));
       })
       .catch(() => {
-        if (isActive) setLoadError('The billing parameters could not be loaded.')
+        if (isActive)
+          setLoadError("The billing parameters could not be loaded.");
       })
       .finally(() => {
-        if (isActive) setIsLoading(false)
-      })
+        if (isActive) setIsLoading(false);
+      });
 
     return () => {
-      isActive = false
-    }
-  }, [])
+      isActive = false;
+    };
+  }, []);
 
   const parameterByName = useMemo(() => {
-    return new Map(parameters.map((parameter) => [parameter.name, parameter]))
-  }, [parameters])
+    return new Map(parameters.map((parameter) => [parameter.name, parameter]));
+  }, [parameters]);
 
   const changedParameters = useMemo(() => {
     return parameterConfigs.filter((config) => {
-      const parameter = parameterByName.get(config.name)
-      return parameter && values[config.name] !== parameter.value
-    })
-  }, [parameterByName, values])
+      const parameter = parameterByName.get(config.name);
+      return parameter && values[config.name] !== parameter.value;
+    });
+  }, [parameterByName, values]);
 
   function updateValue(name: ParameterName, value: string) {
-    setValues((current) => ({ ...current, [name]: value }))
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setSaveError('')
-    setSaveMessage('')
+    setValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: undefined }));
+    setSaveError("");
+    setSaveMessage("");
   }
 
   async function handleSave() {
-    const nextErrors = validateParameters(values)
+    const nextErrors = validateParameters(values);
 
     if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors)
-      setSaveError('Please fix the highlighted parameters before saving.')
-      return
+      setErrors(nextErrors);
+      setSaveError("Please fix the highlighted parameters before saving.");
+      return;
     }
 
     const updates = changedParameters
       .map((config) => {
-        const parameter = parameterByName.get(config.name)
+        const parameter = parameterByName.get(config.name);
         return parameter
-          ? { parameterID: parameter.id, name: config.name, value: values[config.name] ?? '' }
-          : null
+          ? {
+              parameterID: parameter.id,
+              name: config.name,
+              value: values[config.name] ?? "",
+            }
+          : null;
       })
-      .filter((update): update is { parameterID: string; name: ParameterName; value: string } =>
-        update !== null,
-      )
+      .filter(
+        (
+          update,
+        ): update is {
+          parameterID: string;
+          name: ParameterName;
+          value: string;
+        } => update !== null,
+      );
 
-    if (updates.length === 0) return
+    if (updates.length === 0) return;
 
-    setIsSaving(true)
-    setSaveError('')
-    setSaveMessage('')
+    setIsSaving(true);
+    setSaveError("");
+    setSaveMessage("");
 
     try {
       const updatedParameters = await updateAdminParameters(
@@ -221,45 +236,47 @@ function ParametersPage() {
           parameterID: update.parameterID,
           value: update.value.trim(),
         })),
-      )
+      );
 
       setParameters((current) =>
         current.map((parameter) => {
           const updatedParameter = updatedParameters.find(
             (candidate) => candidate.name === parameter.name,
-          )
+          );
 
-          return updatedParameter ?? parameter
+          return updatedParameter ?? parameter;
         }),
-      )
+      );
       setValues((current) => ({
         ...current,
         ...toFormValues(updatedParameters),
-      }))
-      setErrors({})
-      setSaveMessage('Billing parameters were saved successfully.')
+      }));
+      setErrors({});
+      setSaveMessage("Billing parameters were saved successfully.");
     } catch (error) {
       setSaveError(
         error instanceof Error
           ? error.message
-          : 'The billing parameters could not be saved.',
-      )
+          : "The billing parameters could not be saved.",
+      );
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
 
   function handleReset() {
-    setValues(toFormValues(parameters))
-    setErrors({})
-    setSaveError('')
-    setSaveMessage('')
+    setValues(toFormValues(parameters));
+    setErrors({});
+    setSaveError("");
+    setSaveMessage("");
   }
 
-  const feeConfigs = parameterConfigs.filter((config) => config.group === 'fees')
+  const feeConfigs = parameterConfigs.filter(
+    (config) => config.group === "fees",
+  );
   const cycleConfigs = parameterConfigs.filter(
-    (config) => config.group === 'cycle',
-  )
+    (config) => config.group === "cycle",
+  );
 
   return (
     <PageContainer>
@@ -289,19 +306,19 @@ function ParametersPage() {
             disabled={isSaving || changedParameters.length === 0}
           >
             {isSaving ? <Spinner /> : null}
-            {isSaving ? 'Saving...' : 'Save changes'}
+            {isSaving ? "Saving..." : "Save changes"}
           </Button>
         </div>
       </div>
 
       {saveMessage ? (
-        <Alert tone="success" onDismiss={() => setSaveMessage('')}>
+        <Alert tone="success" onDismiss={() => setSaveMessage("")}>
           {saveMessage}
         </Alert>
       ) : null}
 
       {saveError ? (
-        <Alert tone="danger" onDismiss={() => setSaveError('')}>
+        <Alert tone="danger" onDismiss={() => setSaveError("")}>
           {saveError}
         </Alert>
       ) : null}
@@ -353,7 +370,7 @@ function ParametersPage() {
         </>
       ) : null}
     </PageContainer>
-  )
+  );
 }
 
 function ParameterGroup({
@@ -366,14 +383,14 @@ function ParameterGroup({
   disabled,
   onChange,
 }: {
-  title: string
-  description: string
-  configs: ParameterConfig[]
-  values: Partial<FormValues>
-  errors: FormErrors
-  parameterByName: Map<ParameterName, AdminParameter>
-  disabled: boolean
-  onChange: (name: ParameterName, value: string) => void
+  title: string;
+  description: string;
+  configs: ParameterConfig[];
+  values: Partial<FormValues>;
+  errors: FormErrors;
+  parameterByName: Map<ParameterName, AdminParameter>;
+  disabled: boolean;
+  onChange: (name: ParameterName, value: string) => void;
 }) {
   return (
     <div className="rounded-lg border border-hairline bg-surface">
@@ -384,9 +401,12 @@ function ParameterGroup({
 
       <div className="grid gap-0 divide-y divide-hairline">
         {configs.map((config) => {
-          const parameter = parameterByName.get(config.name)
-          const value = values[config.name] ?? ''
-          const error = errors[config.name]
+          const parameter = parameterByName.get(config.name);
+          const value = values[config.name] ?? "";
+          const error = errors[config.name];
+          // Grouping assumes whole đồng; if the backend ever stores a
+          // decimal, leave that field as a plain number input.
+          const isMoney = config.unit.startsWith("VND") && !value.includes(".");
 
           return (
             <div
@@ -404,15 +424,21 @@ function ParameterGroup({
                 <div className="flex items-center gap-2">
                   <Input
                     id={config.name}
-                    type="number"
-                    min={config.min}
-                    max={config.max}
-                    step={config.step}
-                    value={value}
+                    type={isMoney ? "text" : "number"}
+                    inputMode="numeric"
+                    min={isMoney ? undefined : config.min}
+                    max={isMoney ? undefined : config.max}
+                    step={isMoney ? undefined : config.step}
+                    value={isMoney ? formatAmountInput(value) : value}
                     disabled={disabled || !parameter}
                     aria-invalid={Boolean(error)}
                     onChange={(event) =>
-                      onChange(config.name, event.target.value)
+                      onChange(
+                        config.name,
+                        isMoney
+                          ? toAmountDigits(event.target.value)
+                          : event.target.value,
+                      )
                     }
                     className="bg-white"
                   />
@@ -430,11 +456,11 @@ function ParameterGroup({
                 ) : null}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 function Alert({
@@ -442,18 +468,18 @@ function Alert({
   children,
   onDismiss,
 }: {
-  tone: 'success' | 'danger'
-  children: React.ReactNode
-  onDismiss: () => void
+  tone: "success" | "danger";
+  children: React.ReactNode;
+  onDismiss: () => void;
 }) {
   const className =
-    tone === 'success'
-      ? 'border-[#bfd2bf] bg-status-success-bg text-status-success-fg'
-      : 'border-[#e0c2bc] bg-status-danger-bg text-status-danger-fg'
+    tone === "success"
+      ? "border-[#bfd2bf] bg-status-success-bg text-status-success-fg"
+      : "border-[#e0c2bc] bg-status-danger-bg text-status-danger-fg";
 
   return (
     <div
-      role={tone === 'danger' ? 'alert' : 'status'}
+      role={tone === "danger" ? "alert" : "status"}
       className={`flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm ${className}`}
     >
       <span>{children}</span>
@@ -468,66 +494,62 @@ function Alert({
         <CloseIcon />
       </Button>
     </div>
-  )
+  );
 }
 
 function toFormValues(parameters: AdminParameter[]) {
   return parameters.reduce<Partial<FormValues>>((formValues, parameter) => {
-    formValues[parameter.name] = parameter.value
-    return formValues
-  }, {})
+    formValues[parameter.name] = parameter.value;
+    return formValues;
+  }, {});
 }
 
 function validateParameters(values: Partial<FormValues>) {
-  const errors: FormErrors = {}
+  const errors: FormErrors = {};
 
   parameterConfigs.forEach((config) => {
-    const rawValue = values[config.name]?.trim() ?? ''
-    const numericValue = Number(rawValue)
+    const rawValue = values[config.name]?.trim() ?? "";
+    const numericValue = Number(rawValue);
 
     if (!rawValue) {
-      errors[config.name] = 'Enter a value.'
-      return
+      errors[config.name] = "Enter a value.";
+      return;
     }
 
     if (Number.isNaN(numericValue)) {
-      errors[config.name] = 'Enter a valid number.'
-      return
+      errors[config.name] = "Enter a valid number.";
+      return;
     }
 
     if (config.integer && !Number.isInteger(numericValue)) {
-      errors[config.name] = 'Enter a whole number.'
-      return
+      errors[config.name] = "Enter a whole number.";
+      return;
     }
 
     if (numericValue < config.min) {
       errors[config.name] =
         config.min === 0
-          ? 'Value cannot be negative.'
-          : `Value must be at least ${config.min}.`
-      return
+          ? "Value cannot be negative."
+          : `Value must be at least ${config.min}.`;
+      return;
     }
 
     if (config.max !== undefined && numericValue > config.max) {
-      errors[config.name] = `Value must be ${config.max} or less.`
+      errors[config.name] = `Value must be ${config.max} or less.`;
     }
-  })
+  });
 
-  const startDay = Number(values.meterReadingStartDay)
-  const endDay = Number(values.meterReadingEndDay)
+  const startDay = Number(values.meterReadingStartDay);
+  const endDay = Number(values.meterReadingEndDay);
 
-  if (
-    !Number.isNaN(startDay) &&
-    !Number.isNaN(endDay) &&
-    startDay > endDay
-  ) {
+  if (!Number.isNaN(startDay) && !Number.isNaN(endDay) && startDay > endDay) {
     errors.meterReadingStartDay =
-      'Start date must be earlier than or equal to end date.'
+      "Start date must be earlier than or equal to end date.";
     errors.meterReadingEndDay =
-      'End date must be later than or equal to start date.'
+      "End date must be later than or equal to start date.";
   }
 
-  return errors
+  return errors;
 }
 
-export { ParametersPage }
+export { ParametersPage };
