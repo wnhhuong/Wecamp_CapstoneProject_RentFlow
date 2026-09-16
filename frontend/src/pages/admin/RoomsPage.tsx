@@ -3,19 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { StatusBadge } from "@/components/status";
-import type { RoomStatus } from "@/shared/types/status";
 import { Button } from "@/components/ui/button";
-import {
-  CloseIcon,
-  KeyIcon,
-  PlusIcon,
-  SearchIcon,
-} from "@/components/ui/icons";
-import { Input } from "@/components/ui/input";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+import { CloseIcon, KeyIcon, PlusIcon } from "@/components/ui/icons";
+import { SearchFilter } from "@/components/ui/search-filter";
+
 import {
   Table,
   TableBody,
@@ -32,8 +23,6 @@ import { AddRoomDialog } from "./rooms/AddRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
 import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
 
-type StatusFilter = RoomStatus | "all";
-
 function RoomsPage() {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,10 +32,12 @@ function RoomsPage() {
   const [createdRoomCode, setCreatedRoomCode] = useState("");
   const [preparedUsername, setPreparedUsername] = useState("");
   const [search, setSearch] = useState("");
-  const [areaID, setAreaID] = useState("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [capacity, setCapacity] = useState("all");
-  const [owed, setOwed] = useState("all");
+  const [filters, setFilters] = useState<Record<string, string[]>>({
+    area: [],
+    status: [],
+    capacity: [],
+    balance: [],
+  });
 
   async function loadRooms() {
     setIsLoading(true);
@@ -88,13 +79,16 @@ function RoomsPage() {
         !normalizedSearch ||
         room.roomCode.toLowerCase().includes(normalizedSearch) ||
         room.tenantName?.toLowerCase().includes(normalizedSearch);
-      const matchesArea = areaID === "all" || room.areaID === areaID;
-      const matchesStatus = status === "all" || room.status === status;
+      const matchesArea =
+        filters.area.length === 0 || filters.area.includes(room.areaID);
+      const matchesStatus =
+        filters.status.length === 0 || filters.status.includes(room.status);
       const matchesCapacity =
-        capacity === "all" || room.maxPeople === Number(capacity);
+        filters.capacity.length === 0 ||
+        filters.capacity.includes(String(room.maxPeople));
       const matchesOwed =
-        owed === "all" ||
-        (owed === "owed" ? room.stillOwed > 0 : room.stillOwed === 0);
+        filters.balance.length === 0 ||
+        filters.balance.includes(room.stillOwed > 0 ? "owed" : "not_owed");
 
       return (
         matchesSearch &&
@@ -104,7 +98,7 @@ function RoomsPage() {
         matchesOwed
       );
     });
-  }, [areaID, capacity, owed, rooms, search, status]);
+  }, [filters, rooms, search]);
 
   const areas = useMemo(() => getAreasFromRooms(rooms), [rooms]);
 
@@ -192,68 +186,61 @@ function RoomsPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-hairline bg-surface p-3">
-        <div className="relative min-w-[14rem] flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by room code or tenant..."
-            aria-label="Search rooms"
-            className="bg-white pl-9"
-          />
-        </div>
-        <FilterSelect
-          label="Area"
-          value={areaID}
-          onChange={setAreaID}
-          options={[
-            ["all", "All areas"],
-            ...areas.map(
-              (area) => [area.areaID, area.areaName] as [string, string],
-            ),
-          ]}
-        />
-        <FilterSelect
-          label="Status"
-          value={status}
-          onChange={(value) => setStatus(value as StatusFilter)}
-          options={[
-            ["all", "All statuses"],
-            ["available now", "Available now"],
-            ["rented", "Rented"],
-            ["available soon", "Available soon"],
-            ["not available", "Not available"],
-          ]}
-        />
-        <FilterSelect
-          label="Capacity"
-          value={capacity}
-          onChange={setCapacity}
-          options={[
-            ["all", "All capacities"],
-            ["1", "1 person"],
-            ["2", "2 people"],
-            ["3", "3 people"],
-            ["4", "4 people"],
-          ]}
-        />
-        <FilterSelect
-          label="Balance"
-          value={owed}
-          onChange={setOwed}
-          options={[
-            ["all", "All balances"],
-            ["owed", "Still owed"],
-            ["not_owed", "No balance"],
-          ]}
-        />
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        {filteredRooms.length} {filteredRooms.length === 1 ? "room" : "rooms"}{" "}
-        matching
-      </p>
+      <SearchFilter
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by room code or tenant..."
+        searchLabel="Search rooms"
+        filters={[
+          {
+            id: "area",
+            label: "Area",
+            selected: filters.area,
+            options: areas.map((area) => ({
+              value: area.areaID,
+              label: area.areaName,
+            })),
+          },
+          {
+            id: "status",
+            label: "Status",
+            selected: filters.status,
+            options: [
+              { value: "available now", label: "Available now" },
+              { value: "rented", label: "Rented" },
+              { value: "available soon", label: "Available soon" },
+              { value: "not available", label: "Not available" },
+            ],
+          },
+          {
+            id: "capacity",
+            label: "Capacity",
+            selected: filters.capacity,
+            options: [1, 2, 3, 4].map((capacity) => ({
+              value: String(capacity),
+              label: `${capacity} ${capacity === 1 ? "person" : "people"}`,
+            })),
+          },
+          {
+            id: "balance",
+            label: "Balance",
+            selected: filters.balance,
+            options: [
+              { value: "owed", label: "Still owed" },
+              { value: "not_owed", label: "No balance" },
+            ],
+          },
+        ]}
+        onFilterChange={(id, selected) =>
+          setFilters((current) => ({ ...current, [id]: selected }))
+        }
+        onClearFilters={() =>
+          setFilters({ area: [], status: [], capacity: [], balance: [] })
+        }
+        resultCount={filteredRooms.length}
+        totalCount={rooms.length}
+        itemNoun="room"
+      />
 
       {isLoading ? (
         <PageLoading
@@ -382,33 +369,6 @@ function RoomsPage() {
         onAccountPrepared={handleAccountPrepared}
       />
     </PageContainer>
-  );
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: [string, string][];
-}) {
-  return (
-    <NativeSelect
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      aria-label={label}
-      className="w-full sm:w-auto"
-    >
-      {options.map(([optionValue, optionLabel]) => (
-        <NativeSelectOption key={optionValue} value={optionValue}>
-          {optionLabel}
-        </NativeSelectOption>
-      ))}
-    </NativeSelect>
   );
 }
 
