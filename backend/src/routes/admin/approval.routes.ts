@@ -1,21 +1,23 @@
 import { Router } from 'express';
-import { protect, adminOnly } from '../../middlewares/auth.middleware';
-import * as requestController from '../../controllers/request.controller';
+import {
+  listRequestsController,
+  getRequestDetailController,
+  approveRequestController,
+} from '../../controllers/admin/request.controller.js';
+import { protect, adminOnly } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 
+// Toàn bộ route admin requests yêu cầu đăng nhập và role ADMIN
 router.use(protect, adminOnly);
 
-// GET /api/requests?type=consump&status=pending
-router.get('/', requestController.list);
+// #38 — GET /api/admin/requests?type=consump&status=pending
+router.get('/', listRequestsController);
 
-// GET /api/requests/:requestId
-router.get('/:requestId', requestController.getDetail);
+// #39 — GET /api/admin/requests/:requestID
+router.get('/:requestID', getRequestDetailController);
 
-// PATCH /api/requests/:requestId/approve
-router.patch('/:requestId/approve', requestController.approve);
-
-// PATCH /api/requests/:requestId/reject
-router.patch('/:requestId/reject', requestController.reject);
+// #40 — PATCH /api/admin/requests/:requestID/approve
+router.patch('/:requestID/approve', approveRequestController);
 
 export default router;
