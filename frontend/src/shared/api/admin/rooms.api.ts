@@ -1,3 +1,6 @@
+import { API_BASE_URL, AUTH_TOKEN_KEY } from '@/shared/api/config'
+import { ENDPOINTS } from '@/shared/api/endpoints'
+
 export type RoomStatus =
   | 'available now'
   | 'rented'
@@ -115,11 +118,7 @@ interface LoginResponse {
   accessToken: string | null
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
-  'http://localhost:5000/api'
-
-const ACCESS_TOKEN_KEY = 'rentflow_access_token'
+const ACCESS_TOKEN_KEY = AUTH_TOKEN_KEY
 const ROOMS_PAGE_SIZE = 100
 
 export async function getAdminRooms(): Promise<AdminRoom[]> {
@@ -128,7 +127,7 @@ export async function getAdminRooms(): Promise<AdminRoom[]> {
 
   while (true) {
     const response = await apiRequest<AdminRoomsResponse>(
-      `/admin/rooms?page=${currentPage}&limit=${ROOMS_PAGE_SIZE}`,
+      `${ENDPOINTS.admin.rooms}?page=${currentPage}&limit=${ROOMS_PAGE_SIZE}`,
     )
 
     rooms.push(...response.items)
@@ -167,7 +166,7 @@ export async function createAdminRoom(
 
   input.images.forEach((image) => body.append('images', image))
 
-  const createdRoom = await apiRequest<BackendAdminRoom>('/admin/rooms', {
+  const createdRoom = await apiRequest<BackendAdminRoom>(ENDPOINTS.admin.rooms, {
     method: 'POST',
     body,
   })
@@ -180,7 +179,7 @@ export async function prepareRoomAccount(
 ): Promise<{ room: AdminRoom; credential: PreparedRoomCredential }> {
   const temporaryPassword = input.temporaryPassword.trim()
   const credential = await apiRequest<Omit<PreparedRoomCredential, 'temporaryPassword'>>(
-    `/admin/rooms/${input.roomID}/account/password`,
+    ENDPOINTS.admin.roomAccountPassword(input.roomID),
     {
       method: 'PATCH',
       headers: {
@@ -258,7 +257,7 @@ async function getAccessToken() {
 }
 
 async function loginWithSeedAdmin() {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}${ENDPOINTS.auth.login}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

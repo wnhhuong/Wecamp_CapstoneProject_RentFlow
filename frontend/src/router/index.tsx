@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 
 import App from '@/App'
 import { ParametersPage } from '@/pages/admin/ParametersPage'
+import { LoginPage } from '@/pages/auth/LoginPage'
 import { RoomsPage } from '@/pages/admin/RoomsPage'
 import { RoutePlaceholder } from '@/router/route-placeholder'
 import { RouterErrorPage } from '@/router/router-error-page'
@@ -29,7 +30,7 @@ const router = createBrowserRouter([
 
       {
         path: ROUTES.auth.login,
-        element: <RoutePlaceholder title="Log in" />,
+        element: <LoginPage />,
       },
       {
         path: ROUTES.auth.firstLoginProfile,
