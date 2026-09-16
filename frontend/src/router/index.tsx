@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from "react-router";
 import App from "@/App";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
+import { InvoiceDetailsPage } from "@/pages/user/invoices/InvoiceDetailsPage";
+import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
 import { RequireAuth } from "@/router/require-auth";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { RoutePlaceholder } from "@/router/route-placeholder";
@@ -68,10 +70,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: ROUTES.user.invoices, 
+        path: ROUTES.user.invoices,
         element: (
           <RequireAuth role="user">
-            <RoutePlaceholder title="Invoices" />
+            <InvoiceListPage />
           </RequireAuth>
         ),
       },
@@ -79,7 +81,7 @@ const router = createBrowserRouter([
         path: ROUTES.user.invoiceDetails,
         element: (
           <RequireAuth role="user">
-            <RoutePlaceholder title="Invoice details" />
+            <InvoiceDetailsPage />
           </RequireAuth>
         ),
       },

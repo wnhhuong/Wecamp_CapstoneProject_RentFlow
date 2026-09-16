@@ -1,5 +1,6 @@
 import type {
   AccountStatus,
+  InvoiceStatus,
   RoomStatus,
 } from '@/shared/types/status'
 
@@ -37,4 +38,8 @@ export function mapAccountStatus(status?: string): AccountStatus {
     default:
       return 'inactive'
   }
+}
+
+export function mapInvoiceStatus(status?: string): InvoiceStatus {
+  return status === 'paid' ? 'paid' : 'not_paid'
 }
