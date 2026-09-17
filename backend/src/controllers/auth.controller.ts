@@ -130,7 +130,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 export const firstLoginProfile = async (req: OnboardingRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { accountID } = req.onboarding!;
-        const account = await Account.findById(accountID);
+        const account = await Account.findById(accountID).select("+password");
         if(!account){ sendError(res, 404, "Account not found"); return; }
         if(account.status !== AccountStatus.INACTIVE){
             sendError(res, 409, "This account has already completed onboarding");
@@ -152,6 +152,14 @@ export const firstLoginProfile = async (req: OnboardingRequest, res: Response, n
         if(confirmIn4 !== "true"){
             sendError(res, 400, "You must confirm your information before proceeding");
             return;
+        }
+
+        if(account.password){
+            const isSamePassword = await bcrypt.compare(password, account.password || "");
+            if(isSamePassword){
+                sendError(res, 400, "New password must be different from the current password");
+                return;
+            }
         }
 
         // find by CCCD

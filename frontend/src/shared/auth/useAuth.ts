@@ -4,6 +4,8 @@ import {
   getAuthSession,
   signIn,
   signOut,
+  completeOnboarding,
+  updateOnboardingToken,
   subscribeToAuth,
 } from '@/shared/auth/auth-store'
 
@@ -21,5 +23,7 @@ export function useAuth() {
     requireFirstLogin: session?.requireFirstLogin ?? false,
     signIn,
     signOut,
+    completeOnboarding,
+    updateOnboardingToken,
   }
 }
