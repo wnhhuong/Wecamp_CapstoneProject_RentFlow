@@ -6,10 +6,10 @@ import type {
   AdminPaidDetails,
   AdminRequest,
   AdminRequestDetail,
-  AdminRequestType,
   ApproveRequestResult,
 } from '@/shared/types/admin/request'
 import { formatMonthYear } from '@/shared/utils/dateFormatter'
+import { mapRequestType } from '@/shared/utils/requestTypes'
 import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
 interface BackendRequestListResponse {
@@ -55,15 +55,6 @@ interface BackendApproveResponse {
 }
 
 const REQUEST_PAGE_SIZE = 100
-
-const REQUEST_TYPES: AdminRequestType[] = [
-  'consump',
-  'paid',
-  'delay',
-  'extend',
-  'moveout',
-  'checkout',
-]
 
 export async function getAdminRequests(): Promise<AdminRequest[]> {
   const response = await apiRequest<BackendRequestListResponse>(
@@ -122,10 +113,6 @@ function mapRequest(request: BackendRequestListItem): AdminRequest {
     resolveDate: request.resolveDate ?? null,
     status: mapRequestStatus(request.status),
   }
-}
-
-function mapRequestType(type: string): AdminRequestType {
-  return REQUEST_TYPES.find((known) => known === type) ?? 'consump'
 }
 
 function mapConsumptionDetails(

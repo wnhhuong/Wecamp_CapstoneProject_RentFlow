@@ -21,20 +21,20 @@ import {
 import type {
   AdminRequest,
   AdminRequestDetail,
-  AdminRequestType,
   ApproveRequestResult,
 } from "@/shared/types/admin/request";
+import type { RequestType } from "@/shared/types/request";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 import { formatDate } from "@/shared/utils/dateFormatter";
+import { REQUEST_TYPE_LABELS } from "@/shared/utils/requestTypes";
 
-import { REQUEST_TYPE_LABELS } from "./utils/requestTypes";
 
-const APPROVE_LABELS: Partial<Record<AdminRequestType, string>> = {
+const APPROVE_LABELS: Partial<Record<RequestType, string>> = {
   consump: "Approve and create invoice",
   paid: "Confirm payment",
 };
 
-const APPROVE_NOTES: Partial<Record<AdminRequestType, string>> = {
+const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
   consump:
     "Approval records the consumption and creates a NOT PAID invoice immediately.",
   paid: "Confirm only after the money has arrived. Approving marks the invoice PAID.",

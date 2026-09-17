@@ -17,12 +17,13 @@ import {
 import { getAdminRequests } from "@/shared/api/admin/requests.api";
 import type { AdminRequest } from "@/shared/types/admin/request";
 import { formatDate } from "@/shared/utils/dateFormatter";
-
-import { RequestDetailsSheet } from "./requests/RequestDetailsSheet";
 import {
   REQUEST_TYPE_LABELS,
   REQUEST_TYPE_OPTIONS,
-} from "./requests/utils/requestTypes";
+} from "@/shared/utils/requestTypes";
+
+import { RequestDetailsSheet } from "./requests/RequestDetailsSheet";
+
 
 const STATUS_FILTER_ID = "status";
 const TYPE_FILTER_ID = "type";

@@ -22,8 +22,6 @@ const ROUTES = {
       invoiceDetailsLink: (invoiceId: string) =>
         `/user/invoices/${invoiceId}`,
       requests: '/user/requests',
-      requestDetailsLink: (requestId: string) =>
-        `/user/requests/${requestId}`,
       tickets: '/user/tickets',
       profile: '/user/profile',
     },
