@@ -55,7 +55,7 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
         const consumptionIds = consumptions.map((c) => c._id);
 
         // Bước 2: filter theo status/year ngay ở DB (2 field này nằm thẳng trên Invoice, filter trực tiếp được)
-        const filter: any = { comsumptionID: { $in: consumptionIds } };
+        const filter: any = { consumptionID: { $in: consumptionIds } };
         if (status) filter.status = status;
         if (yearNum !== undefined) {
             filter.createdDate = {
@@ -116,7 +116,7 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         const invoice = await Invoice.findById(invoiceID);
         if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
  
-        const consumption = await Consumption.findById(invoice.comsumptionID);
+        const consumption = await Consumption.findById(invoice.consumptionID);
         if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
 
         // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
@@ -175,7 +175,7 @@ export const submitPaidRequest = async (req: UserAuthRequest, res: Response, nex
         if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
 
         // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
-        const consumption = await Consumption.findById(invoice.comsumptionID);
+        const consumption = await Consumption.findById(invoice.consumptionID);
         if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
 
         const belongsToCurrentTenancy =
@@ -270,7 +270,7 @@ export const submitLatePaymentRequest = async (req: UserAuthRequest, res: Respon
         if (!invoice) { sendError(res, 404, "Invoice not found"); return; }
 
         // chặn IDOR — invoice phải thuộc đúng phòng + current tenancy của người đang đăng nhập
-        const consumption = await Consumption.findById(invoice.comsumptionID);
+        const consumption = await Consumption.findById(invoice.consumptionID);
         if (!consumption) { sendError(res, 404, "Related consumption not found"); return; }
 
         const belongsToCurrentTenancy =

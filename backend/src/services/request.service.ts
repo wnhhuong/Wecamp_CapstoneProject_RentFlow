@@ -13,21 +13,22 @@ import Room from '../models/Room.js';
 import { 
   RequestType, 
   RequestStatus, 
-  ContractStatus 
+  ContractStatus, 
 } from '../models/enums.js';
 
+import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
+import { getVNDateParts } from '../utils/dateFormat.js';
 
-
-const isSameCalendarMonth = (a: Date, b: Date): boolean =>
-  a.getUTCFullYear() === b.getUTCFullYear() && 
-  a.getUTCMonth() === b.getUTCMonth();
-
-
-const formatBillingPeriod = (date: Date): string => {
-  const d = new Date(date);
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-  return `${d.getUTCFullYear()}-${month}`;
+/**
+ * So sánh "cùng tháng" theo GIỜ VIỆT NAM (không dùng getUTCMonth trực tiếp) — tránh lệch
+ * 1 tháng với các request tạo/approve trong khoảng 00h-07h sáng giờ VN (17h-24h UTC hôm trước).
+ */
+const isSameCalendarMonth = (a: Date, b: Date): boolean => {
+  const pa = getVNDateParts(a);
+  const pb = getVNDateParts(b);
+  return pa.year === pb.year && pa.month === pb.month;
 };
+
 
 export class RequestServiceError extends Error {
   statusCode: number;
@@ -67,7 +68,7 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
     const updatedRequest = await RequestModel.findOneAndUpdate(
       { _id: requestID, status: RequestStatus.PENDING },
       { $set: { status: RequestStatus.APPROVED, resolveDate: now } },
-      { new: true, session },
+      { returnDocument: "after", session },
     );
 
     if (!updatedRequest) {
@@ -80,7 +81,7 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
       }
       throw new RequestServiceError(
         400,
-        `Request ${requestID} is already "${existing.status}", cannot approve again.`,
+        `Request ${requestID} is already ${existing.status.toUpperCase()}, cannot approve again.`,
       );
     }
 
@@ -96,8 +97,6 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
       case RequestType.EXTEND:
       case RequestType.MOVEOUT:
       case RequestType.CHECKOUT: {
-        // TODO: implement ở task riêng. Throw ở đây sẽ abort transaction bên dưới,
-        // Request tự động rollback lại về PENDING — không bị kẹt ở trạng thái approved dở dang.
         throw new RequestServiceError(
           501,
           `Approve logic for request type "${updatedRequest.type}" is not implemented yet (out of scope of this task).`,
@@ -167,7 +166,10 @@ const approveConsumpRequest = async (
 
   // Reading kỳ trước gần nhất của phòng (nếu có) để tính usage.
   // GIẢ ĐỊNH: nếu đây là kỳ điện đầu tiên (chưa từng có Consumption), previousReading = 0.
-  const previousConsumption = await Consumption.findOne({ roomID: request.roomID })
+  const previousConsumption = await Consumption.findOne({ 
+    roomID: request.roomID,
+    trackingTime: { $lt: consumpRequest.capturedAt },
+  })
     .sort({ trackingTime: -1 })
     .session(session);
   const previousReading = previousConsumption?.meterReading ?? 0;
@@ -183,7 +185,7 @@ const approveConsumpRequest = async (
   if (previousConsumption && isSameCalendarMonth(previousConsumption.trackingTime, consumpRequest.capturedAt)) {
     throw new RequestServiceError(
       409,
-      `Room ${request.roomID} already has a CONSUMPTION/Invoice for billing period ${formatBillingPeriod(
+      `Room ${room.roomCode} already has a CONSUMPTION/Invoice for billing period ${computeBillingPeriod(
         consumpRequest.capturedAt,
       )}. Cannot create duplicate.`,
     );
@@ -204,12 +206,19 @@ const approveConsumpRequest = async (
   );
   const consumption = createdConsumption[0];
 
+
   return {
     consumptionID: String(consumption._id),
+    roomCode: room.roomCode,
     meterReading: consumption.meterReading,
     previousReading,
     consumpAmount,
-    billingPeriod: formatBillingPeriod(consumption.trackingTime),
+    billingPeriod: computeBillingPeriod(consumption.trackingTime),
+    invoice: await buildInvoiceForConsumption(
+      { consumptionID: consumption._id, consumpAmount, roomBill: activeContract.rentPrice},
+      session
+    ),
+
   };
 };
 
