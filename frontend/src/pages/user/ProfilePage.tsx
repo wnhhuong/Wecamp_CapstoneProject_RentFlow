@@ -6,12 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { getTenantContract } from "@/shared/api/user/contract.api";
 import {
   getTenantProfile,
   updateTenantProfile,
 } from "@/shared/api/user/profile.api";
+import type { TenantContract } from "@/shared/types/contract";
 import type { TenantProfile, TenantSex } from "@/shared/types/profile";
 import { formatDate } from "@/shared/utils/dateFormatter";
+
+import { LeaseCard } from "./profile/LeaseCard";
 
 const SEX_LABELS: Record<TenantSex, string> = {
   male: "Male",
@@ -22,10 +26,12 @@ const SEX_LABELS: Record<TenantSex, string> = {
 /** Mirrors the backend rule so a bad number never leaves the page. */
 const PHONE_PATTERN = /^[0-9+]{9,15}$/;
 
-const FIELD_LABEL_CLASS = "text-sm font-normal text-muted-foreground";
+const ROW_CLASS =
+  "flex flex-wrap items-start justify-between gap-3 border-b border-hairline py-2.5 text-sm last:border-b-0";
 
 function ProfilePage() {
   const [profile, setProfile] = useState<TenantProfile | null>(null);
+  const [contract, setContract] = useState<TenantContract | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -35,7 +41,12 @@ function ProfilePage() {
     setLoadError("");
 
     try {
-      setProfile(await getTenantProfile());
+      const [loadedProfile, loadedContract] = await Promise.all([
+        getTenantProfile(),
+        getTenantContract(),
+      ]);
+      setProfile(loadedProfile);
+      setContract(loadedContract);
     } catch {
       setLoadError("Your profile could not be loaded.");
     } finally {
@@ -46,8 +57,14 @@ function ProfilePage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    getTenantProfile(controller.signal)
-      .then((loadedProfile) => setProfile(loadedProfile))
+    Promise.all([
+      getTenantProfile(controller.signal),
+      getTenantContract(controller.signal),
+    ])
+      .then(([loadedProfile, loadedContract]) => {
+        setProfile(loadedProfile);
+        setContract(loadedContract);
+      })
       .catch(() => {
         if (!controller.signal.aborted) {
           setLoadError("Your profile could not be loaded.");
@@ -67,7 +84,7 @@ function ProfilePage() {
           Profile &amp; lease
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          The personal details the owner holds for your tenancy
+          Your personal details and the lease you signed
         </p>
       </div>
 
@@ -86,44 +103,54 @@ function ProfilePage() {
       ) : null}
 
       {!isLoading && !loadError && profile ? (
-        isEditing ? (
-          <ContactForm
-            profile={profile}
-            onCancel={() => setIsEditing(false)}
-            onSaved={(saved) => {
-              setProfile(saved);
-              setIsEditing(false);
-            }}
-          />
-        ) : (
-          <ProfileCard
-            action={
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit contact details
-              </Button>
-            }
-          >
-            <ProfileGrid
+        <div className="grid items-start gap-5 lg:grid-cols-2">
+          {isEditing ? (
+            <ContactForm
               profile={profile}
-              phone={
-                <Field
-                  label="Phone number"
-                  value={profile.phoneNumber || "Not provided"}
-                />
-              }
-              residence={
-                <Field
-                  label="Place of residence"
-                  value={profile.placeOfResidence || "Not provided"}
-                />
-              }
+              onCancel={() => setIsEditing(false)}
+              onSaved={(saved) => {
+                setProfile(saved);
+                setIsEditing(false);
+              }}
             />
-          </ProfileCard>
-        )
+          ) : (
+            <ProfileCard
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </Button>
+              }
+            >
+              <ProfileRows
+                profile={profile}
+                phone={
+                  <Row
+                    label="Phone number"
+                    value={profile.phoneNumber || "Not provided"}
+                  />
+                }
+                residence={
+                  <Row
+                    label="Place of residence"
+                    value={profile.placeOfResidence || "Not provided"}
+                  />
+                }
+              />
+            </ProfileCard>
+          )}
+
+          {contract ? (
+            <LeaseCard contract={contract} profile={profile} />
+          ) : (
+            <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+              No active lease is recorded for your room right now.
+            </p>
+          )}
+        </div>
       ) : null}
     </PageContainer>
   );
@@ -151,10 +178,10 @@ function ProfileCard({
 }
 
 /**
- * Both modes render this same grid, so switching to edit only swaps the last
- * entry of each column for an input instead of moving anything above it.
+ * Both modes render this same list, so switching to edit only swaps the last
+ * two values for inputs instead of moving anything above them.
  */
-function ProfileGrid({
+function ProfileRows({
   profile,
   phone,
   residence,
@@ -164,22 +191,17 @@ function ProfileGrid({
   residence: React.ReactNode;
 }) {
   return (
-    <dl className="mt-5 grid gap-5 sm:grid-cols-2">
-      <div className="grid content-start gap-5">
-        <Field label="Full name" value={profile.fullName} />
-        <Field label="Identity number" value={profile.identityNo} />
-        <Field label="Nationality" value={profile.nationality} />
-        {phone}
-      </div>
-
-      <div className="grid content-start gap-5">
-        <Field
-          label="Date of birth"
-          value={profile.dob ? formatDate(profile.dob) : "Not provided"}
-        />
-        <Field label="Sex" value={SEX_LABELS[profile.sex]} />
-        {residence}
-      </div>
+    <dl className="mt-5">
+      <Row label="Full name" value={profile.fullName} />
+      <Row
+        label="Date of birth"
+        value={profile.dob ? formatDate(profile.dob) : "Not provided"}
+      />
+      <Row label="Identity number" value={profile.identityNo} />
+      <Row label="Sex" value={SEX_LABELS[profile.sex]} />
+      <Row label="Nationality" value={profile.nationality} />
+      {phone}
+      {residence}
     </dl>
   );
 }
@@ -255,13 +277,10 @@ function ContactForm({
           </>
         }
       >
-        <ProfileGrid
+        <ProfileRows
           profile={profile}
           phone={
-            <div className="space-y-2">
-              <Label htmlFor="profile-phone" className={FIELD_LABEL_CLASS}>
-                Phone number
-              </Label>
+            <EditableRow htmlFor="profile-phone" label="Phone number">
               <Input
                 id="profile-phone"
                 type="tel"
@@ -271,39 +290,43 @@ function ContactForm({
                 disabled={isSaving}
                 aria-invalid={trimmedPhone !== "" && !isPhoneValid}
                 aria-describedby="profile-phone-help"
+                className="text-right"
                 onChange={(event) => setPhoneNumber(event.target.value)}
               />
               <p
                 id="profile-phone-help"
                 className={
                   trimmedPhone !== "" && !isPhoneValid
-                    ? "text-sm text-destructive"
-                    : "text-sm text-muted-foreground"
+                    ? "text-right text-sm text-destructive"
+                    : "text-right text-sm text-muted-foreground"
                 }
               >
                 9 to 15 digits, "+" allowed for a country code.
               </p>
-            </div>
+            </EditableRow>
           }
           residence={
-            <div className="space-y-2">
-              <Label htmlFor="profile-residence" className={FIELD_LABEL_CLASS}>
-                Place of residence
-              </Label>
+            <EditableRow htmlFor="profile-residence" label="Place of residence">
               <Input
                 id="profile-residence"
                 type="text"
                 required
                 value={placeOfResidence}
                 disabled={isSaving}
+                className="text-right"
                 onChange={(event) => setPlaceOfResidence(event.target.value)}
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-right text-sm text-muted-foreground">
                 Where you are registered as living.
               </p>
-            </div>
+            </EditableRow>
           }
         />
+
+        <p className="mt-5 border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+          Only your phone number and place of residence can be changed here. The
+          rest comes from your signed lease.
+        </p>
 
         {saveError ? (
           <p role="alert" className="mt-5 text-sm text-destructive">
@@ -315,11 +338,33 @@ function ContactForm({
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium text-foreground">{value}</dd>
+    <div className={ROW_CLASS}>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium text-foreground">{value}</dd>
+    </div>
+  );
+}
+
+function EditableRow({
+  htmlFor,
+  label,
+  children,
+}: {
+  htmlFor: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={ROW_CLASS}>
+      <Label
+        htmlFor={htmlFor}
+        className="pt-2 font-normal text-muted-foreground"
+      >
+        {label}
+      </Label>
+      <div className="w-full max-w-72 space-y-1.5">{children}</div>
     </div>
   );
 }

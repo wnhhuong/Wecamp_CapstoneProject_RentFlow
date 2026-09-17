@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react'
+import type { ContractStatus } from '@/shared/types/contract'
 import type {
   AccountStatus,
   InvoiceStatus,
@@ -13,6 +14,7 @@ type StatusBadgeProps = ComponentProps<typeof Badge> &
   (
     | { domain: 'room'; status: RoomStatus }
     | { domain: 'invoice'; status: InvoiceStatus }
+    | { domain: 'contract'; status: ContractStatus }
     | { domain: 'request'; status: RequestStatus }
     | { domain: 'ticket'; status: TicketStatus }
     | { domain: 'account'; status: AccountStatus }
@@ -36,6 +38,10 @@ const statusPresentations = {
     paid: { label: 'PAID', tone: 'success' },
     not_paid: { label: 'NOT PAID', tone: 'danger' },
   },
+  contract: {
+    active: { label: 'ACTIVE', tone: 'success' },
+    expired: { label: 'EXPIRED', tone: 'neutral' },
+  },
   request: {
     pending: { label: 'PENDING', tone: 'warning' },
     approved: { label: 'APPROVED', tone: 'info' },
@@ -51,7 +57,7 @@ const statusPresentations = {
     active: { label: 'ACTIVE', tone: 'success' },
   },
 } as const satisfies Record<
-  'room' | 'invoice' | 'request' | 'ticket' | 'account',
+  'room' | 'invoice' | 'contract' | 'request' | 'ticket' | 'account',
   Record<string, StatusPresentation>
 >
 
@@ -89,6 +95,8 @@ function getStatusPresentation(props: StatusBadgeProps): StatusPresentation {
       return statusPresentations.room[props.status]
     case 'invoice':
       return statusPresentations.invoice[props.status]
+    case 'contract':
+      return statusPresentations.contract[props.status]
     case 'request':
       return statusPresentations.request[props.status]
     case 'ticket':

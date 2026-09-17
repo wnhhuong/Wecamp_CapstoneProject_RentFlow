@@ -32,6 +32,8 @@ export const ENDPOINTS = {
 
     profile: '/user/profile',
 
+    contract: '/user/contract',
+
     requests: '/user/requests',
 
     request: (requestID: string) =>

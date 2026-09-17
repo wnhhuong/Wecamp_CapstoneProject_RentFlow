@@ -3,6 +3,7 @@ import Room, { IRoom } from '../models/Room.js';
 import Parameter from '../models/Parameter.js';
 import { ContractStatus, ParameterName } from '../models/enums.js';
 import { buildContractDisplayID } from '../utils/displayId.js';
+import { getVNDateParts } from '../utils/dateFormat.js';
 
 export interface ActiveContractResponse {
   contractID: string;      // ID thật
@@ -69,8 +70,8 @@ export class ContractService {
     parameters.forEach((p) => paramMap.set(p.name, p.value));
 
     const formatDateOnly = (d: Date | string): string => {
-      const date = new Date(d);
-      return date.toISOString().split('T')[0];
+      const { day, month, year } = getVNDateParts(new Date(d));
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     };
 
     // Sinh mã displayID bằng util dùng chung của dự án
