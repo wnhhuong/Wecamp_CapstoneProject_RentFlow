@@ -1,10 +1,10 @@
 import { Schema, model, Document, Types } from 'mongoose';
-import { TicketStatus } from './enums.js';
+import { TicketStatus, TicketType } from './enums.js';
 
 /** TICKET: phiếu báo hỏng/sửa chữa cho 1 ROOM. */
 export interface ITicket extends Document {
   roomID: Types.ObjectId; // ref Room
-  ticketName: string;
+  ticketType: TicketType;
   createDate: Date;
   resolveDate?: Date;
   status: TicketStatus;
@@ -15,7 +15,7 @@ export interface ITicket extends Document {
 const TicketSchema = new Schema<ITicket>(
   {
     roomID: { type: Schema.Types.ObjectId, ref: 'Room', required: true, index: true },
-    ticketName: { type: String, required: true, trim: true },
+    ticketType: { type: String, enum: Object.values(TicketType), required: true, index: true },
     createDate: { type: Date, required: true, default: Date.now },
     resolveDate: { type: Date },
     status: {
