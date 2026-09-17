@@ -3,6 +3,8 @@ import Invoice, { IInvoice } from '../models/Invoice.js';
 import Parameter from '../models/Parameter.js';
 import Consumption, { IConsumption } from '../models/Consumption.js';
 import { ParameterName, InvoiceStatus } from '../models/enums.js';
+import { getVNDateParts } from '../utils/dateFormat.js';
+
 
 interface BuildInvoiceInput {
   consumptionID: Types.ObjectId;
@@ -37,25 +39,16 @@ const getParamRaw = async (name: ParameterName, session?: ClientSession): Promis
 };
 
 /**
- * Tính dueDate cho invoice mới tạo, dựa trên Parameter "paymentDueDay".
- *
- * GIẢ ĐỊNH (đã xác nhận: paymentDueDay là NGÀY CỐ ĐỊNH TRONG THÁNG):
- * chỉ lấy phần "ngày" (getUTCDate) trong value đang lưu (vd "2025-02-10" -> ngày 10),
- * bỏ qua tháng/năm lưu trong Parameter. Invoice tạo ngay sau khi kỳ ghi điện đóng lại
- * (thường cuối tháng hiện tại), hạn thanh toán áp dụng cho NGÀY ĐÓ CỦA THÁNG KẾ TIẾP.
- *
- * QUAN TRỌNG (task 2 AC "Parameter thay đổi sau đó không làm thay đổi Invoice đã tạo"):
- * dueDate được TÍNH 1 LẦN NGAY LÚC TẠO INVOICE và lưu cứng vào `Invoice.dueDate`,
- * không tính lại theo Parameter hiện tại ở các lần đọc sau -> đã tuân thủ đúng AC.
+ * Tính dueDate cho invoice mới tạo, dựa trên Parameter "paymentDueDay" 
+ * Fallback ngày 10 nếu Parameter thiếu/lỗi, để không chặn toàn bộ luồng approve chỉ vì thiếu 1 config phụ.
  */
 const computeDueDate = async (createdDate: Date, session?: ClientSession): Promise<Date> => {
   const raw = await getParamRaw(ParameterName.PAYMENT_DUE_DAY, session);
-  const dayOfMonth = raw ? new Date(raw).getUTCDate() : 10; // fallback ngày 10 nếu Parameter thiếu/lỗi
+  const dayOfMonth = raw ? Number(raw) : 10; 
 
-  const nextMonthIndex = createdDate.getUTCMonth() + 1; // Date.UTC tự tràn năm nếu = 12
-  const year = createdDate.getUTCFullYear();
+  const { month, year } = getVNDateParts(createdDate);
 
-  return new Date(Date.UTC(year, nextMonthIndex, dayOfMonth));
+  return new Date(Date.UTC(year, month, dayOfMonth));
 };
 
 /**
@@ -72,14 +65,14 @@ const computeDueDate = async (createdDate: Date, session?: ClientSession): Promi
  * đảm bảo atomic — nếu bất kỳ bước nào lỗi, toàn bộ rollback (không có Invoice "mồ côi").
  */
 export const buildInvoiceForConsumption = async (
-  { consumptionID, consumpAmount, roomBill }: BuildInvoiceInput,
+  { consumptionID, consumpAmount, roomBill}: BuildInvoiceInput,
   session?: ClientSession,
 ): Promise<IInvoice> => {
   const electricityUnitPrice = await getParamNumber(ParameterName.ELECTRICITY_UNIT_PRICE, 0, session);
   const waterBill = await getParamNumber(ParameterName.WATER_PRICE, 0, session);
   const wifiBill = await getParamNumber(ParameterName.WIFI_FEE, 0, session);
   const otherBill = await getParamNumber(ParameterName.OTHER_FEES, 0, session);
-  const parkingBill = 0; // Chưa có Parameter cho phí gửi xe (đã xác nhận: giữ 0)
+  const parkingBill = await getParamNumber(ParameterName.PARKING_FEE, 0, session); 
 
   const electricalBill = consumpAmount * electricityUnitPrice;
   const totalBill = roomBill + electricalBill + waterBill + wifiBill + parkingBill + otherBill;
@@ -90,7 +83,7 @@ export const buildInvoiceForConsumption = async (
   const created = await Invoice.create(
     [
       {
-        comsumptionID: consumptionID,
+        consumptionID: consumptionID,
         roomBill,
         electricalBill,
         waterBill,
@@ -115,10 +108,9 @@ export const buildInvoiceForConsumption = async (
  * vì mỗi Invoice gắn 1-1 với 1 Consumption duy nhất. Format "YYYY-MM".
  */
 export const computeBillingPeriod = (trackingTime: Date): string => {
-  const d = new Date(trackingTime);
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-  return `${d.getUTCFullYear()}-${month}`;
-};
+  const { month, year } = getVNDateParts(trackingTime);
+  return `${year}-${month.toString().padStart(2, '0')}`;
+}
 
 /**
  * Suy ngược usageKwh và electricityUnitPrice TẠI THỜI ĐIỂM TẠO INVOICE (không phải giá hiện tại),

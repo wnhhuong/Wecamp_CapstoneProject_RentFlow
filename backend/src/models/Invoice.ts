@@ -3,7 +3,7 @@ import { InvoiceStatus } from './enums.js';
 
 /** INVOICE: hóa đơn tổng hợp tiền phòng + điện/nước/wifi/gửi xe/khác. */
 export interface IInvoice extends Document {
-  comsumptionID: Types.ObjectId; // ref Consumption (giữ nguyên tên field theo ERD)
+  consumptionID: Types.ObjectId; // ref Consumption (giữ nguyên tên field theo ERD)
   roomBill: number;
   totalBill: number;
   electricalBill: number;
@@ -22,7 +22,7 @@ export interface IInvoice extends Document {
 
 const InvoiceSchema = new Schema<IInvoice>(
   {
-    comsumptionID: {
+    consumptionID: {
       type: Schema.Types.ObjectId,
       ref: 'Consumption',
       required: true,
