@@ -1,9 +1,12 @@
 import { apiRequest } from '@/shared/api/client'
+import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
+  AdminRoomDetail,
   AdminRoom,
   AdminRoomsResponse,
   BackendAdminRoom,
+  BackendAdminRoomDetail,
   BackendRoomAccount,
   CreateRoomInput,
   PrepareRoomAccountInput,
@@ -44,6 +47,41 @@ export async function getAdminRooms(): Promise<AdminRoom[]> {
   }
 
   return rooms.map(mapAdminRoom)
+}
+
+export async function getAdminRoomDetail(
+  roomID: string,
+): Promise<AdminRoomDetail> {
+  const detail = await apiRequest<BackendAdminRoomDetail>(
+    ENDPOINTS.admin.room(roomID),
+    { auth: 'admin' },
+  )
+  const room = mapAdminRoom({
+    ...detail.room,
+    areaID: detail.area?.areaID,
+    areaName: detail.area?.areaName,
+  })
+
+  return {
+    room: {
+      roomID: room.roomID,
+      areaID: room.areaID,
+      areaName: room.areaName,
+      roomCode: room.roomCode,
+      floor: room.floor,
+      maxPeople: room.maxPeople,
+      roomDetail: room.roomDetail,
+      price: room.price,
+      deposit: room.deposit,
+      status: room.status,
+      availableFrom: room.availableFrom,
+      images: room.images,
+    },
+    activeContract: detail.activeContract,
+    tenant: detail.tenant,
+    account: detail.account ? mapRoomAccount(detail.account) : null,
+    stillOwed: detail.stillOwed ?? 0,
+  }
 }
 
 export async function createAdminRoom(
@@ -136,7 +174,7 @@ function mapAdminRoom(room: BackendAdminRoom): AdminRoom {
     deposit: room.deposit ?? 0,
     status: mapRoomStatus(room.status),
     availableFrom: room.availableFrom ?? null,
-    images: room.images ?? [],
+    images: (room.images ?? []).map(toAbsoluteAssetUrl),
     tenantName: room.tenantName ?? null,
     account: room.account
       ? mapRoomAccount(room.account)
@@ -154,5 +192,15 @@ function mapRoomAccount(
     accountID: account.accountID,
     username: account.username,
     status: mapAccountStatus(account.status),
+    role: account.role,
+    startDate: account.startDate ?? null,
   }
+}
+
+function toAbsoluteAssetUrl(path: string) {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path
+
+  const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin
+  return new URL(path, `${apiOrigin}/`).toString()
 }

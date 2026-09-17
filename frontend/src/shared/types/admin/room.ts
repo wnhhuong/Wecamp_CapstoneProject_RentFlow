@@ -13,6 +13,8 @@ export interface RoomAccount {
   accountID: string
   username: string
   status: AccountStatus
+  role?: string
+  startDate?: string | null
 }
 
 export interface AdminArea {
@@ -36,6 +38,38 @@ export interface AdminRoom {
   tenantName: string | null
   account: RoomAccount | null
   electricityState: ElectricityState
+  stillOwed: number
+}
+
+export interface ActiveRoomContract {
+  contractID: string
+  userID: string
+  roomID: string
+  startDate: string | null
+  expireDate: string | null
+  deposit: number
+  rent: number
+  status: string
+  signature: string | null
+  signedAt: string | null
+}
+
+export interface RoomTenant {
+  userID: string
+  fullName: string
+  phoneNumber: string
+  identityNo: string
+  dob: string | null
+  sex: string
+  nationality: string
+  por: string
+}
+
+export interface AdminRoomDetail {
+  room: Omit<AdminRoom, 'tenantName' | 'account' | 'electricityState' | 'stillOwed'>
+  activeContract: ActiveRoomContract | null
+  tenant: RoomTenant | null
+  account: RoomAccount | null
   stillOwed: number
 }
 
@@ -73,6 +107,8 @@ export interface BackendRoomAccount {
   accountID: string
   username: string
   status: string
+  role?: string
+  startDate?: string | null
 }
 
 export interface BackendAdminRoom {
@@ -97,4 +133,13 @@ export interface BackendAdminRoom {
 export interface AdminRoomsResponse {
   items: BackendAdminRoom[]
   pagination?: ApiPagination
+}
+
+export interface BackendAdminRoomDetail {
+  room: BackendAdminRoom
+  area: AdminArea | null
+  activeContract: ActiveRoomContract | null
+  tenant: RoomTenant | null
+  account: BackendRoomAccount | null
+  stillOwed: number
 }

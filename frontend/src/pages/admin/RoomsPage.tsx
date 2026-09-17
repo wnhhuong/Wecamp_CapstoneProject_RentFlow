@@ -4,7 +4,7 @@ import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
-import { CloseIcon, KeyIcon, PlusIcon } from "@/components/ui/icons";
+import { CloseIcon, EyeIcon, KeyIcon, PlusIcon } from "@/components/ui/icons";
 import { SearchFilter } from "@/components/ui/search-filter";
 
 import {
@@ -21,6 +21,7 @@ import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 import { AddRoomDialog } from "./rooms/AddRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
+import { RoomDetailsSheet } from "./rooms/RoomDetailsSheet";
 import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
 
 function RoomsPage() {
@@ -29,6 +30,7 @@ function RoomsPage() {
   const [loadError, setLoadError] = useState("");
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null);
+  const [detailRoomID, setDetailRoomID] = useState<string | null>(null);
   const [createdRoomCode, setCreatedRoomCode] = useState("");
   const [preparedUsername, setPreparedUsername] = useState("");
   const [search, setSearch] = useState("");
@@ -104,6 +106,8 @@ function RoomsPage() {
 
   const selectedRoom =
     rooms.find((room) => room.roomID === selectedRoomID) ?? null;
+  const detailRoom =
+    rooms.find((room) => room.roomID === detailRoomID) ?? null;
 
   function handleRoomCreated(room: AdminRoom) {
     setRooms((current) => [room, ...current]);
@@ -323,25 +327,28 @@ function RoomsPage() {
                     {formatCurrency(room.price)}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
-                    {room.account?.status === "banned" ? (
+                    <div className="flex items-center justify-end gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedRoomID(room.roomID)}
+                        onClick={() => setDetailRoomID(room.roomID)}
                       >
-                        <KeyIcon />
-                        Prepare
+                        <EyeIcon />
+                        Details
                       </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        {!room.account
-                          ? "No account"
-                          : room.account.status === "inactive"
-                            ? "Prepared"
-                            : "In use"}
-                      </span>
-                    )}
+                      {room.account?.status === "banned" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedRoomID(room.roomID)}
+                        >
+                          <KeyIcon />
+                          Prepare
+                        </Button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -349,10 +356,6 @@ function RoomsPage() {
           </Table>
         </div>
       ) : null}
-
-      <p className="text-sm text-muted-foreground">
-        Select a room to view its room, lease, tenant and account details.
-      </p>
 
       <AddRoomDialog
         open={isAddRoomOpen}
@@ -367,6 +370,16 @@ function RoomsPage() {
           if (!open) setSelectedRoomID(null);
         }}
         onAccountPrepared={handleAccountPrepared}
+      />
+      <RoomDetailsSheet
+        room={detailRoom}
+        onOpenChange={(open) => {
+          if (!open) setDetailRoomID(null);
+        }}
+        onPrepareAccount={(roomID) => {
+          setDetailRoomID(null);
+          setSelectedRoomID(roomID);
+        }}
       />
     </PageContainer>
   );
