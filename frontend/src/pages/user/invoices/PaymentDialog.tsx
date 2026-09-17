@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { submitPaidRequest } from "@/shared/api/user/invoices.api";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 /**
@@ -22,6 +25,7 @@ const PAYMENT_ACCOUNT = {
 interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  invoiceID: string;
   displayID: string;
   amount: number;
 }
@@ -29,11 +33,43 @@ interface PaymentDialogProps {
 function PaymentDialog({
   open,
   onOpenChange,
+  invoiceID,
   displayID,
   amount,
 }: PaymentDialogProps) {
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+
+  async function notifyOwner() {
+    if (isSending) return;
+
+    setIsSending(true);
+    setSendError("");
+
+    try {
+      await submitPaidRequest(invoiceID);
+      onOpenChange(false);
+    } catch (error: unknown) {
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "The payment notice could not be sent.",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  function handleOpenChange(next: boolean) {
+    // Closing mid-send would hide whether the notice went through.
+    if (isSending) return;
+
+    if (!next) setSendError("");
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-[min(34rem,calc(100%-2rem))] max-w-none rounded-lg bg-field p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl">Pay this invoice</DialogTitle>
@@ -63,16 +99,32 @@ function PaymentDialog({
           </dl>
         </div>
 
+        <p className="mt-5 border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+          Tell the owner once the transfer is done. This invoice stays unpaid
+          until they confirm receiving the money.
+        </p>
+
+        {sendError ? (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {sendError}
+          </p>
+        ) : null}
+
         <DialogFooter className="mt-6">
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            disabled={isSending}
+            onClick={() => handleOpenChange(false)}
           >
             Close
           </Button>
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            I have transferred
+          <Button
+            type="button"
+            disabled={isSending}
+            onClick={() => void notifyOwner()}
+          >
+            {isSending ? "Sending…" : "I have transferred"}
           </Button>
         </DialogFooter>
       </DialogContent>

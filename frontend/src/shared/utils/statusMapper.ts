@@ -1,6 +1,7 @@
 import type {
   AccountStatus,
   InvoiceStatus,
+  RequestStatus,
   RoomStatus,
 } from '@/shared/types/status'
 
@@ -42,4 +43,8 @@ export function mapAccountStatus(status?: string): AccountStatus {
 
 export function mapInvoiceStatus(status?: string): InvoiceStatus {
   return status === 'paid' ? 'paid' : 'not_paid'
+}
+
+export function mapRequestStatus(status?: string): RequestStatus {
+  return status === 'approved' ? 'approved' : 'pending'
 }

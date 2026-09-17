@@ -24,6 +24,9 @@ export const ENDPOINTS = {
     invoice: (invoiceID: string) =>
       `/user/invoices/${encodeURIComponent(invoiceID)}`,
 
+    invoicePaidRequest: (invoiceID: string) =>
+      `/user/invoices/${encodeURIComponent(invoiceID)}/paid-request`,
+
     consumptionRequest: (requestID: string | number) =>
       `/user/consumption-requests/${encodeURIComponent(String(requestID))}`,
   },

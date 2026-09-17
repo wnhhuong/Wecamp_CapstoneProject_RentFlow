@@ -1,14 +1,16 @@
 import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
+  BackendPaidRequest,
   BackendTenantInvoice,
   BackendTenantInvoiceDetail,
   BackendTenantInvoiceList,
   InvoiceBreakdown,
   TenantInvoice,
   TenantInvoiceDetail,
+  TenantPaidRequest,
 } from '@/shared/types/invoice'
-import { mapInvoiceStatus } from '@/shared/utils/statusMapper'
+import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
 /**
  * A tenant has about twelve invoices a year, so the list is loaded once and
@@ -64,6 +66,23 @@ export async function getTenantInvoice(
 /** Only a non-negative reading difference is a usable kWh figure. */
 function toUsage(usage: number | undefined): number | null {
   return usage === undefined || usage < 0 ? null : usage
+}
+
+export async function submitPaidRequest(
+  invoiceID: string,
+  signal?: AbortSignal,
+): Promise<TenantPaidRequest> {
+  const request = await apiRequest<BackendPaidRequest>(
+    ENDPOINTS.user.invoicePaidRequest(invoiceID),
+    { auth: 'user', method: 'POST', signal },
+  )
+
+  return {
+    requestID: request.requestID,
+    createDate: request.createDate,
+    status: mapRequestStatus(request.status),
+    invoiceID: request.invoiceID,
+  }
 }
 
 function mapTenantInvoice(invoice: BackendTenantInvoice): TenantInvoice {
