@@ -196,8 +196,8 @@ export class DashboardService {
 
       return {
         ticketID: String(t._id || t.ticketID),
-        ticketName: t.ticketName || 'Ticket',
-        type: t.type || (t.facilityID ? 'REPAIR' : 'COMPLAIN'),
+        ticketName: t.ticketType === 'repair' ? 'Repair' : t.ticketType === 'complain' ? 'Complaint' : 'Ticket',
+        type: t.ticketType ? t.ticketType.toUpperCase() : (t.facilityID ? 'REPAIR' : 'COMPLAIN'),
         location,
         createDate: formattedDate,
       };

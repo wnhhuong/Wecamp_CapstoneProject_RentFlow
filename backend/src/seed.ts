@@ -101,7 +101,7 @@ async function seed(): Promise<void> {
       { name: ParameterName.ADMIN_EMAIL, value: 'admin@rentflow.vn' },
       {
         name: ParameterName.CONTRACT_PLACEHOLDER,
-        value: 'Hợp đồng thuê phòng số {contractID} giữa Bên A - RentFlow Residence và Bên B - {tenantName}. Phòng thuê: {roomCode}. Giá thuê: {rent} VND/tháng. Tiền cọc: {deposit} VND. Thời hạn: {startDate} đến {expireDate}.',
+        value: 'This Room Lease Agreement is made between Nguyễn Thị Bình (the Owner) and {fullName}, identity number {identityNo}, residing at {placeOfResidence} (the Tenant). The Tenant confirms that the personal information supplied during first login is accurate.\n\nThe Owner leases Room {roomCode} at Nhà trọ Bình An, 128 Đường số 7, Thủ Đức, to the Tenant from {startDate} until {expireDate}. The room is intended only for residential use by the registered Tenant.\n\nThe monthly rent is {rent}. A property deposit of {deposit} is recorded for this contract. Electricity is charged at ₫ 3.500 for each tenant-submitted meterReading approved by the Owner. Other monthly services are shown on the Tenant invoice.\n\nInvoices are issued monthly and must be paid by the displayed due date. If payment cannot be made on time, the Tenant may submit a late-payment request. A payment is recorded as paid only after the Owner confirms receipt.\n\nThe Tenant must use the room and shared areas responsibly, report repair needs through RentFlow, and compensate for damage caused by misuse. The Owner is responsible for maintaining the property facilities under their control.\n\nTo end the lease, the Tenant must first submit a move-out notice with a proposed date. On the approved checkout date, the Tenant must submit the final electricity image and final meterReading.\n\nBy signing electronically below, the Tenant confirms having read, understood and accepted this agreement. The electronic signature, timestamp and account identity will be associated with this agreement.',
       },
     ]);
 
@@ -120,14 +120,16 @@ async function seed(): Promise<void> {
     console.log('Creating rooms and tenants...');
     const roomIds = new Map<string, Types.ObjectId>();
     const rooms = [
-      { areaName: 'Building A', status: RoomStatus.RENTED, maxPeople: 2, roomDetail: 'Bright corner room with private bathroom and balcony.', images: ['uploads/rooms/A-101-1.jpg', 'uploads/rooms/A-101-2.jpg'], roomCode: 'A-101', floor: 1, price: 3200000, deposit: 3200000, availableFrom: new Date('2026-09-01') },
-      { areaName: 'Building A', status: RoomStatus.RENTED, maxPeople: 2, roomDetail: 'Quiet room near stair, suitable for student or office worker.', images: ['uploads/rooms/A-102-1.jpg'], roomCode: 'A-102', floor: 1, price: 3400000, deposit: 3400000, availableFrom: new Date('2026-09-01') },
-      { areaName: 'Building A', status: RoomStatus.AVAILABLE_NOW, maxPeople: 1, roomDetail: 'Compact single room, fully furnished.', images: ['uploads/rooms/A-201-1.jpg'], roomCode: 'A-201', floor: 2, price: 2800000, deposit: 2800000, availableFrom: new Date('2026-09-15') },
-      { areaName: 'Building A', status: RoomStatus.AVAILABLE_SOON, maxPeople: 2, roomDetail: 'Room will be available after cleaning and maintenance.', images: ['uploads/rooms/A-301-1.jpg'], roomCode: 'A-301', floor: 3, price: 3300000, deposit: 3300000, availableFrom: new Date('2026-10-05') },
-      { areaName: 'Building B', status: RoomStatus.RENTED, maxPeople: 3, roomDetail: 'Large room for small family, close to parking area.', images: ['uploads/rooms/B-101-1.jpg', 'uploads/rooms/B-101-2.jpg'], roomCode: 'B-101', floor: 1, price: 3800000, deposit: 3800000, availableFrom: new Date('2026-08-01') },
-      { areaName: 'Building B', status: RoomStatus.NOT_AVAILABLE, maxPeople: 2, roomDetail: 'Temporarily closed for bathroom renovation.', images: ['uploads/rooms/B-202-1.jpg'], roomCode: 'B-202', floor: 2, price: 3600000, deposit: 3600000, availableFrom: new Date('2026-11-01') },
-      { areaName: 'Building C', status: RoomStatus.RENTED, maxPeople: 3, roomDetail: 'Premium room on high floor with city view.', images: ['uploads/rooms/C-301-1.jpg', 'uploads/rooms/C-301-2.jpg'], roomCode: 'C-301', floor: 3, price: 4200000, deposit: 4200000, availableFrom: new Date('2026-07-01') },
-      { areaName: 'Building C', status: RoomStatus.AVAILABLE_NOW, maxPeople: 2, roomDetail: 'Newly painted room, close to laundry area.', images: ['uploads/rooms/C-302-1.jpg'], roomCode: 'C-302', floor: 3, price: 3500000, deposit: 3500000, availableFrom: new Date('2026-09-10') },
+      { areaName: 'Building A', status: RoomStatus.RENTED, maxPeople: 2, roomDetail: 'Bright corner room with private bathroom and balcony.', images: ['uploads/rooms/A-101-1.jpg', 'uploads/rooms/A-101-2.jpg'], roomCode: 'A-101', floor: 1, price: 3200000, deposit: 3200000, availableFrom: new Date('2024-09-01') },
+      { areaName: 'Building A', status: RoomStatus.RENTED, maxPeople: 2, roomDetail: 'Quiet room near stair, suitable for student or office worker.', images: ['uploads/rooms/A-102-1.jpg'], roomCode: 'A-102', floor: 1, price: 3400000, deposit: 3400000, availableFrom: new Date('2024-09-01') },
+      { areaName: 'Building A', status: RoomStatus.AVAILABLE_NOW, maxPeople: 1, roomDetail: 'Compact single room, fully furnished.', images: ['uploads/rooms/A-201-1.jpg'], roomCode: 'A-201', floor: 2, price: 2800000, deposit: 2800000, availableFrom: new Date('2024-09-15') },
+      { areaName: 'Building A', status: RoomStatus.AVAILABLE_SOON, maxPeople: 2, roomDetail: 'Room will be available after cleaning and maintenance.', images: ['uploads/rooms/A-301-1.jpg'], roomCode: 'A-301', floor: 3, price: 3300000, deposit: 3300000, availableFrom: new Date('2024-10-05') },
+      { areaName: 'Building B', status: RoomStatus.RENTED, maxPeople: 3, roomDetail: 'Large room for small family, close to parking area.', images: ['uploads/rooms/B-101-1.jpg', 'uploads/rooms/B-101-2.jpg'], roomCode: 'B-101', floor: 1, price: 3800000, deposit: 3800000, availableFrom: new Date('2024-08-01') },
+      { areaName: 'Building B', status: RoomStatus.NOT_AVAILABLE, maxPeople: 2, roomDetail: 'Temporarily closed for bathroom renovation.', images: ['uploads/rooms/B-202-1.jpg'], roomCode: 'B-202', floor: 2, price: 3600000, deposit: 3600000, availableFrom: new Date('2024-11-01') },
+      { areaName: 'Building C', status: RoomStatus.RENTED, maxPeople: 3, roomDetail: 'Premium room on high floor with city view.', images: ['uploads/rooms/C-301-1.jpg', 'uploads/rooms/C-301-2.jpg'], roomCode: 'C-301', floor: 3, price: 4200000, deposit: 4200000, availableFrom: new Date('2024-07-01') },
+      { areaName: 'Building C', status: RoomStatus.AVAILABLE_NOW, maxPeople: 2, roomDetail: 'Newly painted room, close to laundry area.', images: ['uploads/rooms/C-302-1.jpg'], roomCode: 'C-302', floor: 3, price: 3500000, deposit: 3500000, availableFrom: new Date('2024-09-10') },
+      { areaName: 'Building C', status: RoomStatus.RENTED, maxPeople: 1, roomDetail: 'Small single room for edge-case account testing.', images: ['uploads/rooms/C-401-1.jpg'], roomCode: 'C-401', floor: 4, price: 2500000, deposit: 2500000, availableFrom: new Date('2024-01-15') },
+      { areaName: 'Building C', status: RoomStatus.AVAILABLE_NOW, maxPeople: 4, roomDetail: 'Large room for testing higher occupancy limits.', images: ['uploads/rooms/C-402-1.jpg'], roomCode: 'C-402', floor: 4, price: 5000000, deposit: 5000000, availableFrom: new Date('2024-02-01') },
     ];
     for (const roomData of rooms) {
       const room = await Room.create({ ...roomData, areaID: id(areaIds, roomData.areaName, 'Area') });
@@ -140,6 +142,10 @@ async function seed(): Promise<void> {
       { key: 'binh', fullName: 'Trần Thị Bình', DoB: new Date('2001-11-20'), phoneNumber: '0901234502', identityNo: '001201000002', sex: Sex.FEMALE, nationality: 'Vietnamese', PoR: 'Nam Định' },
       { key: 'chau', fullName: 'Lê Minh Châu', DoB: new Date('1998-03-08'), phoneNumber: '0901234503', identityNo: '001198000003', sex: Sex.OTHER, nationality: 'Vietnamese', PoR: 'Đà Nẵng' },
       { key: 'dung', fullName: 'Phạm Hoàng Dũng', DoB: new Date('1995-09-02'), phoneNumber: '0901234504', identityNo: '001195000004', sex: Sex.MALE, nationality: 'Vietnamese', PoR: 'TP. Hồ Chí Minh' },
+      { key: 'old-an', fullName: 'Ngô Quang Huy', DoB: new Date('1990-04-12'), phoneNumber: '0901234511', identityNo: '001190000011', sex: Sex.MALE, nationality: 'Vietnamese', PoR: 'Hải Phòng' },
+      { key: 'old-binh', fullName: 'Đặng Thị Mai', DoB: new Date('1992-12-01'), phoneNumber: '0901234512', identityNo: '001192000012', sex: Sex.FEMALE, nationality: 'Vietnamese', PoR: 'Quảng Ninh' },
+      { key: 'old-chau', fullName: 'Phan Gia Hân', DoB: new Date('1997-07-23'), phoneNumber: '0901234513', identityNo: '001197000013', sex: Sex.FEMALE, nationality: 'Vietnamese', PoR: 'Huế' },
+      { key: 'old-dung', fullName: 'Bùi Đức Long', DoB: new Date('1993-02-18'), phoneNumber: '0901234514', identityNo: '001193000014', sex: Sex.MALE, nationality: 'Vietnamese', PoR: 'Nghệ An' },
     ];
     for (const { key, ...userData } of users) {
       const user = await User.create(userData);
@@ -149,23 +155,35 @@ async function seed(): Promise<void> {
     const adminPassword = await bcrypt.hash('Admin@123', 10);
     const tenantPassword = await bcrypt.hash('Tenant@123', 10);
     const temporaryPassword = await bcrypt.hash('Temp@123', 10);
-    await Account.create({ username: 'admin', password: adminPassword, status: AccountStatus.ACTIVE, role: AccountRole.ADMIN, startDate: new Date('2026-01-01') });
+    await Account.create({ username: 'admin', password: adminPassword, status: AccountStatus.ACTIVE, role: AccountRole.ADMIN, startDate: new Date('2024-01-01') });
     for (const account of [
-      { roomCode: 'A-101', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2026-09-01') },
-      { roomCode: 'A-102', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2026-09-05') },
-      { roomCode: 'B-101', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2026-08-01') },
-      { roomCode: 'C-301', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2026-07-01') },
-      { roomCode: 'C-302', password: temporaryPassword, status: AccountStatus.INACTIVE, startDate: new Date('2026-09-15') },
+      { roomCode: 'A-101', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2024-09-01') },
+      { roomCode: 'A-102', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2024-09-05') },
+      { roomCode: 'B-101', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2024-08-01') },
+      { roomCode: 'C-301', password: tenantPassword, status: AccountStatus.ACTIVE, startDate: new Date('2024-07-01') },
+      { roomCode: 'C-302', password: temporaryPassword, status: AccountStatus.INACTIVE, startDate: new Date('2024-09-15') },
+      { roomCode: 'C-401', password: temporaryPassword, status: AccountStatus.INACTIVE, startDate: new Date('2024-01-15') },
+      { roomCode: 'C-402', password: temporaryPassword, status: AccountStatus.BANNED, startDate: new Date('2024-02-01') },
     ]) {
       await Account.create({ roomID: id(roomIds, account.roomCode, 'Room'), username: account.roomCode, password: account.password, status: account.status, role: AccountRole.USER, startDate: account.startDate });
     }
 
     const contractIds = new Map<string, Types.ObjectId>();
+    // Historical contracts: one account per room remains current, while old tenants retain expired contracts.
     for (const contractData of [
-      { roomCode: 'A-101', userKey: 'an', startDate: new Date('2026-09-01'), expireDate: new Date('2027-09-01'), propertyDeposit: 3200000, rentPrice: 3200000, signature: 'uploads/signatures/contract-501.png', signedAt: new Date('2026-09-01T03:00:00.000Z') },
-      { roomCode: 'A-102', userKey: 'binh', startDate: new Date('2026-09-05'), expireDate: new Date('2027-09-05'), propertyDeposit: 3400000, rentPrice: 3400000, signature: 'uploads/signatures/contract-502.png', signedAt: new Date('2026-09-05T02:30:00.000Z') },
-      { roomCode: 'B-101', userKey: 'chau', startDate: new Date('2026-08-01'), expireDate: new Date('2027-08-01'), propertyDeposit: 3800000, rentPrice: 3800000, signature: 'uploads/signatures/contract-503.png', signedAt: new Date('2026-08-01T04:00:00.000Z') },
-      { roomCode: 'C-301', userKey: 'dung', startDate: new Date('2026-07-01'), expireDate: new Date('2027-07-01'), propertyDeposit: 4200000, rentPrice: 4200000, signature: 'uploads/signatures/contract-504.png', signedAt: new Date('2026-07-01T04:30:00.000Z') },
+      { roomCode: 'A-101', userKey: 'old-an', startDate: new Date('2023-09-01'), expireDate: new Date('2024-08-31'), propertyDeposit: 3000000, rentPrice: 3000000, signature: 'uploads/signatures/contract-old-a101.png', signedAt: new Date('2023-09-01T03:00:00.000Z') },
+      { roomCode: 'A-102', userKey: 'old-binh', startDate: new Date('2023-09-05'), expireDate: new Date('2024-09-04'), propertyDeposit: 3200000, rentPrice: 3200000, signature: 'uploads/signatures/contract-old-a102.png', signedAt: new Date('2023-09-05T02:30:00.000Z') },
+      { roomCode: 'B-101', userKey: 'old-chau', startDate: new Date('2023-08-01'), expireDate: new Date('2024-07-31'), propertyDeposit: 3600000, rentPrice: 3600000, signature: 'uploads/signatures/contract-old-b101.png', signedAt: new Date('2023-08-01T04:00:00.000Z') },
+      { roomCode: 'C-301', userKey: 'old-dung', startDate: new Date('2023-07-01'), expireDate: new Date('2024-06-30'), propertyDeposit: 4000000, rentPrice: 4000000, signature: 'uploads/signatures/contract-old-c301.png', signedAt: new Date('2023-07-01T04:30:00.000Z') },
+    ]) {
+      const contract = await Contract.create({ ...contractData, roomID: id(roomIds, contractData.roomCode, 'Room'), userID: id(userIds, contractData.userKey, 'User'), status: ContractStatus.EXPIRED });
+      contractIds.set(`${contractData.roomCode}-old`, contract._id);
+    }
+    for (const contractData of [
+      { roomCode: 'A-101', userKey: 'an', startDate: new Date('2024-09-01'), expireDate: new Date('2025-09-01'), propertyDeposit: 3200000, rentPrice: 3200000, signature: 'uploads/signatures/contract-501.png', signedAt: new Date('2024-09-01T03:00:00.000Z') },
+      { roomCode: 'A-102', userKey: 'binh', startDate: new Date('2024-09-05'), expireDate: new Date('2025-09-05'), propertyDeposit: 3400000, rentPrice: 3400000, signature: 'uploads/signatures/contract-502.png', signedAt: new Date('2024-09-05T02:30:00.000Z') },
+      { roomCode: 'B-101', userKey: 'chau', startDate: new Date('2024-08-01'), expireDate: new Date('2025-08-01'), propertyDeposit: 3800000, rentPrice: 3800000, signature: 'uploads/signatures/contract-503.png', signedAt: new Date('2024-08-01T04:00:00.000Z') },
+      { roomCode: 'C-301', userKey: 'dung', startDate: new Date('2024-07-01'), expireDate: new Date('2025-07-01'), propertyDeposit: 4200000, rentPrice: 4200000, signature: 'uploads/signatures/contract-504.png', signedAt: new Date('2024-07-01T04:30:00.000Z') },
     ]) {
       const contract = await Contract.create({ ...contractData, roomID: id(roomIds, contractData.roomCode, 'Room'), userID: id(userIds, contractData.userKey, 'User'), status: ContractStatus.ACTIVE });
       contractIds.set(contractData.roomCode, contract._id);
@@ -173,11 +191,11 @@ async function seed(): Promise<void> {
 
     const facilityIds = new Map<string, Types.ObjectId>();
     for (const facilityData of [
-      { roomCode: 'A-101', typeName: 'Air conditioner', lastModified: new Date('2026-09-01') },
-      { roomCode: 'A-101', typeName: 'Bathroom tap', lastModified: new Date('2026-09-01') },
-      { roomCode: 'A-102', typeName: 'Water heater', lastModified: new Date('2026-09-05') },
-      { roomCode: 'B-101', typeName: 'Bed', lastModified: new Date('2026-08-01') },
-      { roomCode: 'C-301', typeName: 'Wardrobe', lastModified: new Date('2026-07-01') },
+      { roomCode: 'A-101', typeName: 'Air conditioner', lastModified: new Date('2024-09-01') },
+      { roomCode: 'A-101', typeName: 'Bathroom tap', lastModified: new Date('2024-09-01') },
+      { roomCode: 'A-102', typeName: 'Water heater', lastModified: new Date('2024-09-05') },
+      { roomCode: 'B-101', typeName: 'Bed', lastModified: new Date('2024-08-01') },
+      { roomCode: 'C-301', typeName: 'Wardrobe', lastModified: new Date('2024-07-01') },
     ]) {
       const facility = await Facility.create({ roomID: id(roomIds, facilityData.roomCode, 'Room'), typeID: id(facilityTypeIds, facilityData.typeName, 'Facility type'), lastModified: facilityData.lastModified });
       facilityIds.set(`${facilityData.roomCode}:${facilityData.typeName}`, facility._id);
@@ -185,50 +203,82 @@ async function seed(): Promise<void> {
 
     const consumptionIds = new Map<string, Types.ObjectId>();
     for (const consumptionData of [
-      { key: 'A-101-sep', roomCode: 'A-101', meterReading: 148, trackingTime: new Date('2026-09-28T08:10:00.000Z'), e_meterImage: 'uploads/consumption/A-101-202609.jpg' },
-      { key: 'A-102-sep', roomCode: 'A-102', meterReading: 116, trackingTime: new Date('2026-09-28T08:20:00.000Z'), e_meterImage: 'uploads/consumption/A-102-202609.jpg' },
-      { key: 'B-101-sep', roomCode: 'B-101', meterReading: 175, trackingTime: new Date('2026-09-28T08:30:00.000Z'), e_meterImage: 'uploads/consumption/B-101-202609.jpg' },
+      { key: 'A-101-sep', roomCode: 'A-101', meterReading: 148, trackingTime: new Date('2026-08-28T08:10:00.000Z'), e_meterImage: 'uploads/consumption/A-101-202608.jpg' },
+      { key: 'A-102-sep', roomCode: 'A-102', meterReading: 116, trackingTime: new Date('2026-08-28T08:20:00.000Z'), e_meterImage: 'uploads/consumption/A-102-202608.jpg' },
+      { key: 'B-101-sep', roomCode: 'B-101', meterReading: 175, trackingTime: new Date('2026-08-28T08:30:00.000Z'), e_meterImage: 'uploads/consumption/B-101-202608.jpg' },
       { key: 'C-301-aug', roomCode: 'C-301', meterReading: 190, trackingTime: new Date('2026-08-28T08:40:00.000Z'), e_meterImage: 'uploads/consumption/C-301-202608.jpg' },
     ]) {
       const consumption = await Consumption.create({ ...consumptionData, roomID: id(roomIds, consumptionData.roomCode, 'Room') });
       consumptionIds.set(consumptionData.key, consumption._id);
     }
 
+    // Historical meter readings are retained by room; user-facing services filter them by Account.startDate.
+    for (const consumptionData of [
+      { key: 'A-101-old-jun', roomCode: 'A-101', meterReading: 98, trackingTime: new Date('2024-06-28T08:10:00.000Z'), e_meterImage: 'uploads/consumption/A-101-202406.jpg' },
+      { key: 'A-101-old-aug', roomCode: 'A-101', meterReading: 132, trackingTime: new Date('2024-08-28T08:10:00.000Z'), e_meterImage: 'uploads/consumption/A-101-202608.jpg' },
+      { key: 'A-102-old-jun', roomCode: 'A-102', meterReading: 76, trackingTime: new Date('2024-06-28T08:20:00.000Z'), e_meterImage: 'uploads/consumption/A-102-202406.jpg' },
+      { key: 'B-101-old-jun', roomCode: 'B-101', meterReading: 121, trackingTime: new Date('2024-06-28T08:30:00.000Z'), e_meterImage: 'uploads/consumption/B-101-202406.jpg' },
+      { key: 'C-301-old-may', roomCode: 'C-301', meterReading: 144, trackingTime: new Date('2024-05-28T08:40:00.000Z'), e_meterImage: 'uploads/consumption/C-301-202405.jpg' },
+    ]) {
+      const consumption = await Consumption.create({ ...consumptionData, roomID: id(roomIds, consumptionData.roomCode, 'Room') });
+      consumptionIds.set(consumptionData.key, consumption._id);
+    }
     const invoiceIds = new Map<string, Types.ObjectId>();
     for (const invoiceData of [
-      { key: 'A-101-sep', consumptionKey: 'A-101-sep', roomBill: 3200000, electricalBill: 518000, waterBill: 125000, wifiBill: 100000, parkingBill: 150000, otherBill: 0, totalBill: 4093000, createdDate: new Date('2026-09-29T01:20:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: true, status: InvoiceStatus.NOT_PAID },
-      { key: 'A-102-sep', consumptionKey: 'A-102-sep', roomBill: 3400000, electricalBill: 406000, waterBill: 150000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 4236000, createdDate: new Date('2026-09-29T01:25:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
-      { key: 'B-101-sep', consumptionKey: 'B-101-sep', roomBill: 3800000, electricalBill: 612500, waterBill: 150000, wifiBill: 100000, parkingBill: 0, otherBill: 30000, totalBill: 4692500, createdDate: new Date('2026-09-29T01:30:00.000Z'), paymentDate: new Date('2026-10-02T10:00:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.PAID },
+      { key: 'A-101-sep', consumptionKey: 'A-101-sep', roomBill: 3200000, electricalBill: 518000, waterBill: 125000, wifiBill: 100000, parkingBill: 150000, otherBill: 0, totalBill: 4093000, createdDate: new Date('2026-08-29T01:20:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: true, status: InvoiceStatus.NOT_PAID },
+      { key: 'A-102-sep', consumptionKey: 'A-102-sep', roomBill: 3400000, electricalBill: 406000, waterBill: 150000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 4236000, createdDate: new Date('2026-08-29T01:25:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
+      { key: 'B-101-sep', consumptionKey: 'B-101-sep', roomBill: 3800000, electricalBill: 612500, waterBill: 150000, wifiBill: 100000, parkingBill: 0, otherBill: 30000, totalBill: 4692500, createdDate: new Date('2026-08-29T01:30:00.000Z'), paymentDate: new Date('2026-09-02T10:00:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: false, status: InvoiceStatus.PAID },
       { key: 'C-301-aug', consumptionKey: 'C-301-aug', roomBill: 4200000, electricalBill: 665000, waterBill: 175000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 5320000, createdDate: new Date('2026-08-29T01:30:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
     ]) {
       const invoice = await Invoice.create({ ...invoiceData, consumptionID: id(consumptionIds, invoiceData.consumptionKey, 'Consumption') });
       invoiceIds.set(invoiceData.key, invoice._id);
     }
 
+    for (const invoiceData of [
+      { key: 'A-101-old-jun', consumptionKey: 'A-101-old-jun', roomBill: 3000000, electricalBill: 343000, waterBill: 125000, wifiBill: 100000, parkingBill: 0, otherBill: 0, totalBill: 3568000, createdDate: new Date('2024-06-29'), dueDate: new Date('2024-07-10'), isRequestLate: false, status: InvoiceStatus.PAID, paymentDate: new Date('2024-07-05') },
+      { key: 'A-101-old-aug', consumptionKey: 'A-101-old-aug', roomBill: 3000000, electricalBill: 350000, waterBill: 125000, wifiBill: 100000, parkingBill: 0, otherBill: 0, totalBill: 3575000, createdDate: new Date('2024-08-29'), dueDate: new Date('2026-08-10'), isRequestLate: true, status: InvoiceStatus.NOT_PAID },
+      { key: 'A-102-old-jun', consumptionKey: 'A-102-old-jun', roomBill: 3200000, electricalBill: 266000, waterBill: 150000, wifiBill: 100000, parkingBill: 70000, otherBill: 30000, totalBill: 3816000, createdDate: new Date('2024-06-29'), dueDate: new Date('2024-07-10'), isRequestLate: false, status: InvoiceStatus.PAID, paymentDate: new Date('2024-07-08') },
+      { key: 'B-101-old-jun', consumptionKey: 'B-101-old-jun', roomBill: 3600000, electricalBill: 189000, waterBill: 150000, wifiBill: 0, parkingBill: 0, otherBill: 0, totalBill: 3939000, createdDate: new Date('2024-06-29'), dueDate: new Date('2024-07-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
+      { key: 'C-301-old-may', consumptionKey: 'C-301-old-may', roomBill: 4000000, electricalBill: 161000, waterBill: 150000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 4591000, createdDate: new Date('2024-05-29'), dueDate: new Date('2024-06-10'), isRequestLate: false, status: InvoiceStatus.PAID, paymentDate: new Date('2024-06-04') },
+    ]) {
+      const invoice = await Invoice.create({ ...invoiceData, consumptionID: id(consumptionIds, invoiceData.consumptionKey, 'Consumption') });
+      invoiceIds.set(invoiceData.key, invoice._id);
+    }
     const requestIds = new Map<string, Types.ObjectId>();
     for (const requestData of [
-      { key: 'late-A-101', type: RequestType.DELAY, roomCode: 'A-101', userKey: 'an', createDate: new Date('2026-09-30'), status: RequestStatus.PENDING },
-      { key: 'paid-A-102', type: RequestType.PAID, roomCode: 'A-102', userKey: 'binh', createDate: new Date('2026-09-30'), status: RequestStatus.PENDING },
-      { key: 'consump-A-102', type: RequestType.CONSUMP, roomCode: 'A-102', userKey: 'binh', createDate: new Date('2026-09-28'), status: RequestStatus.PENDING },
-      { key: 'extend-A-101', type: RequestType.EXTEND, roomCode: 'A-101', userKey: 'an', createDate: new Date('2026-09-20'), status: RequestStatus.PENDING },
-      { key: 'moveout-C-301', type: RequestType.MOVEOUT, roomCode: 'C-301', userKey: 'dung', createDate: new Date('2026-09-12'), resolveDate: new Date('2026-09-13'), status: RequestStatus.APPROVED },
-      { key: 'checkout-C-301', type: RequestType.CHECKOUT, roomCode: 'C-301', userKey: 'dung', createDate: new Date('2026-09-30'), status: RequestStatus.PENDING },
+      { key: 'late-A-101', type: RequestType.DELAY, roomCode: 'A-101', userKey: 'an', createDate: new Date('2024-09-30'), status: RequestStatus.PENDING },
+      { key: 'paid-A-102', type: RequestType.PAID, roomCode: 'A-102', userKey: 'binh', createDate: new Date('2024-09-30'), status: RequestStatus.PENDING },
+      { key: 'consump-A-102', type: RequestType.CONSUMP, roomCode: 'A-102', userKey: 'binh', createDate: new Date('2026-08-28'), status: RequestStatus.PENDING },
+      { key: 'extend-A-101', type: RequestType.EXTEND, roomCode: 'A-101', userKey: 'an', createDate: new Date('2024-09-20'), status: RequestStatus.PENDING },
+      { key: 'moveout-C-301', type: RequestType.MOVEOUT, roomCode: 'C-301', userKey: 'dung', createDate: new Date('2024-09-12'), resolveDate: new Date('2024-09-13'), status: RequestStatus.APPROVED },
+      { key: 'checkout-C-301', type: RequestType.CHECKOUT, roomCode: 'C-301', userKey: 'dung', createDate: new Date('2024-09-30'), status: RequestStatus.PENDING },
+      { key: 'paid-old-A-101', type: RequestType.PAID, roomCode: 'A-101', userKey: 'old-an', createDate: new Date('2024-06-30'), resolveDate: new Date('2024-07-05'), status: RequestStatus.APPROVED },
+      { key: 'late-old-A-102', type: RequestType.DELAY, roomCode: 'A-102', userKey: 'old-binh', createDate: new Date('2024-08-31'), status: RequestStatus.PENDING },
+      { key: 'moveout-old-B-101', type: RequestType.MOVEOUT, roomCode: 'B-101', userKey: 'old-chau', createDate: new Date('2024-07-15'), resolveDate: new Date('2024-07-16'), status: RequestStatus.APPROVED },
+      { key: 'checkout-old-C-301', type: RequestType.CHECKOUT, roomCode: 'C-301', userKey: 'old-dung', createDate: new Date('2024-06-20'), resolveDate: new Date('2024-06-21'), status: RequestStatus.APPROVED },
     ]) {
       const request = await TenantRequest.create({ ...requestData, roomID: id(roomIds, requestData.roomCode, 'Room'), userID: id(userIds, requestData.userKey, 'User') });
       requestIds.set(requestData.key, request._id);
     }
     await LatePaymentRequest.create({ requestID: id(requestIds, 'late-A-101', 'Request'), invoiceID: id(invoiceIds, 'A-101-sep', 'Invoice') });
     await PaidRequest.create({ requestID: id(requestIds, 'paid-A-102', 'Request'), invoiceID: id(invoiceIds, 'A-102-sep', 'Invoice') });
-    await ConsumpRequest.create({ requestID: id(requestIds, 'consump-A-102', 'Request'), image: 'uploads/consumption/request-703.jpg', reading: 121, capturedAt: new Date('2026-09-28T08:20:00.000Z') });
+    await ConsumpRequest.create({ requestID: id(requestIds, 'consump-A-102', 'Request'), image: 'uploads/consumption/request-703.jpg', reading: 121, capturedAt: new Date('2026-08-28T08:20:00.000Z') });
     await ExtendRequest.create({ requestID: id(requestIds, 'extend-A-101', 'Request'), contractID: id(contractIds, 'A-101', 'Contract') });
-    await MoveoutRequest.create({ requestID: id(requestIds, 'moveout-C-301', 'Request'), contractID: id(contractIds, 'C-301', 'Contract'), requestMoveoutDate: new Date('2026-10-31') });
+    await MoveoutRequest.create({ requestID: id(requestIds, 'moveout-C-301', 'Request'), contractID: id(contractIds, 'C-301', 'Contract'), requestMoveoutDate: new Date('2024-10-31') });
     await CheckoutRequest.create({ requestID: id(requestIds, 'checkout-C-301', 'Request'), contractID: id(contractIds, 'C-301', 'Contract'), finalImage: 'uploads/checkout/request-706.jpg', finalReading: 205 });
+    await PaidRequest.create({ requestID: id(requestIds, 'paid-old-A-101', 'Request'), invoiceID: id(invoiceIds, 'A-101-old-jun', 'Invoice') });
+    await LatePaymentRequest.create({ requestID: id(requestIds, 'late-old-A-102', 'Request'), invoiceID: id(invoiceIds, 'A-101-old-aug', 'Invoice') });
+    await MoveoutRequest.create({ requestID: id(requestIds, 'moveout-old-B-101', 'Request'), contractID: id(contractIds, 'B-101-old', 'Contract'), requestMoveoutDate: new Date('2024-07-31') });
+    await CheckoutRequest.create({ requestID: id(requestIds, 'checkout-old-C-301', 'Request'), contractID: id(contractIds, 'C-301-old', 'Contract'), finalImage: 'uploads/checkout/old-c301.jpg', finalReading: 166 });
 
     const ticketIds = new Map<string, Types.ObjectId>();
     for (const ticketData of [
-      { key: 'repair-tap', roomCode: 'A-101', ticketType: TicketType.REPAIR, createDate: new Date('2026-09-18'), status: TicketStatus.NEED_ACTION },
-      { key: 'repair-heater', roomCode: 'A-102', ticketType: TicketType.REPAIR, createDate: new Date('2026-09-12'), status: TicketStatus.IN_PROGRESS },
-      { key: 'noise', roomCode: 'B-101', ticketType: TicketType.COMPLAIN, createDate: new Date('2026-09-10'), resolveDate: new Date('2026-09-13'), status: TicketStatus.DONE },
+      { key: 'repair-tap', roomCode: 'A-101', ticketType: TicketType.REPAIR, createDate: new Date('2024-09-18'), status: TicketStatus.NEED_ACTION },
+      { key: 'repair-heater', roomCode: 'A-102', ticketType: TicketType.REPAIR, createDate: new Date('2024-09-12'), status: TicketStatus.IN_PROGRESS },
+      { key: 'noise', roomCode: 'B-101', ticketType: TicketType.COMPLAIN, createDate: new Date('2024-09-10'), resolveDate: new Date('2024-09-13'), status: TicketStatus.DONE },
+      { key: 'repair-old-tap', roomCode: 'A-101', ticketType: TicketType.REPAIR, createDate: new Date('2024-06-18'), resolveDate: new Date('2024-06-20'), status: TicketStatus.DONE },
+      { key: 'repair-old-heater', roomCode: 'A-102', ticketType: TicketType.REPAIR, createDate: new Date('2024-08-12'), status: TicketStatus.IN_PROGRESS },
+      { key: 'noise-old', roomCode: 'B-101', ticketType: TicketType.COMPLAIN, createDate: new Date('2024-07-10'), status: TicketStatus.NEED_ACTION },
     ]) {
       const ticket = await Ticket.create({ ...ticketData, roomID: id(roomIds, ticketData.roomCode, 'Room') });
       ticketIds.set(ticketData.key, ticket._id);
@@ -236,8 +286,11 @@ async function seed(): Promise<void> {
     await Repair.create({ ticketID: id(ticketIds, 'repair-tap', 'Ticket'), facilityID: id(facilityIds, 'A-101:Bathroom tap', 'Facility'), description: 'Bathroom tap is leaking continuously.', facilityImage: 'uploads/repair/ticket-1001.jpg' });
     await Repair.create({ ticketID: id(ticketIds, 'repair-heater', 'Ticket'), facilityID: id(facilityIds, 'A-102:Water heater', 'Facility'), description: 'Water heater turns off after a few minutes.', facilityImage: 'uploads/repair/ticket-1002.jpg' });
     await Complain.create({ ticketID: id(ticketIds, 'noise', 'Ticket'), areaID: id(areaIds, 'Building B', 'Area'), roomID: id(roomIds, 'B-101', 'Room'), description: 'Noise after 23:00 near Building B hallway.' });
+    await Repair.create({ ticketID: id(ticketIds, 'repair-old-tap', 'Ticket'), facilityID: id(facilityIds, 'A-101:Bathroom tap', 'Facility'), description: 'Historical leak repaired before current tenancy.', facilityImage: 'uploads/repair/old-tap.jpg' });
+    await Repair.create({ ticketID: id(ticketIds, 'repair-old-heater', 'Ticket'), facilityID: id(facilityIds, 'A-102:Water heater', 'Facility'), description: 'Historical heater issue still in progress.', facilityImage: 'uploads/repair/old-heater.jpg' });
+    await Complain.create({ ticketID: id(ticketIds, 'noise-old', 'Ticket'), areaID: id(areaIds, 'Building B', 'Area'), roomID: id(roomIds, 'B-101', 'Room'), description: 'Historical noise complaint from previous tenant.' });
 
-    console.log('Seed complete: 3 areas, 8 rooms, 5 tenant accounts, 4 contracts, 4 invoices, 6 requests, and 3 tickets.');
+    console.log('Seed complete: 3 areas, 10 rooms, 11 users, 8 contracts (including 4 historical), 9 invoices, 6 requests, and 3 tickets.');
     console.log('Login accounts: admin / Admin@123, or a room code such as A-101 / Tenant@123.');
   } finally {
     await mongoose.disconnect();
@@ -248,3 +301,15 @@ seed().catch((error: unknown) => {
   console.error('Seeding failed:', error);
   process.exitCode = 1;
 });
+
+
+
+
+
+
+
+
+
+
+
+

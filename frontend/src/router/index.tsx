@@ -13,6 +13,10 @@ import { RoutePlaceholder } from "@/router/route-placeholder";
 import { RouterErrorPage } from "@/router/router-error-page";
 import { ROUTES } from "@/router/routes";
 
+import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
+import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
+import { RequireOnboarding } from "@/router/require-onboarding";
+
 const router = createBrowserRouter([
   {
     path: ROUTES.home,
@@ -39,11 +43,11 @@ const router = createBrowserRouter([
       },
       {
         path: ROUTES.auth.firstLoginProfile,
-        element: <RoutePlaceholder title="Complete profile" />,
+        element: <RequireOnboarding><FirstLoginProfilePage /></RequireOnboarding>,
       },
       {
         path: ROUTES.auth.firstLoginContract,
-        element: <RoutePlaceholder title="Review contract" />,
+        element: <RequireOnboarding><FirstLoginContractPage /></RequireOnboarding>,
       },
 
       {
@@ -185,3 +189,5 @@ const router = createBrowserRouter([
 ]);
 
 export { router };
+
+

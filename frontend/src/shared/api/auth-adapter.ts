@@ -2,7 +2,7 @@
  * Scope documents which role an endpoint requires. A signed-in session holds
  * exactly one token, so every protected scope resolves through the same reader.
  */
-export type ProtectedApiScope = 'admin' | 'user'
+export type ProtectedApiScope = 'admin' | 'user' | 'onboarding'
 export type ApiScope = 'guest' | ProtectedApiScope
 
 type AccessTokenReader = (

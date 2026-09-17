@@ -39,6 +39,21 @@ export function signOut() {
   publish(null)
 }
 
+export function completeOnboarding(result: LoginResult) {
+  publish({
+    accessToken: result.accessToken,
+    onboardingToken: null,
+    requireFirstLogin: false,
+    account: result.account,
+    fullName: readFullName(result.user),
+  })
+}
+
+export function updateOnboardingToken(onboardingToken: string) {
+  if (!session) return
+  publish({ ...session, onboardingToken, fullName: session.fullName })
+}
+
 function publish(next: AuthSession | null) {
   session = next
 
@@ -122,7 +137,10 @@ function safeParse(raw: string): unknown {
 }
 
 configureApiAuth({
-  readAccessToken: () => session?.accessToken ?? null,
+  readAccessToken: (scope) =>
+    scope === 'onboarding'
+      ? session?.onboardingToken ?? null
+      : session?.accessToken ?? null,
   onUnauthorized: () => {
     if (session) signOut()
   },
