@@ -3,7 +3,6 @@ import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   BackendTenantContract,
-  ContractStatus,
   TenantContract,
 } from '@/shared/types/contract'
 
