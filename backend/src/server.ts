@@ -13,6 +13,7 @@ import userRequestRouter from "./routes/user/request.routes.js";
 import approvalRoutes from "./routes/admin/approval.routes.js";
 import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
 import guessRouter from "./routes/guest.routes.js";
+import userTicketRouter from "./routes/user/ticket.routes.js";
 
 const app = express();
 
@@ -43,6 +44,9 @@ app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
 app.use(`/api/user/invoices`, userInvoiceRouter)
 app.use(`/api/user/requests`, userRequestRouter)
+// ticket route
+app.use(`/api/user/tickets`, userTicketRouter)
+
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 

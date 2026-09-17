@@ -40,6 +40,7 @@ import {
   RoomStatus,
   Sex,
   TicketStatus,
+  TicketType,
 } from './models/enums.js';
 
 const mongoUri = process.env.MONGO_URI;
@@ -225,9 +226,9 @@ async function seed(): Promise<void> {
 
     const ticketIds = new Map<string, Types.ObjectId>();
     for (const ticketData of [
-      { key: 'repair-tap', roomCode: 'A-101', ticketName: 'Repair bathroom tap', createDate: new Date('2026-09-18'), status: TicketStatus.NEED_ACTION },
-      { key: 'repair-heater', roomCode: 'A-102', ticketName: 'Repair water heater', createDate: new Date('2026-09-12'), status: TicketStatus.IN_PROGRESS },
-      { key: 'noise', roomCode: 'B-101', ticketName: 'Noise complaint', createDate: new Date('2026-09-10'), resolveDate: new Date('2026-09-13'), status: TicketStatus.DONE },
+      { key: 'repair-tap', roomCode: 'A-101', ticketType: TicketType.REPAIR, createDate: new Date('2026-09-18'), status: TicketStatus.NEED_ACTION },
+      { key: 'repair-heater', roomCode: 'A-102', ticketType: TicketType.REPAIR, createDate: new Date('2026-09-12'), status: TicketStatus.IN_PROGRESS },
+      { key: 'noise', roomCode: 'B-101', ticketType: TicketType.COMPLAIN, createDate: new Date('2026-09-10'), resolveDate: new Date('2026-09-13'), status: TicketStatus.DONE },
     ]) {
       const ticket = await Ticket.create({ ...ticketData, roomID: id(roomIds, ticketData.roomCode, 'Room') });
       ticketIds.set(ticketData.key, ticket._id);

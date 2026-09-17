@@ -51,6 +51,12 @@ export enum InvoiceStatus {
   PAID = 'paid',
 }
 
+export enum TicketType {
+  COMPLAIN = 'complain',
+  REPAIR = 'repair'
+}
+
+
 export enum TicketStatus {
   NEED_ACTION = 'need_action',
   IN_PROGRESS = 'in_progress',
