@@ -81,7 +81,7 @@ export interface TenantInvoiceDetail {
   totalBill: number
 }
 
-export interface BackendPaidRequest {
+export interface BackendInvoiceRequest {
   requestID: string
   invoiceID: string
   type?: string
@@ -89,7 +89,8 @@ export interface BackendPaidRequest {
   status?: string
 }
 
-export interface TenantPaidRequest {
+/** A request a tenant raises against one invoice: a paid notice or a late payment. */
+export interface TenantInvoiceRequest {
   requestID: string
   invoiceID: string
   createDate: string

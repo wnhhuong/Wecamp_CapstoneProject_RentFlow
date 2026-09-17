@@ -208,6 +208,7 @@ function InvoiceDetailsPage() {
           <LatePaymentDialog
             open={isLatePaymentOpen}
             onOpenChange={setIsLatePaymentOpen}
+            invoiceID={invoiceId}
             dueDate={invoice.dueDate}
           />
         </>
