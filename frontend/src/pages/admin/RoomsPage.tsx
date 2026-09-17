@@ -20,6 +20,7 @@ import type { AdminRoom } from "@/shared/types/admin/room";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 import { AddRoomDialog } from "./rooms/AddRoomDialog";
+import { EditRoomDialog } from "./rooms/EditRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
 import { RoomDetailsSheet } from "./rooms/RoomDetailsSheet";
 import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
@@ -31,7 +32,9 @@ function RoomsPage() {
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null);
   const [detailRoomID, setDetailRoomID] = useState<string | null>(null);
+  const [editRoomID, setEditRoomID] = useState<string | null>(null);
   const [createdRoomCode, setCreatedRoomCode] = useState("");
+  const [updatedRoomCode, setUpdatedRoomCode] = useState("");
   const [preparedUsername, setPreparedUsername] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<string, string[]>>({
@@ -108,6 +111,7 @@ function RoomsPage() {
     rooms.find((room) => room.roomID === selectedRoomID) ?? null;
   const detailRoom =
     rooms.find((room) => room.roomID === detailRoomID) ?? null;
+  const editRoom = rooms.find((room) => room.roomID === editRoomID) ?? null;
 
   function handleRoomCreated(room: AdminRoom) {
     setRooms((current) => [room, ...current]);
@@ -123,6 +127,15 @@ function RoomsPage() {
     setPreparedUsername(
       preparedRoom.account?.username ?? preparedRoom.roomCode,
     );
+  }
+
+  function handleRoomUpdated(updatedRoom: AdminRoom) {
+    setRooms((current) =>
+      current.map((room) =>
+        room.roomID === updatedRoom.roomID ? updatedRoom : room,
+      ),
+    );
+    setUpdatedRoomCode(updatedRoom.roomCode);
   }
 
   return (
@@ -184,6 +197,27 @@ function RoomsPage() {
             aria-label="Dismiss account success message"
             className="text-status-success-fg hover:bg-black/5"
             onClick={() => setPreparedUsername("")}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      ) : null}
+
+      {updatedRoomCode ? (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        >
+          <span>
+            Room <strong>{updatedRoomCode}</strong> was updated successfully.
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss update success message"
+            className="text-status-success-fg hover:bg-black/5"
+            onClick={() => setUpdatedRoomCode("")}
           >
             <CloseIcon />
           </Button>
@@ -380,6 +414,17 @@ function RoomsPage() {
           setDetailRoomID(null);
           setSelectedRoomID(roomID);
         }}
+        onEditRoom={(roomID) => {
+          setDetailRoomID(null);
+          setEditRoomID(roomID);
+        }}
+      />
+      <EditRoomDialog
+        room={editRoom}
+        onOpenChange={(open) => {
+          if (!open) setEditRoomID(null);
+        }}
+        onRoomUpdated={handleRoomUpdated}
       />
     </PageContainer>
   );

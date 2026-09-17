@@ -86,6 +86,17 @@ export interface CreateRoomInput {
   images: File[]
 }
 
+export interface UpdateRoomInput {
+  roomID: string
+  roomCode: string
+  floor: number
+  maxPeople: number
+  roomDetail: string
+  price: number
+  deposit: number
+  replacementImages: File[]
+}
+
 export interface PrepareRoomAccountInput {
   roomID: string
   temporaryPassword: string
