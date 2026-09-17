@@ -55,6 +55,9 @@ export interface BackendTenantInvoiceDetail {
   isOverdue?: boolean
   isRequestLate?: boolean
   meterReading?: number
+  lastReading?: number
+  usage?: number
+  unitPrice?: number
   breakdown: Partial<InvoiceBreakdown>
   totalBill: number
 }
@@ -68,7 +71,14 @@ export interface TenantInvoiceDetail {
   status: InvoiceStatus
   isOverdue: boolean
   isRequestLate: boolean
+  /** Cumulative meter number the tenant submitted, not the kWh used. */
   meterReading: number | null
+  /** Meter number of the previous reading; 0 for the first billing period. */
+  lastReading: number | null
+  /** kWh billed this period, i.e. meterReading - lastReading. */
+  usage: number | null
+  /** Price per kWh derived from the invoice, null when it cannot be derived. */
+  unitPrice: number | null
   breakdown: InvoiceBreakdown
   totalBill: number
 }

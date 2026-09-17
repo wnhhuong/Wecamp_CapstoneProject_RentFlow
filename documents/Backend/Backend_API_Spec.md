@@ -300,12 +300,15 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`status`|enum|Có|ERD|
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
-|`meterReading`|integer|Có|Join `CONSUMPTION.meterReading`|
+|`meterReading`|integer|Có|Join `CONSUMPTION.meterReading` — chỉ số công tơ tích luỹ|
+|`lastReading`|integer|Có|Chỉ số của lần đọc liền trước cùng phòng, kỳ đầu tiên = 0|
+|`usage`|integer|Có|`meterReading - lastReading` — số kWh đã dùng trong kỳ|
+|`unitPrice`|integer|Có|Đơn giá điện suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
 |`breakdown`|object|Có|room/electrical/water/wifi/parking/other bill|
 |`totalBill`|integer|Có|ERD|
 
 ```json
-{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000},"message":null}
+{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"lastReading":6,"usage":142,"unitPrice":3500,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000},"message":null}
 ```
 
 ## #10 — POST `/api/user/invoices/:invoiceID/paid-request`

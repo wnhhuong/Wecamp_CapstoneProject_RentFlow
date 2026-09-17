@@ -226,10 +226,7 @@ function buildChargeLines(invoice: TenantInvoiceDetail): ChargeLine[] {
     {
       label: "Electricity",
       note: "Meter reading entered by tenant",
-      basis:
-        invoice.meterReading === null
-          ? "Meter reading"
-          : `Meter reading ${invoice.meterReading}`,
+      basis: buildElectricityBasis(invoice),
       amount: invoice.breakdown.electrical,
     },
     {
@@ -262,6 +259,24 @@ function buildChargeLines(invoice: TenantInvoiceDetail): ChargeLine[] {
   }
 
   return lines;
+}
+
+/**
+ * Electricity is billed on the kWh used in the period, not on the cumulative
+ * meter number, so the basis reads "142 kWh × ₫ 3.500". The unit price is
+ * derived from the invoice, so both fall back to the raw reading when the
+ * backend cannot work them out.
+ */
+function buildElectricityBasis(invoice: TenantInvoiceDetail): string {
+  if (invoice.usage === null) {
+    return invoice.meterReading === null
+      ? "Meter reading"
+      : `Meter reading ${invoice.meterReading}`;
+  }
+
+  return invoice.unitPrice === null
+    ? `${invoice.usage} kWh`
+    : `${invoice.usage} kWh × ${formatCurrency(invoice.unitPrice)}`;
 }
 
 export { InvoiceDetailsPage };
