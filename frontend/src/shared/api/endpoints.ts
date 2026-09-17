@@ -31,6 +31,13 @@ export const ENDPOINTS = {
   admin: {
     rooms: '/admin/rooms',
     parameters: '/admin/parameters',
+    requests: '/admin/requests',
+
+    request: (requestID: string) =>
+      `/admin/requests/${encodeURIComponent(requestID)}`,
+
+    approveRequest: (requestID: string) =>
+      `/admin/requests/${encodeURIComponent(requestID)}/approve`,
 
     roomAccountPassword: (roomID: string) =>
       `/admin/rooms/${encodeURIComponent(roomID)}/account/password`,

@@ -1,16 +1,17 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
 import App from "@/App";
+import { ApprovalsPage } from "@/pages/admin/ApprovalsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
+import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
+import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 import { InvoiceDetailsPage } from "@/pages/user/invoices/InvoiceDetailsPage";
 import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
 import { RequireAuth } from "@/router/require-auth";
-import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { RoutePlaceholder } from "@/router/route-placeholder";
 import { RouterErrorPage } from "@/router/router-error-page";
 import { ROUTES } from "@/router/routes";
-import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 
 const router = createBrowserRouter([
   {
@@ -170,7 +171,7 @@ const router = createBrowserRouter([
         path: ROUTES.admin.approvals,
         element: (
           <RequireAuth role="admin">
-            <RoutePlaceholder title="Approvals" />
+            <ApprovalsPage />
           </RequireAuth>
         ),
       },
