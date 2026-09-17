@@ -15,7 +15,9 @@ import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
 import guessRouter from "./routes/guest.routes.js";
 import userTicketRouter from "./routes/user/ticket.routes.js";
 import userProfileRouter from "./routes/user/profile.routes.js";
+import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
 import userContractRouter from "./routes/user/contract.routes.js";
+
 const app = express();
 
 // Connect to MongoDB
@@ -45,6 +47,7 @@ app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
 app.use(`/api/user/invoices`, userInvoiceRouter)
 app.use(`/api/user/requests`, userRequestRouter)
+
 // ticket route
 app.use(`/api/user/tickets`, userTicketRouter)
 
@@ -58,6 +61,8 @@ app.use(`/api/admin/rooms`, adminRoomRoutes)
 //Approval routes
 app.use(`/api/admin/requests`, approvalRoutes)
 
+// admin invoice route
+app.use(`/api/admin/invoices`, adminInvoiceRouter)
 // User profile routes
 app.use(`/api/user/profile`, userProfileRouter)
 
