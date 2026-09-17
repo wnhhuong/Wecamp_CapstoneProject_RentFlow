@@ -1369,6 +1369,8 @@ req.User lưu {accountID, roomID, contractID, userID, startDate(của Account)} 
 |`nationality`|string|Có|Quốc tịch|
 |`por`|string|Có|Place of residence|
 |`password`|string|Có|Plain input; backend lưu password hash|
+|`confirmPassword`|string|Có|Plain input; check với password|
+|`confirmInfo`|string|Có|"true" or "false" -> chỉ true mới đi tiếp|
 
 ```json
 {"fullName":"Nguyễn Văn An","dob":"2002-06-14","phoneNumber":"0901234567","identityNo":"001202000001","sex":"male","nationality":"Vietnamese","por":"Hà Nội", "password": "my-new-pass"}
