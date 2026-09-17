@@ -34,9 +34,12 @@ const ROUTES = {
       rooms: '/admin/rooms',
       users: '/admin/users',
       invoices: '/admin/invoices',
+      invoiceDetails: '/admin/invoices/:invoiceId',
+      invoiceDetailsLink: (invoiceId: string) =>
+        `/admin/invoices/${invoiceId}`,
       parameters: '/admin/parameters',
       tickets: '/admin/tickets',
-      approvals: '/admin/approvals',
+      requests: '/admin/requests',
     },
   } as const
   

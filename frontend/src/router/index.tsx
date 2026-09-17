@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
 import App from "@/App";
-import { ApprovalsPage } from "@/pages/admin/ApprovalsPage";
+import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
@@ -156,6 +156,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: ROUTES.admin.invoiceDetails,
+        element: (
+          <RequireAuth role="admin">
+            <RoutePlaceholder title="Invoice details" />
+          </RequireAuth>
+        ),
+      },
+      {
         path: ROUTES.admin.parameters,
         element: (
           <RequireAuth role="admin">
@@ -172,10 +180,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: ROUTES.admin.approvals,
+        path: ROUTES.admin.requests,
         element: (
           <RequireAuth role="admin">
-            <ApprovalsPage />
+            <RequestsPage />
           </RequireAuth>
         ),
       },
