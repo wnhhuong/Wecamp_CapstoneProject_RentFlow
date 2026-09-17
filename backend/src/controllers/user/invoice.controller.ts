@@ -130,7 +130,17 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
 
         const room = await Room.findById(roomID);
         if (!room) { sendError(res, 404, "Room not found"); return; }
- 
+
+        // lấy lần đọc công tơ ngay trước đó của cùng phòng để tính usage
+        const previousConsumption = await Consumption.findOne({
+            roomID: consumption.roomID,
+            trackingTime: { $lt: consumption.trackingTime },
+        }).sort({ trackingTime: -1 });
+        const lastReading = previousConsumption ? previousConsumption.meterReading : 0;
+        const usage = consumption.meterReading - lastReading;
+        // đơn giá suy ngược từ hoá đơn, đúng giá TẠI THỜI ĐIỂM tạo invoice thay vì giá hiện tại
+        const unitPrice = usage > 0 ? Math.round(invoice.electricalBill / usage) : 0;
+
         const now = new Date();
         const displayID = `${room.roomCode}-${formatVNShortDate(new Date(invoice.createdDate))}`;
         
@@ -144,6 +154,9 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
             isOverdue: computeIsOverdue(invoice.paymentDate, invoice.dueDate, now),
             isRequestLate: invoice.isRequestLate,
             meterReading: consumption.meterReading,
+            lastReading,
+            usage,
+            unitPrice,
             breakdown: {
                 room: invoice.roomBill,
                 electrical: invoice.electricalBill,

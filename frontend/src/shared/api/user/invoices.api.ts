@@ -52,9 +52,18 @@ export async function getTenantInvoice(
     isOverdue: invoice.isOverdue ?? false,
     isRequestLate: invoice.isRequestLate ?? false,
     meterReading: invoice.meterReading ?? null,
+    lastReading: invoice.lastReading ?? null,
+    usage: toUsage(invoice.usage),
+    // The backend sends 0 when it cannot derive the price from the invoice.
+    unitPrice: invoice.unitPrice ? invoice.unitPrice : null,
     breakdown: mapBreakdown(invoice.breakdown),
     totalBill: invoice.totalBill,
   }
+}
+
+/** Only a non-negative reading difference is a usable kWh figure. */
+function toUsage(usage: number | undefined): number | null {
+  return usage === undefined || usage < 0 ? null : usage
 }
 
 function mapTenantInvoice(invoice: BackendTenantInvoice): TenantInvoice {
