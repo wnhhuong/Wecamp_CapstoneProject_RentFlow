@@ -8,16 +8,20 @@ import MoveoutRequest from "../models/MoveoutRequest.js";
 import PaidRequest from "../models/PaidRequest.js";
 import Contract from '../models/Contract.js';
 import Consumption from '../models/Consumption.js';
+import Invoice from '../models/Invoice.js';
 import User from '../models/User.js';
 import Room from '../models/Room.js';
 import { 
   RequestType, 
   RequestStatus, 
-  ContractStatus, 
+  ContractStatus,
+  InvoiceStatus, 
 } from '../models/enums.js';
 
 import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
 import { getVNDateParts } from '../utils/dateFormat.js';
+import { buildInvoiceDisplayID } from '../utils/displayId.js';
+import { parsePagination, paginateArray } from '../utils/pagination.js';
 
 /**
  * So sánh "cùng tháng" theo GIỜ VIỆT NAM (không dùng getUTCMonth trực tiếp) — tránh lệch
@@ -92,7 +96,10 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
         result = await approveConsumpRequest(updatedRequest, session);
         break;
       }
-      case RequestType.PAID:      
+      case RequestType.PAID: {
+        result = await approvePaidRequest(updatedRequest, session);
+        break;
+      }      
       case RequestType.DELAY:
       case RequestType.EXTEND:
       case RequestType.MOVEOUT:
@@ -206,6 +213,14 @@ const approveConsumpRequest = async (
   );
   const consumption = createdConsumption[0];
 
+  const invoice = await buildInvoiceForConsumption(
+    {
+      consumptionID: consumption._id,
+      consumpAmount,
+      roomBill: activeContract.rentPrice,
+    },
+  session
+  );
 
   return {
     consumptionID: String(consumption._id),
@@ -214,13 +229,63 @@ const approveConsumpRequest = async (
     previousReading,
     consumpAmount,
     billingPeriod: computeBillingPeriod(consumption.trackingTime),
-    invoice: await buildInvoiceForConsumption(
-      { consumptionID: consumption._id, consumpAmount, roomBill: activeContract.rentPrice},
-      session
-    ),
+    // Invoice summary
+    invoiceID: String(invoice._id),
+    displayID: buildInvoiceDisplayID(room.roomCode, invoice.createdDate),
+    totalBill: invoice.totalBill,
+
+  // Full bill
+    invoice,
 
   };
 };
+
+/**
+ * Nhánh PAID_REQUEST (task 3):
+ * 1. Lấy PaidRequest -> invoiceID.
+ * 2. Invoice PHẢI đang NOT_PAID.
+ * 3. Set Invoice PAID + paymentDate = now (cùng transaction).
+ */
+const approvePaidRequest = async (
+  request: HydratedDocument<IRequest>,
+  session: ClientSession,
+): Promise<Record<string, unknown>> => {
+  const paidRequest = await PaidRequest.findOne({ requestID: request._id }).session(session);
+  if (!paidRequest) {
+    throw new RequestServiceError(404, `PAID_REQUEST detail not found for request ${request._id}.`);
+  }
+ 
+  const invoice = await Invoice.findById(paidRequest.invoiceID).session(session);
+  if (!invoice) {
+    throw new RequestServiceError(404, `Invoice ${paidRequest.invoiceID} not found.`);
+  }
+ 
+  if (invoice.status === InvoiceStatus.PAID) {
+    throw new RequestServiceError(
+      400,
+      `Invoice ${invoice._id} is already PAID, cannot confirm payment again.`,
+    );
+  }
+  if (invoice.status !== InvoiceStatus.NOT_PAID) {
+    throw new RequestServiceError(
+      400,
+      `Invoice ${invoice._id} is in status "${invoice.status}", only NOT_PAID invoices can be marked as PAID via this request.`,
+    );
+  }
+ 
+  const now = new Date();
+  invoice.status = InvoiceStatus.PAID;
+  invoice.paymentDate = now;
+  await invoice.save({ session });
+ 
+  return {
+    invoiceID: String(invoice._id),
+    status: invoice.status,
+    paymentDate: invoice.paymentDate,
+    totalBill: invoice.totalBill,
+  };
+};
+
 
 // ---------------------------------------------------------------------------
 // #38 / #39 — GET list & detail
@@ -253,8 +318,7 @@ export const listRequests = async (query: ListRequestsQuery) => {
     filter.status = query.status;
   }
  
-  const pageNum = Math.max(1, Number(query.page) || 1);
-  const limitNum = Math.min(100, Math.max(1, Number(query.limit) || 12));
+  const { page, limit } = parsePagination(query.page, query.limit);
  
   const requests = await RequestModel.find(filter)
     .sort({ createDate: -1 })
@@ -283,17 +347,12 @@ export const listRequests = async (query: ListRequestsQuery) => {
     );
   }
  
-  const totalItems = mapped.length;
-  const items = mapped.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+  // search/filter bằng field đã map ở JS -> paginate trên mảng in-memory (đúng use-case paginateArray)
+  const { data, meta } = paginateArray(mapped, page, limit);
  
   return {
-    items,
-    pagination: {
-      page: pageNum,
-      limit: limitNum,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limitNum) || 1,
-    },
+    items: data,
+    pagination: meta, // { page, limit, total, totalPages } — total, KHÔNG phải totalItems (xem cảnh báo)
   };
 };
  
@@ -312,7 +371,7 @@ export const getRequestDetail = async (requestID: string) => {
     User.findById(request.userID),
   ]);
  
-  let details: Record<string, unknown>;
+  let details: Record<string, unknown> | null;
  
   if (request.type === RequestType.CONSUMP) {
     const consumpRequest = await ConsumpRequest.findOne({ requestID: request._id });
@@ -333,9 +392,11 @@ export const getRequestDetail = async (requestID: string) => {
       capturedAt: consumpRequest.capturedAt,
     };
   } else {
-    details = {
-      note: `Detail rendering for request type "${request.type}" is not implemented yet.`,
-    };
+    const DetailModel = DETAIL_MODEL_MAP[request.type];
+    const doc = DetailModel ? await DetailModel.findOne({ requestID: request._id }) : null;
+    details = doc
+      ? buildDetails(request.type, doc)
+      : { note: `Detail record not found for request type "${request.type}".` };
   }
  
   return {
