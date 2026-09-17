@@ -4,6 +4,7 @@ import { TicketStatus, TicketType } from "../../models/enums.js";
 import { sendError, sendSuccess } from "../../utils/response.js";
 import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js";
 import Room from "../../models/Room.js";
+import fs from "fs";
 import Ticket from "../../models/Ticket.js";
 import { buildTicketDisplayID } from "../../utils/displayId.js";
 import Complain from "../../models/Complain.js";
@@ -11,6 +12,7 @@ import Repair from "../../models/Repair.js";
 import Area from "../../models/Area.js";
 import Facility from "../../models/Facility.js";
 import FacilityType from "../../models/FacilityType.js";
+import mongoose from "mongoose";
 
 // Get all user tickets with filter and search
 // GET /api/user/tickets
@@ -139,15 +141,36 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
     }
 }
 
-// // Get repair options
-// // GET /api/user/tickets/repair/options
-// export const getRepairOptions = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
-//     try {
-        
-//     } catch (error) {
-//         next(error);
-//     }
-// }
+// Get repair options
+// GET /api/user/tickets/repair/options
+export const getRepairOptions = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID } = req.auth!;
+
+        const room = await Room.findById(roomID);
+        if (!room) { sendError(res, 404, "Room not found"); return; }
+
+        const facilities = await Facility.find({ roomID });
+        const typeIDs = [...new Set(facilities.map((f) => f.typeID.toString()))];
+        const facilityTypes = await FacilityType.find({ _id: { $in: typeIDs } });
+        const typeNameByID = new Map(facilityTypes.map((ft) => [ft._id.toString(), ft.typeName]));
+
+        const mappedFacilities = facilities.map((f) => ({
+            facilityID: f._id,
+            typeID: f.typeID,
+            typeName: typeNameByID.get(f.typeID.toString()) ?? "",
+        }));
+
+        sendSuccess(res, {
+            roomID: room._id,
+            roomCode: room.roomCode,
+            facilities: mappedFacilities,
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
 
 // // Get complain options
 // // GET /api/user/tickets/complain/options
@@ -159,15 +182,102 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
 //     }
 // }
 
-// // Create repair ticket
-// // POST /api/user/tickets/repair
-// export const createRepairTicket = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
-//     try {
+// Create repair ticket
+// POST /api/user/tickets/repair
+export const createRepairTicket = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const file = req.file;
+    const cleanupFile = () => {
+        if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    };
+
+    try {
+        const { roomID } = req.auth!;
+
+        // validate input
+        if (!file) { sendError(res, 400, "Facility image is required"); return; }
+        const { facilityID, description } = req.body;
+        if (!facilityID || !description) {
+            cleanupFile();
+            sendError(res, 400, "Please enter all required fields");
+            return;
+        }
+        if (!mongoose.isValidObjectId(facilityID)) {
+            cleanupFile();
+            sendError(res, 400, "Invalid facilityID");
+            return;
+        }
+        const room = await Room.findById(roomID);
+        if (!room) {
+            cleanupFile();
+            sendError(res, 404, "Room not found");
+            return;
+        }
+        // facility phải thuộc đúng phòng của tenant
+        const facility = await Facility.findOne({ _id: facilityID, roomID });
+        if (!facility) {
+            cleanupFile();
+            sendError(res, 403, "Facility does not belong to your room");
+            return;
+        }
+
+        const now = new Date();
+        const imagePath = `/uploads/repair/${file.filename}`;
+
+        const session = await mongoose.startSession();
+        let ticket, repair;
+
+        try {
+            session.startTransaction();
+
+            const createdTicket = await Ticket.create(
+                [{
+                    roomID: room._id,
+                    ticketType: TicketType.REPAIR,
+                    createDate: now,
+                    status: TicketStatus.NEED_ACTION,
+                }],
+                { session }
+            );
+            ticket = createdTicket[0];
+
+            const createdRepair = await Repair.create(
+                [{
+                    ticketID: ticket._id,
+                    facilityID: facility._id,
+                    description,
+                    facilityImage: imagePath,
+                }],
+                { session }
+            );
+            repair = createdRepair[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            cleanupFile();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        const displayID = buildTicketDisplayID(ticket.ticketType, room.roomCode, now, ticket._id);
+
+        sendSuccess(res, {
+            ticketID: ticket._id,
+            type: ticket.ticketType,
+            ticketName: displayID,
+            roomID: room._id,
+            facilityID: repair.facilityID,
+            description: repair.description,
+            facilityImage: repair.facilityImage,
+            createDate: ticket.createDate.toISOString(),
+            status: ticket.status,
+        });
         
-//     } catch (error) {
-//         next(error);
-//     }
-// }
+    } catch (error) {
+        next(error);
+    }
+}
 
 // // Create complain ticket
 // // POST /api/user/tickets/complain

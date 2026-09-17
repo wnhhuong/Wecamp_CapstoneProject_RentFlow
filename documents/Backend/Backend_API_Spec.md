@@ -430,7 +430,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |---|---|---|---|
 |`facilityID`|integer|Có|Facility thuộc phòng tenant|
 |`description`|string|Có|Nội dung repair|
-|`facilityImage`|file|Có|Ảnh facility cần sửa|
+|`image`|file|Có|Ảnh facility cần sửa|
 
 **Payload mẫu**
 
@@ -444,7 +444,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
 |`type`|enum|Có|`REPAIR`|
-|`ticketName`|string|Có|Backend sinh|
+|`ticketName`|string|Có|Backend sinh DisplayID|
 |`roomID`|integer|Có|Room của tenant|
 |`facilityID`|integer|Có|Facility được chọn|
 |`description`|string|Có|Nội dung repair|
