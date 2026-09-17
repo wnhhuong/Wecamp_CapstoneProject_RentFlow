@@ -185,7 +185,7 @@ const approveConsumpRequest = async (
   if (previousConsumption && isSameCalendarMonth(previousConsumption.trackingTime, consumpRequest.capturedAt)) {
     throw new RequestServiceError(
       409,
-      `Room ${room.roomCode} already has a CONSUMPTION for billing period ${computeBillingPeriod(
+      `Room ${room.roomCode} already has a CONSUMPTION/Invoice for billing period ${computeBillingPeriod(
         consumpRequest.capturedAt,
       )}. Cannot create duplicate.`,
     );
