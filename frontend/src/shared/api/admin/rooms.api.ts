@@ -12,6 +12,7 @@ import type {
   PrepareRoomAccountInput,
   PreparedRoomCredential,
   RoomAccount,
+  UpdateRoomInput,
 } from '@/shared/types/admin/room'
 import { mapAccountStatus, mapRoomStatus } from '@/shared/utils/statusMapper'
 
@@ -116,6 +117,41 @@ export async function createAdminRoom(
   )
 
   return mapAdminRoom(createdRoom)
+}
+
+export async function updateAdminRoom(
+  input: UpdateRoomInput,
+): Promise<AdminRoom> {
+  const body = new FormData()
+
+  body.append('roomCode', input.roomCode.trim().toUpperCase())
+  body.append('floor', String(input.floor))
+  body.append('maxPeople', String(input.maxPeople))
+  body.append('roomDetail', input.roomDetail.trim())
+  body.append('price', String(input.price))
+  body.append('deposit', String(input.deposit))
+
+  input.replacementImages.forEach((image) => {
+    body.append('images', image)
+  })
+
+  await apiRequest<BackendAdminRoom>(
+    ENDPOINTS.admin.room(input.roomID),
+    {
+      auth: 'admin',
+      method: 'PATCH',
+      body,
+    },
+  )
+
+  const rooms = await getAdminRooms()
+  const updatedRoom = rooms.find((room) => room.roomID === input.roomID)
+
+  if (!updatedRoom) {
+    throw new Error('The updated room could not be refreshed.')
+  }
+
+  return updatedRoom
 }
 
 export async function prepareRoomAccount(

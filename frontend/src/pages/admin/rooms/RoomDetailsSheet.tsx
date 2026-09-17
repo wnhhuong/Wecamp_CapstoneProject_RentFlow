@@ -21,12 +21,14 @@ interface RoomDetailsSheetProps {
   room: AdminRoom | null
   onOpenChange: (open: boolean) => void
   onPrepareAccount: (roomID: string) => void
+  onEditRoom: (roomID: string) => void
 }
 
 function RoomDetailsSheet({
   room,
   onOpenChange,
   onPrepareAccount,
+  onEditRoom,
 }: RoomDetailsSheetProps) {
   return (
     <Sheet open={room !== null} onOpenChange={onOpenChange}>
@@ -36,6 +38,7 @@ function RoomDetailsSheet({
             key={room.roomID}
             room={room}
             onPrepareAccount={onPrepareAccount}
+            onEditRoom={onEditRoom}
           />
         ) : null}
       </SheetContent>
@@ -46,9 +49,11 @@ function RoomDetailsSheet({
 function RoomDetailsLoader({
   room,
   onPrepareAccount,
+  onEditRoom,
 }: {
   room: AdminRoom
   onPrepareAccount: (roomID: string) => void
+  onEditRoom: (roomID: string) => void
 }) {
   const [detail, setDetail] = useState<AdminRoomDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -119,16 +124,17 @@ function RoomDetailsLoader({
         ) : null}
       </div>
 
-      {detail?.account?.status === 'banned' ? (
+      {detail ? (
         <SheetFooter className="border-t border-hairline">
-          <Button
-            type="button"
-            variant="dark"
-            onClick={() => onPrepareAccount(detail.room.roomID)}
-          >
-            <KeyIcon />
-            Prepare room account
+          <Button type="button" variant="outline" onClick={() => onEditRoom(detail.room.roomID)}>
+            Edit room
           </Button>
+          {detail.account?.status === 'banned' ? (
+            <Button type="button" variant="dark" onClick={() => onPrepareAccount(detail.room.roomID)}>
+              <KeyIcon />
+              Prepare room account
+            </Button>
+          ) : null}
         </SheetFooter>
       ) : null}
     </>
