@@ -1,18 +1,11 @@
+import type { RequestType } from '@/shared/types/request'
 import type { InvoiceStatus, RequestStatus } from '@/shared/types/status'
-
-export type AdminRequestType =
-  | 'consump'
-  | 'paid'
-  | 'delay'
-  | 'extend'
-  | 'moveout'
-  | 'checkout'
 
 export interface AdminRequest {
   requestID: string
   /** Human-readable code, e.g. "PAI-A-102-300924". */
   displayID: string
-  type: AdminRequestType
+  type: RequestType
   roomCode: string
   tenantName: string
   createDate: string
@@ -47,7 +40,7 @@ export interface AdminRequestDetail extends AdminRequest {
 
 export interface ApproveRequestResult {
   requestID: string
-  type: AdminRequestType
+  type: RequestType
   status: RequestStatus
   resolveDate: string
   /** Due date of the invoice a consumption approval creates. */

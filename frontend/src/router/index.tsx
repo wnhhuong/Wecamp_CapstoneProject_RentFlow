@@ -8,6 +8,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 import { InvoiceDetailsPage } from "@/pages/user/invoices/InvoiceDetailsPage";
 import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
+import { RequestListPage } from "@/pages/user/requests/RequestListPage";
 import { RequireAuth } from "@/router/require-auth";
 import { RoutePlaceholder } from "@/router/route-placeholder";
 import { RouterErrorPage } from "@/router/router-error-page";
@@ -94,7 +95,7 @@ const router = createBrowserRouter([
         path: ROUTES.user.requests,
         element: (
           <RequireAuth role="user">
-            <RoutePlaceholder title="Requests" />
+            <RequestListPage />
           </RequireAuth>
         ),
       },
