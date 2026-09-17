@@ -1,5 +1,5 @@
 import type { ApiPagination } from '@/shared/types/api'
-import type { InvoiceStatus } from '@/shared/types/status'
+import type { InvoiceStatus, RequestStatus } from '@/shared/types/status'
 
 export interface InvoiceBreakdown {
   room: number
@@ -28,9 +28,7 @@ export interface BackendTenantInvoiceList {
 }
 
 export interface TenantInvoice {
-  /** Database id, used for the details route. */
   invoiceID: string
-  /** Human-readable code, e.g. "A-101-290926". */
   displayID: string
   roomCode: string
   createDate: string
@@ -81,4 +79,19 @@ export interface TenantInvoiceDetail {
   unitPrice: number | null
   breakdown: InvoiceBreakdown
   totalBill: number
+}
+
+export interface BackendPaidRequest {
+  requestID: string
+  invoiceID: string
+  type?: string
+  createDate: string
+  status?: string
+}
+
+export interface TenantPaidRequest {
+  requestID: string
+  invoiceID: string
+  createDate: string
+  status: RequestStatus
 }

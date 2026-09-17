@@ -200,6 +200,7 @@ function InvoiceDetailsPage() {
           <PaymentDialog
             open={isPaymentOpen}
             onOpenChange={setIsPaymentOpen}
+            invoiceID={invoiceId}
             displayID={invoice.displayID}
             amount={invoice.totalBill}
           />
