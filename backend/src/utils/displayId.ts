@@ -22,4 +22,4 @@ export const buildInvoiceDisplayID = (roomCode: string, createdDate: Date): stri
 
 // Contract: roomCode-startDDMMYY, vd "A-101-010126"
 export const buildContractDisplayID = (roomCode: string, startDate: Date): string =>
-    `${roomCode}-${formatVNShortDate(startDate)}}`;
+    `${roomCode}-${formatVNShortDate(startDate)}`;

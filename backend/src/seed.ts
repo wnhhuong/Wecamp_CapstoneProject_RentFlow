@@ -200,7 +200,7 @@ async function seed(): Promise<void> {
       { key: 'B-101-sep', consumptionKey: 'B-101-sep', roomBill: 3800000, electricalBill: 612500, waterBill: 150000, wifiBill: 100000, parkingBill: 0, otherBill: 30000, totalBill: 4692500, createdDate: new Date('2026-09-29T01:30:00.000Z'), paymentDate: new Date('2026-10-02T10:00:00.000Z'), dueDate: new Date('2026-10-10'), isRequestLate: false, status: InvoiceStatus.PAID },
       { key: 'C-301-aug', consumptionKey: 'C-301-aug', roomBill: 4200000, electricalBill: 665000, waterBill: 175000, wifiBill: 100000, parkingBill: 150000, otherBill: 30000, totalBill: 5320000, createdDate: new Date('2026-08-29T01:30:00.000Z'), dueDate: new Date('2026-09-10'), isRequestLate: false, status: InvoiceStatus.NOT_PAID },
     ]) {
-      const invoice = await Invoice.create({ ...invoiceData, comsumptionID: id(consumptionIds, invoiceData.consumptionKey, 'Consumption') });
+      const invoice = await Invoice.create({ ...invoiceData, consumptionID: id(consumptionIds, invoiceData.consumptionKey, 'Consumption') });
       invoiceIds.set(invoiceData.key, invoice._id);
     }
 
