@@ -1,14 +1,14 @@
 import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
-  BackendPaidRequest,
+  BackendInvoiceRequest,
   BackendTenantInvoice,
   BackendTenantInvoiceDetail,
   BackendTenantInvoiceList,
   InvoiceBreakdown,
   TenantInvoice,
   TenantInvoiceDetail,
-  TenantPaidRequest,
+  TenantInvoiceRequest,
 } from '@/shared/types/invoice'
 import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
@@ -71,11 +71,32 @@ function toUsage(usage: number | undefined): number | null {
 export async function submitPaidRequest(
   invoiceID: string,
   signal?: AbortSignal,
-): Promise<TenantPaidRequest> {
-  const request = await apiRequest<BackendPaidRequest>(
+): Promise<TenantInvoiceRequest> {
+  return postInvoiceRequest(
     ENDPOINTS.user.invoicePaidRequest(invoiceID),
-    { auth: 'user', method: 'POST', signal },
+    signal,
   )
+}
+
+export async function submitLatePaymentRequest(
+  invoiceID: string,
+  signal?: AbortSignal,
+): Promise<TenantInvoiceRequest> {
+  return postInvoiceRequest(
+    ENDPOINTS.user.invoiceLatePaymentRequest(invoiceID),
+    signal,
+  )
+}
+
+async function postInvoiceRequest(
+  path: string,
+  signal?: AbortSignal,
+): Promise<TenantInvoiceRequest> {
+  const request = await apiRequest<BackendInvoiceRequest>(path, {
+    auth: 'user',
+    method: 'POST',
+    signal,
+  })
 
   return {
     requestID: request.requestID,
