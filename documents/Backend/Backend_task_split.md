@@ -26,10 +26,10 @@
 
 ### 5. Tickets - tenant
 - Danh sách ticket của tenant (`/api/user/tickets`)
-- Facility của phòng để tạo repair (`/api/user/tickets/repair/options`)
-- Area và room để tạo complaint (`/api/user/tickets/complain/options`)
-- Tạo repair ticket (`/api/user/tickets/repair`)
-- Tạo complaint ticket (`/api/user/tickets/complain`)
+- Facility của phòng để tạo repair (`/api/user/tickets/repairs/options`)
+- Area và room để tạo complaint (`/api/user/tickets/complains/options`)
+- Tạo repair ticket (`/api/user/tickets/repairs`)
+- Tạo complaint ticket (`/api/user/tickets/complains`)
 
 ### 13. Authentication
 - Đăng nhập và xác định first-login (`/api/auth/login`)

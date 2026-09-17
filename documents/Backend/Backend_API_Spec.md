@@ -365,10 +365,10 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |12|GET|`/api/user/tickets`|Danh sách ticket của tenant|Tenant / Tickets|
-|13|GET|`/api/user/tickets/repair/options`|Facility của phòng để tạo repair|Create repair|
-|14|GET|`/api/user/tickets/complain/options`|Area và room để tạo complaint|Create complaint|
-|15|POST|`/api/user/tickets/repair`|Tạo repair ticket|Create repair|
-|16|POST|`/api/user/tickets/complain`|Tạo complaint ticket|Create complaint|
+|13|GET|`/api/user/tickets/repairs/options`|Facility của phòng để tạo repair|Create repair|
+|14|GET|`/api/user/tickets/complains/options`|Area và room để tạo complaint|Create complaint|
+|15|POST|`/api/user/tickets/repairs`|Tạo repair ticket|Create repair|
+|16|POST|`/api/user/tickets/complains`|Tạo complaint ticket|Create complaint|
 
 ## #12 — GET `/api/user/tickets`
 
@@ -395,7 +395,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`resolveDate`|date-only, nullable|Không|ERD|
 |`status`|enum|Có|ERD|
 
-## #13 — GET `/api/user/tickets/repair/options`
+## #13 — GET `/api/user/tickets/repairs/options`
 
 **Input/Params:** Không có; room lấy từ token.
 
@@ -407,7 +407,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`roomCode`|string|Có|Join ROOM|
 |`facilities`|array|Có|Danh sách `{ facilityID, typeID, typeName }` của room|
 
-## #14 — GET `/api/user/tickets/complain/options`
+## #14 — GET `/api/user/tickets/complains/options`
 
 **Input/Params:** Không có.
 
@@ -422,7 +422,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`areas[].rooms[].roomID`|integer|Có|`ROOM.roomID`|
 |`areas[].rooms[].roomCode`|string|Có|`ROOM.roomCode`|
 
-## #15 — POST `/api/user/tickets/repair`
+## #15 — POST `/api/user/tickets/repairs`
 
 **Input — multipart/form-data**
 
@@ -452,7 +452,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`createDate`|date-only|Có|Ngày tạo|
 |`status`|enum|Có|`need_action`|
 
-## #16 — POST `/api/user/tickets/complain`
+## #16 — POST `/api/user/tickets/complains`
 
 **Input — JSON**
 
@@ -472,7 +472,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
 |`type`|enum|Có|`COMPLAIN`|
-|`ticketName`|string|Có|Backend sinh|
+|`ticketName`|string|Có|displayID do Backend sinh|
 |`areaID`|integer|Có|Area được chọn|
 |`roomID`|integer, nullable|Không|Room optional|
 |`description`|string|Có|Nội dung complaint|

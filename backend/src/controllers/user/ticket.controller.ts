@@ -142,7 +142,7 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
 }
 
 // Get repair options
-// GET /api/user/tickets/repair/options
+// GET /api/user/tickets/repairs/options
 export const getRepairOptions = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { roomID } = req.auth!;
@@ -172,18 +172,36 @@ export const getRepairOptions = async (req: UserAuthRequest, res: Response, next
     }
 }
 
-// // Get complain options
-// // GET /api/user/tickets/complain/options
-// export const getComplainOptions = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
-//     try {
-        
-//     } catch (error) {
-//         next(error);
-//     }
-// }
+// Get complain options
+// GET /api/user/tickets/complains/options
+export const getComplainOptions = async (_req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const [areas, rooms] = await Promise.all([
+            Area.find().lean(),
+            Room.find().lean()
+        ]);
+
+        const roomsByAreaID = new Map<string, { roomID: any; roomCode: string }[]>();
+        for (const r of rooms) {
+            const key = r.areaID.toString();
+            if (!roomsByAreaID.has(key)) roomsByAreaID.set(key, []);
+            roomsByAreaID.get(key)!.push({ roomID: r._id, roomCode: r.roomCode });
+        }
+
+        const mappedAreas = areas.map((a) => ({
+            areaID: a._id,
+            areaName: a.areaName,
+            rooms: roomsByAreaID.get(a._id.toString()) ?? [],
+        }));
+
+        sendSuccess(res, { areas: mappedAreas });
+    } catch (error) {
+        next(error);
+    }
+}
 
 // Create repair ticket
-// POST /api/user/tickets/repair
+// POST /api/user/tickets/repairs
 export const createRepairTicket = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
     const file = req.file;
     const cleanupFile = () => {
@@ -274,17 +292,107 @@ export const createRepairTicket = async (req: UserAuthRequest, res: Response, ne
             status: ticket.status,
         });
         
-    } catch (error) {
+    } catch (error: any) {
+        if (error?.status) {
+            sendError(res, error.status, error.message);
+            return;
+        }
+
         next(error);
     }
 }
 
-// // Create complain ticket
-// // POST /api/user/tickets/complain
-// export const createComplainTicket = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
-//     try {
-        
-//     } catch (error) {
-//         next(error);
-//     }
-// }
+// Create complain ticket
+// POST /api/user/tickets/complains
+export const createComplainTicket = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID } = req.auth!;
+        const { areaID, roomID: targetRoomID, description } = req.body;
+
+        if (!areaID || !description) {
+            sendError(res, 400, "Please enter all required fields");
+            return;
+        }
+        if (!mongoose.isValidObjectId(areaID)) {
+            sendError(res, 400, "Invalid areaID");
+            return;
+        }
+        if (targetRoomID !== undefined && targetRoomID !== null && !mongoose.isValidObjectId(targetRoomID)) {
+            sendError(res, 400, "Invalid roomID");
+            return;
+        }
+
+        const area = await Area.findById(areaID);
+        if (!area) { sendError(res, 404, "Area not found"); return; }
+        // nếu có chọn room cụ thể, room đó phải thuộc đúng area
+        let targetRoom = null;
+        if (targetRoomID) {
+            targetRoom = await Room.findOne({ _id: targetRoomID, areaID });
+            if (!targetRoom) {
+                sendError(res, 400, "Room does not belong to the selected area");
+                return;
+            }
+        }
+
+        const room = await Room.findById(roomID);
+        if (!room) { sendError(res, 404, "Room not found"); return; }
+
+        const now = new Date();
+
+        const session = await mongoose.startSession();
+        let ticket, complain;
+
+        try {
+            session.startTransaction();
+            const createdTicket = await Ticket.create(
+                [{
+                    roomID: room._id,
+                    ticketType: TicketType.COMPLAIN,
+                    createDate: now,
+                    status: TicketStatus.NEED_ACTION,
+                }],
+                { session }
+            );
+            ticket = createdTicket[0];
+
+            const createdComplain = await Complain.create(
+                [{
+                    ticketID: ticket._id,
+                    areaID: area._id,
+                    roomID: targetRoom ? targetRoom._id : undefined,
+                    description,
+                }],
+                { session }
+            );
+            complain = createdComplain[0];
+
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+
+        const displayID = buildTicketDisplayID(ticket.ticketType, room.roomCode, now, ticket._id);
+
+        sendSuccess(res, {
+            ticketID: ticket._id,
+            type: ticket.ticketType,
+            ticketName: displayID,
+            areaID: complain.areaID,
+            roomID: complain.roomID ?? null,
+            description: complain.description,
+            createDate: ticket.createDate.toISOString(),
+            status: ticket.status,
+        });
+
+    } catch (error: any) {
+        if (error?.status) {
+            sendError(res, error.status, error.message);
+            return;
+        }
+
+        next(error);
+    }
+}
