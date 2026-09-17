@@ -20,7 +20,7 @@ import {
 
 import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
 import { getVNDateParts } from '../utils/dateFormat.js';
-import { buildInvoiceDisplayID } from '../utils/displayId.js';
+import { buildInvoiceDisplayID, buildRequestDisplayID } from '../utils/displayId.js';
 import { parsePagination, paginateArray } from '../utils/pagination.js';
 
 /**
@@ -325,23 +325,30 @@ export const listRequests = async (query: ListRequestsQuery) => {
     .populate<{ roomID: { _id: mongoose.Types.ObjectId; roomCode: string } }>('roomID', 'roomCode')
     .populate<{ userID: { _id: mongoose.Types.ObjectId; fullName: string } }>('userID', 'fullName');
  
-  let mapped = requests.map((r) => ({
-    requestID: String(r._id),
-    type: r.type,
-    roomID: String((r.roomID as any)?._id ?? r.roomID),
-    roomCode: (r.roomID as any)?.roomCode ?? null,
-    userID: String((r.userID as any)?._id ?? r.userID),
-    userFullName: (r.userID as any)?.fullName ?? null,
-    createDate: r.createDate,
-    resolveDate: r.resolveDate ?? null,
-    status: r.status,
-  }));
+  let mapped = requests.map((r) => {
+    const roomCode = (r.roomID as any)?.roomCode ?? null;
+    return {
+      requestID: String(r._id),
+      displayID: roomCode
+        ? buildRequestDisplayID(r.type, roomCode, new Date(r.createDate))
+        : null,
+      type: r.type,
+      roomID: String((r.roomID as any)?._id ?? r.roomID),
+      roomCode,
+      userID: String((r.userID as any)?._id ?? r.userID),
+      userFullName: (r.userID as any)?.fullName ?? null,
+      createDate: r.createDate,
+      resolveDate: r.resolveDate ?? null,
+      status: r.status,
+    };
+  });
  
   if (query.search) {
     const s = String(query.search).trim().toLowerCase();
     mapped = mapped.filter(
       (item) =>
         item.requestID.toLowerCase().includes(s) ||
+        (item.displayID ?? '').toLowerCase().includes(s) ||
         (item.roomCode ?? '').toLowerCase().includes(s) ||
         (item.userFullName ?? '').toLowerCase().includes(s),
     );
@@ -399,8 +406,25 @@ export const getRequestDetail = async (requestID: string) => {
       : { note: `Detail record not found for request type "${request.type}".` };
   }
  
+  // Admin duyệt PAID request là xác nhận đã nhận tiền, nên phải thấy hoá đơn nào
+  // và bao nhiêu tiền ngay trong panel, không chỉ một ObjectId.
+  if (request.type === RequestType.PAID && details?.invoiceID) {
+    const invoice = await Invoice.findById(details.invoiceID as mongoose.Types.ObjectId);
+    if (invoice) {
+      details.invoiceDisplayID = room
+        ? buildInvoiceDisplayID(room.roomCode, new Date(invoice.createdDate))
+        : null;
+      details.invoiceTotalBill = invoice.totalBill;
+      details.invoiceDueDate = invoice.dueDate.toISOString();
+      details.invoiceStatus = invoice.status;
+    }
+  }
+
   return {
     requestID: String(request._id),
+    displayID: room
+      ? buildRequestDisplayID(request.type, room.roomCode, new Date(request.createDate))
+      : null,
     type: request.type,
     room: room ? { roomID: String(room._id), roomCode: room.roomCode } : null,
     user: user ? { userID: String(user._id), fullName: user.fullName } : null,

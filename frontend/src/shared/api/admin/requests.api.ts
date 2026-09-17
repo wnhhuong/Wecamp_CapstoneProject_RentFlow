@@ -2,192 +2,165 @@ import { apiRequest } from '@/shared/api/client'
 import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
-  AdminConsumptionRequest,
-  ApproveConsumptionResult,
+  AdminConsumptionDetails,
+  AdminPaidDetails,
+  AdminRequest,
+  AdminRequestDetail,
+  AdminRequestType,
+  ApproveRequestResult,
 } from '@/shared/types/admin/request'
-import type { RequestStatus } from '@/shared/types/status'
 import { formatMonthYear } from '@/shared/utils/dateFormatter'
+import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
 interface BackendRequestListResponse {
   items?: BackendRequestListItem[]
-  pagination?: {
-    page: number
-    limit: number
-    totalItems: number
-    totalPages: number
-  }
 }
 
 interface BackendRequestListItem {
   requestID: string | number
+  displayID?: string | null
   type: string
-  roomID?: string | number
-  roomCode?: string
-  userID?: string | number
-  userFullName?: string
+  roomCode?: string | null
+  userFullName?: string | null
   createDate: string
   resolveDate?: string | null
-  status: RequestStatus
+  status?: string
 }
 
-interface BackendRequestDetail {
-  requestID: string | number
-  type: string
-  room: {
-    roomID: string | number
-    roomCode: string
-  }
-  user: {
-    userID: string | number
-    fullName: string
-  }
-  createDate: string
-  resolveDate?: string | null
-  status: RequestStatus
-  details: {
+interface BackendRequestDetail extends BackendRequestListItem {
+  room?: { roomID: string | number; roomCode: string } | null
+  user?: { userID: string | number; fullName: string } | null
+  details?: {
     image?: string
-    reading?: number
     currentReading?: number
-    capturedAt?: string
     previousReading?: number
-    previousMeterReading?: number
-    baseReading?: number
     usage?: number
-    consumptionID?: string | number | null
-  }
+    capturedAt?: string
+    invoiceID?: string | number
+    invoiceDisplayID?: string | null
+    invoiceTotalBill?: number
+    invoiceDueDate?: string
+    invoiceStatus?: string
+  } | null
 }
 
 interface BackendApproveResponse {
   requestID: string | number
   type: string
   resolveDate: string
-  status: RequestStatus
+  status?: string
   result?: {
-    consumptionID?: string | number | null
-    meterReading?: number
-    usage?: number
-    consumpAmount?: number
-    trackingTime?: string
-    invoice?: {
-      _id?: string | number
-      invoiceID?: string | number
-      status?: string
-      dueDate?: string
-    }
+    invoice?: { dueDate?: string }
   }
 }
 
 const REQUEST_PAGE_SIZE = 100
-const CONSUMPTION_REQUEST_TYPE = 'consump'
 
-export async function getAdminConsumptionRequests(): Promise<
-  AdminConsumptionRequest[]
-> {
-  const response = await apiRequest<BackendRequestListResponse | BackendRequestListItem[]>(
-    `${ENDPOINTS.admin.requests}?type=${CONSUMPTION_REQUEST_TYPE}&limit=${REQUEST_PAGE_SIZE}`,
+const REQUEST_TYPES: AdminRequestType[] = [
+  'consump',
+  'paid',
+  'delay',
+  'extend',
+  'moveout',
+  'checkout',
+]
+
+export async function getAdminRequests(): Promise<AdminRequest[]> {
+  const response = await apiRequest<BackendRequestListResponse>(
+    `${ENDPOINTS.admin.requests}?limit=${REQUEST_PAGE_SIZE}`,
     { auth: 'admin' },
   )
-  const items = Array.isArray(response) ? response : response.items ?? []
 
-  const details = await Promise.all(
-    items
-      .filter((item) => item.type === CONSUMPTION_REQUEST_TYPE)
-      .map((item) => getAdminConsumptionRequest(String(item.requestID))),
-  )
-
-  return details
+  return (response.items ?? []).map(mapRequest)
 }
 
-export async function getAdminConsumptionRequest(
+export async function getAdminRequest(
   requestID: string,
-): Promise<AdminConsumptionRequest> {
+): Promise<AdminRequestDetail> {
   const detail = await apiRequest<BackendRequestDetail>(
     ENDPOINTS.admin.request(requestID),
     { auth: 'admin' },
   )
-
-  return mapConsumptionDetail(detail)
+  return {
+    ...mapRequest({
+      ...detail,
+      roomCode: detail.room?.roomCode ?? detail.roomCode,
+      userFullName: detail.user?.fullName ?? detail.userFullName,
+    }),
+    consumption: mapConsumptionDetails(detail),
+    paid: mapPaidDetails(detail),
+  }
 }
 
-export async function approveAdminConsumptionRequest(
+export async function approveAdminRequest(
   requestID: string,
-): Promise<ApproveConsumptionResult> {
+): Promise<ApproveRequestResult> {
   const approved = await apiRequest<BackendApproveResponse>(
     ENDPOINTS.admin.approveRequest(requestID),
-    {
-      auth: 'admin',
-      method: 'PATCH',
-    },
+    { auth: 'admin', method: 'PATCH' },
   )
-  const request = await getAdminConsumptionRequest(String(approved.requestID))
-  const invoice = approved.result?.invoice
-
-  if (!invoice || (!invoice._id && !invoice.invoiceID) || !invoice.dueDate) {
-    throw new Error('Approval succeeded, but the created invoice was not returned.')
-  }
-
-  if (invoice.status !== 'not_paid') {
-    throw new Error('The created invoice did not start with NOT PAID status.')
-  }
 
   return {
-    request,
-    consumption: {
-      consumptionID:
-        approved.result?.consumptionID !== undefined &&
-        approved.result.consumptionID !== null
-          ? String(approved.result.consumptionID)
-          : request.consumptionID,
-      roomCode: request.roomCode,
-      meterReading: approved.result?.meterReading ?? request.currentReading,
-      usage:
-        approved.result?.usage ??
-        approved.result?.consumpAmount ??
-        request.usage,
-      trackingTime: approved.result?.trackingTime ?? request.capturedAt,
-    },
-    invoice: {
-      invoiceID: String(invoice.invoiceID ?? invoice._id),
-      status: 'not_paid',
-      dueDate: invoice.dueDate,
-    },
+    requestID: String(approved.requestID),
+    type: mapRequestType(approved.type),
+    status: mapRequestStatus(approved.status),
+    resolveDate: approved.resolveDate,
+    createdInvoiceDueDate: approved.result?.invoice?.dueDate ?? null,
   }
 }
 
-function mapConsumptionDetail(
-  detail: BackendRequestDetail,
-): AdminConsumptionRequest {
-  const currentReading =
-    detail.details.currentReading ?? detail.details.reading ?? 0
-  const previousReading =
-    detail.details.previousReading ??
-    detail.details.previousMeterReading ??
-    detail.details.baseReading ??
-    0
-  const usage =
-    detail.details.usage ??
-    currentReading - previousReading
-  const capturedAt = detail.details.capturedAt ?? detail.createDate
+function mapRequest(request: BackendRequestListItem): AdminRequest {
+  const requestID = String(request.requestID)
 
   return {
-    requestID: String(detail.requestID),
-    roomCode: detail.room.roomCode,
-    tenantName: detail.user.fullName,
-    status: detail.status,
-    createDate: detail.createDate,
-    resolveDate: detail.resolveDate ?? null,
-    capturedAt,
-    meterImage: toAbsoluteAssetUrl(detail.details.image ?? ''),
+    requestID,
+    displayID: request.displayID ?? requestID,
+    type: mapRequestType(request.type),
+    roomCode: request.roomCode ?? '',
+    tenantName: request.userFullName ?? '',
+    createDate: request.createDate,
+    resolveDate: request.resolveDate ?? null,
+    status: mapRequestStatus(request.status),
+  }
+}
+
+function mapRequestType(type: string): AdminRequestType {
+  return REQUEST_TYPES.find((known) => known === type) ?? 'consump'
+}
+
+function mapConsumptionDetails(
+  detail: BackendRequestDetail,
+): AdminConsumptionDetails | null {
+  if (detail.type !== 'consump' || !detail.details) return null
+
+  const details = detail.details
+  const currentReading = details.currentReading ?? 0
+  const previousReading = details.previousReading ?? 0
+  const capturedAt = details.capturedAt ?? detail.createDate
+
+  return {
+    meterImage: toAbsoluteAssetUrl(details.image ?? ''),
     previousReading,
     currentReading,
-    usage,
+    usage: details.usage ?? currentReading - previousReading,
+    capturedAt,
     billingPeriod: formatMonthYear(capturedAt),
-    invoiceDueDate: getNextMonthDate(capturedAt, 5),
-    consumptionID:
-      detail.details.consumptionID !== undefined &&
-      detail.details.consumptionID !== null
-        ? String(detail.details.consumptionID)
-        : null,
+  }
+}
+
+function mapPaidDetails(
+  detail: BackendRequestDetail,
+): AdminPaidDetails | null {
+  if (detail.type !== 'paid' || detail.details?.invoiceID === undefined) return null
+
+  const details = detail.details
+  const invoiceID = String(details.invoiceID)
+
+  return {
+    invoiceID,
+    invoiceDisplayID: details.invoiceDisplayID ?? invoiceID,
+    totalBill: details.invoiceTotalBill ?? 0,
+    invoiceStatus: mapInvoiceStatus(details.invoiceStatus),
   }
 }
 
@@ -197,11 +170,4 @@ function toAbsoluteAssetUrl(path: string) {
 
   const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin
   return new URL(path, `${apiOrigin}/`).toString()
-}
-
-function getNextMonthDate(value: string, day: number) {
-  const date = new Date(value)
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, day),
-  ).toISOString()
 }
