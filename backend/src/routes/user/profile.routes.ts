@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { UserProfileController } from '../../controllers/user/profile.controller.js';
-import { protect } from '../../middlewares/auth.middleware.js';
+import { protect, userOnly } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 
 // Toàn bộ API profile yêu cầu đăng nhập
-router.use(protect);
+router.use(protect, userOnly);
 
 // #17: GET /api/user/profile
 router.get('/', UserProfileController.getProfile);

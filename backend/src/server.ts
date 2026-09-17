@@ -15,6 +15,7 @@ import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
 import guessRouter from "./routes/guest.routes.js";
 import userTicketRouter from "./routes/user/ticket.routes.js";
 import userProfileRouter from "./routes/user/profile.routes.js";
+import userContractRouter from "./routes/user/contract.routes.js";
 const app = express();
 
 // Connect to MongoDB
@@ -59,6 +60,9 @@ app.use(`/api/admin/requests`, approvalRoutes)
 
 // User profile routes
 app.use(`/api/user/profile`, userProfileRouter)
+
+// User contract routes
+app.use(`/api/user/contract`, userContractRouter)
 
 // Global Error Handler
 app.use(errorHandler)
