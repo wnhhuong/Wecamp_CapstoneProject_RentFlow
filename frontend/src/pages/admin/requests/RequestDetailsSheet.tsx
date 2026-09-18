@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
 import { ErrorState, PageLoading } from "@/components/feedback";
@@ -19,25 +19,27 @@ import {
   getAdminRequest,
 } from "@/shared/api/admin/requests.api";
 import type {
+  AdminInvoiceDetails,
   AdminRequest,
   AdminRequestDetail,
-  ApproveRequestResult,
 } from "@/shared/types/admin/request";
 import type { RequestType } from "@/shared/types/request";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 import { formatDate } from "@/shared/utils/dateFormatter";
 import { REQUEST_TYPE_LABELS } from "@/shared/utils/requestTypes";
 
-
 const APPROVE_LABELS: Partial<Record<RequestType, string>> = {
   consump: "Approve and create invoice",
   paid: "Confirm payment",
+  delay: "Approve late payment",
 };
 
 const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
   consump:
-    "Approval records the consumption and creates a NOT PAID invoice immediately.",
-  paid: "Confirm only after the money has arrived. Approving marks the invoice PAID.",
+    "Approving records the consumption and creates an invoice immediately.",
+  paid: "Approving marks the invoice PAID. Confirm only after the money has arrived.",
+  delay:
+    "Approving acknowledges that the tenant will pay after the due date. The invoice status remains NOT PAID and the due date stays the same.",
 };
 
 interface RequestDetailsSheetProps {
@@ -78,8 +80,6 @@ function RequestDetailsLoader({
   const [error, setError] = useState("");
   const [isApproving, setIsApproving] = useState(false);
   const [approveError, setApproveError] = useState("");
-  const [approveResult, setApproveResult] =
-    useState<ApproveRequestResult | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -117,8 +117,7 @@ function RequestDetailsLoader({
 
     try {
       const result = await approveAdminRequest(detail.requestID);
-      setApproveResult(result);
-      // Re-read instead of patching locally: approving also settles the invoice.
+      // Re-read instead of patching locally: approving also settles or creates the invoice.
       setDetail(
         await getAdminRequest(detail.requestID).catch(() => ({
           ...detail,
@@ -139,17 +138,20 @@ function RequestDetailsLoader({
   }
 
   const approveLabel = detail ? APPROVE_LABELS[detail.type] : undefined;
-  const isPending = detail?.status === "pending";
+  const canApprove = Boolean(approveLabel) && detail?.status === "pending";
   // The outcome outlives the click: an approved request keeps showing what it did.
   const outcome =
-    detail && detail.status === "approved"
-      ? buildOutcome(detail, approveResult)
-      : null;
+    detail && detail.status === "approved" ? buildOutcome(detail) : null;
 
   return (
     <>
       <SheetHeader className="border-b border-hairline pr-12">
-        <SheetTitle className="text-xl">{request.displayID}</SheetTitle>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SheetTitle className="text-xl">{request.displayID}</SheetTitle>
+          {detail ? (
+            <StatusBadge domain="request" status={detail.status} />
+          ) : null}
+        </div>
         <SheetDescription>
           {REQUEST_TYPE_LABELS[request.type]} · Room {request.roomCode}
         </SheetDescription>
@@ -167,13 +169,8 @@ function RequestDetailsLoader({
 
         {!isLoading && !error && detail ? (
           <>
-            <section className="grid gap-3 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <StatusBadge domain="request" status={detail.status} />
-              </div>
+            <section className="grid gap-3 py-2">
               <DetailRow label="Tenant" value={detail.tenantName} />
-              <DetailRow label="Room" value={detail.roomCode} />
               <DetailRow
                 label="Submitted"
                 value={formatDate(detail.createDate, true)}
@@ -190,27 +187,23 @@ function RequestDetailsLoader({
 
             {detail.consumption ? (
               <ConsumptionSection
-                detail={detail}
+                roomCode={detail.roomCode}
                 consumption={detail.consumption}
               />
             ) : null}
 
-            {detail.paid ? <PaidSection paid={detail.paid} /> : null}
+            {/* A consumption approval creates the invoice, so it is an outcome to
+                open from the footer, not evidence the owner reviews here. */}
+            {detail.invoice && detail.type !== "consump" ? (
+              <InvoiceSection invoice={detail.invoice} />
+            ) : null}
 
             {outcome ? (
               <p
                 role="status"
-                className="flex gap-2 rounded-md border border-hairline bg-status-success-bg px-3 py-2 text-sm leading-6 text-status-success-fg"
+                className="rounded-md border border-hairline bg-status-success-bg px-3 py-2 text-sm leading-6 text-status-success-fg"
               >
-                <span>{outcome}</span>{" "}
-                <span>{detail.paid ? (
-                  <Link
-                    to={ROUTES.admin.invoiceDetailsLink(detail.paid.invoiceID)}
-                    className="font-medium underline underline-offset-2"
-                  >
-                    View invoice
-                  </Link>
-                ) : null}</span>
+                {outcome}
               </p>
             ) : APPROVE_NOTES[detail.type] ? (
               <p className="rounded-md border border-hairline bg-status-info-bg px-3 py-2 text-sm leading-6 text-status-info-fg">
@@ -232,86 +225,95 @@ function RequestDetailsLoader({
         ) : null}
       </div>
 
-      {detail && approveLabel ? (
-        <SheetFooter className="border-t border-hairline">
-          <Button
-            type="button"
-            variant="dark"
-            disabled={!isPending || isApproving}
-            onClick={() => void approve()}
-          >
-            {isApproving ? <Spinner /> : null}
-            {isPending ? approveLabel : "Already approved"}
-          </Button>
+      {detail && (detail.invoice || canApprove) ? (
+        <SheetFooter className="border-t border-hairline sm:flex-row sm:justify-end">
+          {detail.invoice ? (
+            <Button type="button" variant="outline" asChild>
+              <Link to={ROUTES.admin.invoiceDetailsLink(detail.invoice.invoiceID)}>
+                View invoice
+              </Link>
+            </Button>
+          ) : null}
+
+          {canApprove ? (
+            <Button
+              type="button"
+              variant="dark"
+              disabled={isApproving}
+              onClick={() => void approve()}
+            >
+              {isApproving ? <Spinner /> : null}
+              {approveLabel}
+            </Button>
+          ) : null}
         </SheetFooter>
       ) : null}
     </>
   );
 }
 
-function buildOutcome(
-  detail: AdminRequestDetail,
-  result: ApproveRequestResult | null,
-) {
-  if (detail.paid) {
-    return detail.paid.invoiceStatus === "paid"
-      ? `Invoice ${detail.paid.invoiceDisplayID} is marked PAID.`
-      : `Invoice ${detail.paid.invoiceDisplayID} was confirmed.`;
+function buildOutcome(detail: AdminRequestDetail) {
+  const invoiceLabel = detail.invoice
+    ? `Invoice ${detail.invoice.invoiceDisplayID}`
+    : "The invoice";
+
+  if (detail.type === "paid") {
+    return `Payment confirmed. ${invoiceLabel} is now marked PAID.`;
+  }
+
+  if (detail.type === "delay") {
+    return detail.invoice
+      ? `Late payment approved. ${invoiceLabel} remains NOT PAID and is still due ${formatDate(detail.invoice.dueDate)}.`
+      : `Late payment approved. ${invoiceLabel} remains NOT PAID.`;
   }
 
   if (detail.type === "consump") {
-    return result?.createdInvoiceDueDate
-      ? `Reading approved. A NOT PAID invoice was created for room ${detail.roomCode}, due ${formatDate(result.createdInvoiceDueDate)}.`
-      : `Reading approved for room ${detail.roomCode}.`;
+    return `Reading approved. An invoice was created for room ${detail.roomCode}.`;
   }
 
   return `${detail.displayID} was approved.`;
 }
 
 function ConsumptionSection({
-  detail,
+  roomCode,
   consumption,
 }: {
-  detail: AdminRequestDetail;
+  roomCode: string;
   consumption: NonNullable<AdminRequestDetail["consumption"]>;
 }) {
   return (
-    <section className="grid gap-3 border-t border-hairline pt-4">
-      <h3 className="text-sm font-semibold text-foreground">
-        Meter reading · {consumption.billingPeriod}
-      </h3>
-
-      <MeterImage src={consumption.meterImage} roomCode={detail.roomCode} />
-
-      <div className="grid grid-cols-3 gap-2">
-        <Metric label="Previous" value={`${consumption.previousReading} kWh`} />
-        <Metric label="Current" value={`${consumption.currentReading} kWh`} />
-        <Metric label="Usage" value={`${consumption.usage} kWh`} strong />
-      </div>
-
+    <DetailSection title={`Meter reading · ${consumption.billingPeriod}`}>
+      <MeterImage src={consumption.meterImage} roomCode={roomCode} />
+      <DetailRow
+        label="Previous reading"
+        value={`${consumption.previousReading} kWh`}
+      />
+      <DetailRow
+        label="Current reading"
+        value={`${consumption.currentReading} kWh`}
+      />
+      <DetailRow label="Usage" value={`${consumption.usage} kWh`} />
       <DetailRow
         label="Captured"
         value={formatDate(consumption.capturedAt, true)}
       />
-    </section>
+    </DetailSection>
   );
 }
 
-function PaidSection({
-  paid,
-}: {
-  paid: NonNullable<AdminRequestDetail["paid"]>;
-}) {
+function InvoiceSection({ invoice }: { invoice: AdminInvoiceDetails }) {
   return (
-    <section className="grid gap-3 border-t border-hairline pt-4">
-      <h3 className="text-sm font-semibold text-foreground">Invoice</h3>
-      <DetailRow label="Invoice ID" value={paid.invoiceDisplayID} />
-      <DetailRow label="Amount" value={formatCurrency(paid.totalBill)} />
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Invoice status</span>
-        <StatusBadge domain="invoice" status={paid.invoiceStatus} />
-      </div>
-    </section>
+    <DetailSection
+      title="Invoice"
+      badge={<StatusBadge domain="invoice" status={invoice.invoiceStatus} />}
+    >
+      <DetailRow label="Invoice ID" value={invoice.invoiceDisplayID} />
+      <DetailRow label="Amount" value={formatCurrency(invoice.totalBill)} />
+      <DetailRow
+        label="Due date"
+        value={invoice.dueDate ? formatDate(invoice.dueDate) : "Not set"}
+      />
+    </DetailSection>
   );
 }
 
@@ -321,48 +323,53 @@ function MeterImage({ src, roomCode }: { src: string; roomCode: string }) {
 
   if (!src || hasError) {
     return (
-      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
+      <div className="flex h-28 w-full items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
         Meter image unavailable
       </div>
     );
   }
 
   return (
-    <img
-      src={src}
-      alt={`Meter reading submitted for room ${roomCode}`}
-      className="aspect-[4/3] w-full rounded-md border border-hairline object-cover"
-      onError={() => setHasError(true)}
-    />
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      title="Open the full-size photo"
+      className="block overflow-hidden rounded-md border border-hairline"
+    >
+      <img
+        src={src}
+        alt={`Meter reading submitted for room ${roomCode}`}
+        className="max-h-52 w-full object-cover"
+        onError={() => setHasError(true)}
+      />
+    </a>
   );
 }
 
-function Metric({
-  label,
-  value,
-  strong,
+function DetailSection({
+  title,
+  badge,
+  children,
 }: {
-  label: string;
-  value: string;
-  strong?: boolean;
+  title: string;
+  badge?: ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-hairline bg-page px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p
-        className={`mt-1 text-sm font-semibold ${
-          strong ? "text-status-success-fg" : "text-foreground"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
+    <section className="grid gap-3 border-t border-hairline pt-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {badge}
+      </div>
+      {children}
+    </section>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 text-sm">
+    <div className="flex items-center justify-between gap-4 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right font-medium text-foreground">{value}</span>
     </div>

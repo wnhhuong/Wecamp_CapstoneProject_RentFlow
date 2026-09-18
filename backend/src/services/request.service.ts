@@ -963,18 +963,19 @@ export const getRequestDetail = async (requestID: string) => {
       : { note: `Detail record not found for request type "${request.type}".` };
   }
  
-  // Admin duyệt PAID request là xác nhận đã nhận tiền, nên phải thấy hoá đơn nào
-  // và bao nhiêu tiền ngay trong panel, không chỉ một ObjectId.
-  if (request.type === RequestType.PAID && details?.invoiceID) {
-    const invoice = await Invoice.findById(details.invoiceID as mongoose.Types.ObjectId);
-    if (invoice) {
-      details.invoiceDisplayID = room
-        ? buildInvoiceDisplayID(room.roomCode, new Date(invoice.createdDate))
-        : null;
-      details.invoiceTotalBill = invoice.totalBill;
-      details.invoiceDueDate = invoice.dueDate.toISOString();
-      details.invoiceStatus = invoice.status;
-    }
+  // Request nào gắn với một hoá đơn thì admin phải đi thẳng tới hoá đơn đó được,
+  // nên detail trả kèm tóm tắt thay vì mỗi ObjectId.
+  const invoice = await findRelatedInvoice(request, details);
+  if (invoice) {
+    details = details ?? {};
+    details.invoiceID = String(invoice._id);
+    details.invoiceDisplayID = room
+      ? buildInvoiceDisplayID(room.roomCode, new Date(invoice.createdDate))
+      : null;
+    details.invoiceTotalBill = invoice.totalBill;
+    details.invoiceDueDate = invoice.dueDate.toISOString();
+    details.invoiceStatus = invoice.status;
+    details.invoiceIsRequestLate = invoice.isRequestLate;
   }
 
   return {
@@ -990,6 +991,39 @@ export const getRequestDetail = async (requestID: string) => {
     status: request.status,
     details,
   };
+};
+
+/**
+ * PAID/LATE_PAYMENT giữ sẵn invoiceID. CONSUMP thì không: hoá đơn chỉ ra đời lúc approve,
+ * nên phải đi ngược qua CONSUMPTION được tạo với trackingTime = capturedAt của request.
+ */
+const findRelatedInvoice = async (
+  request: HydratedDocument<IRequest>,
+  details: Record<string, unknown> | null,
+) => {
+  if (request.type === RequestType.PAID || request.type === RequestType.DELAY) {
+    return details?.invoiceID
+      ? await Invoice.findById(details.invoiceID as mongoose.Types.ObjectId)
+      : null;
+  }
+
+  if (request.type !== RequestType.CONSUMP || request.status !== RequestStatus.APPROVED) {
+    return null;
+  }
+
+  const capturedAt = details?.capturedAt as Date | undefined;
+  const reading = details?.currentReading as number | undefined;
+  if (!capturedAt || reading === undefined) return null;
+
+  // Khớp cả meterReading: dữ liệu cũ có thể có sẵn một CONSUMPTION khác cùng trackingTime,
+  // khớp thiếu là link sang nhầm hoá đơn.
+  const consumption = await Consumption.findOne({
+    roomID: request.roomID,
+    trackingTime: capturedAt,
+    meterReading: reading,
+  }).sort({ createdAt: -1 });
+
+  return consumption ? await Invoice.findOne({ consumptionID: consumption._id }) : null;
 };
 
 export const DETAIL_MODEL_MAP: Record<RequestType, any> = {

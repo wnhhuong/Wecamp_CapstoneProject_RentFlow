@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   AdminConsumptionDetails,
-  AdminPaidDetails,
+  AdminInvoiceDetails,
   AdminRequest,
   AdminRequestDetail,
   ApproveRequestResult,
@@ -49,9 +49,6 @@ interface BackendApproveResponse {
   type: string
   resolveDate: string
   status?: string
-  result?: {
-    invoice?: { dueDate?: string }
-  }
 }
 
 const REQUEST_PAGE_SIZE = 100
@@ -79,7 +76,7 @@ export async function getAdminRequest(
       userFullName: detail.user?.fullName ?? detail.userFullName,
     }),
     consumption: mapConsumptionDetails(detail),
-    paid: mapPaidDetails(detail),
+    invoice: mapInvoiceDetails(detail),
   }
 }
 
@@ -96,7 +93,6 @@ export async function approveAdminRequest(
     type: mapRequestType(approved.type),
     status: mapRequestStatus(approved.status),
     resolveDate: approved.resolveDate,
-    createdInvoiceDueDate: approved.result?.invoice?.dueDate ?? null,
   }
 }
 
@@ -135,10 +131,10 @@ function mapConsumptionDetails(
   }
 }
 
-function mapPaidDetails(
+function mapInvoiceDetails(
   detail: BackendRequestDetail,
-): AdminPaidDetails | null {
-  if (detail.type !== 'paid' || detail.details?.invoiceID === undefined) return null
+): AdminInvoiceDetails | null {
+  if (detail.details?.invoiceID === undefined) return null
 
   const details = detail.details
   const invoiceID = String(details.invoiceID)
@@ -147,6 +143,7 @@ function mapPaidDetails(
     invoiceID,
     invoiceDisplayID: details.invoiceDisplayID ?? invoiceID,
     totalBill: details.invoiceTotalBill ?? 0,
+    dueDate: details.invoiceDueDate ?? '',
     invoiceStatus: mapInvoiceStatus(details.invoiceStatus),
   }
 }

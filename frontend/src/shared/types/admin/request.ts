@@ -22,10 +22,11 @@ export interface AdminConsumptionDetails {
   billingPeriod: string
 }
 
-export interface AdminPaidDetails {
+export interface AdminInvoiceDetails {
   invoiceID: string
   invoiceDisplayID: string
   totalBill: number
+  dueDate: string
   invoiceStatus: InvoiceStatus
 }
 
@@ -35,7 +36,7 @@ export interface AdminPaidDetails {
  */
 export interface AdminRequestDetail extends AdminRequest {
   consumption: AdminConsumptionDetails | null
-  paid: AdminPaidDetails | null
+  invoice: AdminInvoiceDetails | null
 }
 
 export interface ApproveRequestResult {
@@ -43,6 +44,4 @@ export interface ApproveRequestResult {
   type: RequestType
   status: RequestStatus
   resolveDate: string
-  /** Due date of the invoice a consumption approval creates. */
-  createdInvoiceDueDate: string | null
 }
