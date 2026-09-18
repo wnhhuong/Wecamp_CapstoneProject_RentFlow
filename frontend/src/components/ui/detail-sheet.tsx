@@ -129,7 +129,7 @@ function Timeline({
                 index < steps.length - 1 && 'pb-4',
               )}
             >
-              <span className="text-muted-foreground">{step.label} at</span>
+              <span className="text-muted-foreground">{step.label}</span>
               <span
                 className={cn(
                   'font-medium',

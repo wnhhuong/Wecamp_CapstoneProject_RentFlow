@@ -71,6 +71,17 @@ export function formatBillingPeriod(period: string): string {
   return /^\d{4}-\d{2}$/.test(period) ? formatMonthYear(`${period}-01`) : '—'
 }
 
+/**
+ * Adds whole years to a YYYY-MM-DD calendar date, mirroring what approving an
+ * extension does to the contract. Only ever a preview; nothing persists it.
+ */
+export function addYears(dateOnly: string, years: number): string {
+  const parts = /^(\d{4})(-\d{2}-\d{2})$/.exec(dateOnly)
+  if (!parts) return dateOnly
+
+  return `${Number(parts[1]) + years}${parts[2]}`
+}
+
 /** Durations in whole years: "1 year", "2 years". */
 export function formatYears(years: number): string {
   return `${years} year${years === 1 ? '' : 's'}`

@@ -3,53 +3,19 @@ import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   AdminConsumptionDetails,
+  AdminExtensionDetails,
   AdminInvoiceDetails,
   AdminRequest,
   AdminRequestDetail,
   ApproveRequestResult,
+  BackendApproveResponse,
+  BackendRequestDetail,
+  BackendRequestListItem,
+  BackendRequestListResponse,
 } from '@/shared/types/admin/request'
 import { formatMonthYear } from '@/shared/utils/dateFormatter'
 import { mapRequestType } from '@/shared/utils/requestTypes'
 import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
-
-interface BackendRequestListResponse {
-  items?: BackendRequestListItem[]
-}
-
-interface BackendRequestListItem {
-  requestID: string | number
-  displayID?: string | null
-  type: string
-  roomCode?: string | null
-  userFullName?: string | null
-  createDate: string
-  resolveDate?: string | null
-  status?: string
-}
-
-interface BackendRequestDetail extends BackendRequestListItem {
-  room?: { roomID: string | number; roomCode: string } | null
-  user?: { userID: string | number; fullName: string } | null
-  details?: {
-    image?: string
-    currentReading?: number
-    previousReading?: number
-    usage?: number
-    capturedAt?: string
-    invoiceID?: string | number
-    invoiceDisplayID?: string | null
-    invoiceTotalBill?: number
-    invoiceDueDate?: string
-    invoiceStatus?: string
-  } | null
-}
-
-interface BackendApproveResponse {
-  requestID: string | number
-  type: string
-  resolveDate: string
-  status?: string
-}
 
 const REQUEST_PAGE_SIZE = 100
 
@@ -75,7 +41,9 @@ export async function getAdminRequest(
       roomCode: detail.room?.roomCode ?? detail.roomCode,
       userFullName: detail.user?.fullName ?? detail.userFullName,
     }),
+    roomID: detail.room ? String(detail.room.roomID) : '',
     consumption: mapConsumptionDetails(detail),
+    extension: mapExtensionDetails(detail),
     invoice: mapInvoiceDetails(detail),
   }
 }
@@ -128,6 +96,23 @@ function mapConsumptionDetails(
     usage: details.usage ?? currentReading - previousReading,
     capturedAt,
     billingPeriod: formatMonthYear(capturedAt),
+  }
+}
+
+function mapExtensionDetails(
+  detail: BackendRequestDetail,
+): AdminExtensionDetails | null {
+  if (detail.type !== 'extend' || detail.details?.contractID === undefined) {
+    return null
+  }
+
+  const details = detail.details
+
+  return {
+    contractDisplayID:
+      details.contractDisplayID ?? String(details.contractID),
+    expireDate: details.contractExpireDate ?? '',
+    yearToExtend: details.yearToExtend ?? 1,
   }
 }
 
