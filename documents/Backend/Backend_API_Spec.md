@@ -345,7 +345,7 @@ Không có body.
 |---|---|---|---|
 |`invoiceID`|integer (path)|Có|Invoice xin trả trễ|
 
-Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
+Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` được set khi admin approve (#40).
 
 **Payload mẫu:** `{}`
 
@@ -1175,12 +1175,12 @@ Chỉ cho `need_action → in_progress → done`; không bỏ bước hoặc chu
 
 |Type|Fields|
 |---|---|
-|`LATE_PAYMENT_REQUEST`|`invoiceID`|
-|`PAID_REQUEST`|`invoiceID`|
+|`LATE_PAYMENT_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
+|`PAID_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
 |`EXTEND_REQUEST`|`contractID`, `yearToExtend` (derived Parameter)|
 |`MOVEOUT_REQUEST`|`contractID`, `requestMoveoutDate`|
 |`CHECKOUT_REQUEST`|`contractID`, `finalImage`, `finalReading`|
-|`CONSUMP_REQUEST`|`image`, `reading`, `capturedAt`|
+|`CONSUMP_REQUEST`|`image`, `currentReading`, `previousReading`, `usage`, `capturedAt`; khi đã approved thêm tóm tắt hoá đơn được tạo (`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`)|
 
 ```json
 {"success":true,"data":{"requestID":701,"type":"CONSUMP_REQUEST","room":{"roomID":101,"roomCode":"A-101"},"user":{"userID":51,"fullName":"Nguyễn Văn An"},"createDate":"2026-09-28","resolveDate":null,"status":"pending","details":{"image":"uploads/consumption/701.jpg","reading":148,"capturedAt":"2026-09-28T08:10:00Z"}},"message":null}
@@ -1198,7 +1198,7 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 
 **Payload mẫu:** `{}`
 
-- `LATE_PAYMENT_REQUEST`: chỉ chuyển request sang approved; `isRequestLate` đã set khi tenant gửi.
+- `LATE_PAYMENT_REQUEST`: chuyển request sang approved và set `INVOICE.isRequestLate=true`; không đổi `dueDate` và `status` của invoice.
 - `PAID_REQUEST`: set invoice `paid`, `paymentDate=now`.
 - `EXTEND_REQUEST`: cộng `yearToExtend` vào `CONTRACT.expireDate`.
 - `MOVEOUT_REQUEST`: approve notice, mở điều kiện checkout.
