@@ -17,6 +17,7 @@ export interface BackendTenantContract {
     waterPrice?: number
     wifiFee?: number
     otherFees?: number
+    yearToExtend?: number
   } | null
 }
 
@@ -27,6 +28,7 @@ export interface TenantContractTerms {
   waterPrice: number
   wifiFee: number
   otherFees: number
+  yearToExtend: number
 }
 
 export interface TenantContract {

@@ -25,8 +25,14 @@ function LeaseCard({ contract, profile }: LeaseCardProps) {
   return (
     <section className="flex flex-col rounded-lg bg-ink p-5 text-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Active lease</h2>
-        <StatusBadge domain="contract" status={contract.status} />
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold">Active lease</h2>
+          <StatusBadge domain="contract" status={contract.status} />
+        </div>
+
+        <Button type="button" onClick={() => setIsContractOpen(true)}>
+          View contract
+        </Button>
       </div>
 
       <dl className="mt-5">
@@ -48,31 +54,6 @@ function LeaseCard({ contract, profile }: LeaseCardProps) {
           }
         />
       </dl>
-
-      <p className="mt-5 text-xs font-medium tracking-wider text-page/50 uppercase">
-        Fixed lease terms
-      </p>
-
-      <dl className="mt-3">
-        <Row
-          label="Electricity"
-          value={`${formatCurrency(contract.terms.electricityUnitPrice)} / kWh`}
-        />
-        <Row label="Water" value={formatCurrency(contract.terms.waterPrice)} />
-        <Row label="WiFi" value={formatCurrency(contract.terms.wifiFee)} />
-        <Row
-          label="Other monthly fees"
-          value={formatCurrency(contract.terms.otherFees)}
-        />
-      </dl>
-
-      <Button
-        type="button"
-        className="mt-5 w-full"
-        onClick={() => setIsContractOpen(true)}
-      >
-        View contract
-      </Button>
 
       <Dialog open={isContractOpen} onOpenChange={setIsContractOpen}>
         <DialogContent className="max-h-[80vh] w-[min(46rem,calc(100%-2rem))] max-w-none overflow-y-auto rounded-lg bg-field p-5 sm:p-6">

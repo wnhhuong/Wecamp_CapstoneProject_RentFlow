@@ -44,6 +44,7 @@ function mapContract(contract: BackendTenantContract): TenantContract {
       waterPrice: terms.waterPrice ?? 0,
       wifiFee: terms.wifiFee ?? 0,
       otherFees: terms.otherFees ?? 0,
+      yearToExtend: terms.yearToExtend ?? 1,
     },
   }
 }

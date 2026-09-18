@@ -2,9 +2,11 @@ import { apiRequest } from '@/shared/api/client'
 import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
+  BackendExtendRequest,
   BackendTenantRequest,
   BackendTenantRequestDetail,
   BackendTenantRequestList,
+  TenantExtendRequest,
   TenantRequest,
   TenantRequestDetail,
 } from '@/shared/types/request'
@@ -73,6 +75,24 @@ export async function getTenantRequest(
             meterImage: toAbsoluteAssetUrl(details.finalImage ?? ''),
             finalReading: details.finalReading,
           },
+  }
+}
+
+export async function submitExtendRequest(
+  signal?: AbortSignal,
+): Promise<TenantExtendRequest> {
+  const request = await apiRequest<BackendExtendRequest>(
+    ENDPOINTS.user.extendRequests,
+    { auth: 'user', method: 'POST', signal },
+  )
+
+  return {
+    requestID: request.requestID,
+    displayID: request.displayID ?? request.requestID,
+    contractID: request.contractID ?? '',
+    yearToExtend: request.yearToExtend,
+    createDate: request.createDate,
+    status: mapRequestStatus(request.status),
   }
 }
 
