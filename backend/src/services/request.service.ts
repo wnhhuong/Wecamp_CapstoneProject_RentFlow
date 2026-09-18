@@ -53,6 +53,108 @@ export interface ApproveRequestResult {
   result: Record<string, unknown>;
 }
 
+interface CreateMoveoutRequestInput {
+  auth: {
+    userID: string;
+    roomID: string;
+  };
+  requestMoveoutDate: string;
+}
+
+export const createMoveoutRequest = async ({
+  auth,
+  requestMoveoutDate,
+}: CreateMoveoutRequestInput) => {
+  if (
+    !mongoose.Types.ObjectId.isValid(auth.userID) ||
+    !mongoose.Types.ObjectId.isValid(auth.roomID)
+  ) {
+    throw new RequestServiceError(401, 'Invalid user or room information.');
+  }
+
+  const moveoutDate = new Date(requestMoveoutDate);
+  if (Number.isNaN(moveoutDate.getTime())) {
+    throw new RequestServiceError(400, 'Invalid requestMoveoutDate.');
+  }
+
+  const contract = await Contract.findOne({
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: ContractStatus.ACTIVE,
+  });
+  if (!contract) {
+    throw new RequestServiceError(404, 'Active contract not found.');
+  }
+
+  const room = await Room.findById(auth.roomID).select('roomCode status');
+  if (!room) {
+    throw new RequestServiceError(404, 'Room not found.');
+  }
+  if (room.status !== RoomStatus.RENTED) {
+    throw new RequestServiceError(
+      400,
+      `Room ${room.roomCode} is "${room.status}", expected RENTED.`,
+    );
+  }
+
+  const existingRequest = await RequestModel.findOne({
+    type: RequestType.MOVEOUT,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: RequestStatus.PENDING,
+  });
+  if (existingRequest) {
+    throw new RequestServiceError(409, 'A move-out request is already pending.');
+  }
+
+  const session = await mongoose.startSession();
+  const createDate = new Date();
+  try {
+    session.startTransaction();
+
+    const [request] = await RequestModel.create(
+      [{
+        type: RequestType.MOVEOUT,
+        roomID: auth.roomID,
+        userID: auth.userID,
+        createDate,
+        status: RequestStatus.PENDING,
+      }],
+      { session },
+    );
+    const [moveoutRequest] = await MoveoutRequest.create(
+      [{
+        requestID: request._id,
+        contractID: contract._id,
+        requestMoveoutDate: moveoutDate,
+      }],
+      { session },
+    );
+
+    await session.commitTransaction();
+    return {
+      requestID: String(request._id),
+      displayID: buildRequestDisplayID(
+        RequestType.MOVEOUT,
+        room.roomCode,
+        createDate,
+      ),
+      type: request.type,
+      contractID: String(contract._id),
+      requestMoveoutDate: moveoutRequest.requestMoveoutDate.toISOString().split('T')[0],
+      createDate: createDate.toISOString().split('T')[0],
+      status: request.status,
+    };
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
 /**
  * #40 — PATCH /api/admin/requests/:requestID/approve
  *
