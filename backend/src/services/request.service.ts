@@ -61,6 +61,16 @@ interface CreateMoveoutRequestInput {
   requestMoveoutDate: string;
 }
 
+interface CreateCheckoutRequestInput {
+  auth: {
+    userID: string;
+    roomID: string;
+    contractID: string;
+  };
+  finalImage: string;
+  finalReading: number;
+}
+
 export const createMoveoutRequest = async ({
   auth,
   requestMoveoutDate,
@@ -142,6 +152,120 @@ export const createMoveoutRequest = async ({
       type: request.type,
       contractID: String(contract._id),
       requestMoveoutDate: moveoutRequest.requestMoveoutDate.toISOString().split('T')[0],
+      createDate: createDate.toISOString().split('T')[0],
+      status: request.status,
+    };
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+export const createCheckoutRequest = async ({
+  auth,
+  finalImage,
+  finalReading,
+}: CreateCheckoutRequestInput) => {
+  if (
+    !mongoose.Types.ObjectId.isValid(auth.userID) ||
+    !mongoose.Types.ObjectId.isValid(auth.roomID) ||
+    !mongoose.Types.ObjectId.isValid(auth.contractID)
+  ) {
+    throw new RequestServiceError(401, 'Invalid user, room, or contract information.');
+  }
+
+  const contract = await Contract.findOne({
+    _id: auth.contractID,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: ContractStatus.ACTIVE,
+  });
+  if (!contract) {
+    throw new RequestServiceError(404, 'Active contract not found.');
+  }
+
+  const room = await Room.findById(auth.roomID).select('roomCode');
+  if (!room) {
+    throw new RequestServiceError(404, 'Room not found.');
+  }
+
+  const approvedMoveoutRequest = await RequestModel.findOne({
+    type: RequestType.MOVEOUT,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: RequestStatus.APPROVED,
+  });
+  if (!approvedMoveoutRequest) {
+    throw new RequestServiceError(
+      400,
+      'An approved move-out request is required before submitting checkout.',
+    );
+  }
+
+  const moveoutDetail = await MoveoutRequest.findOne({
+    requestID: approvedMoveoutRequest._id,
+    contractID: contract._id,
+  });
+  if (!moveoutDetail) {
+    throw new RequestServiceError(
+      400,
+      'The approved move-out request does not belong to the active contract.',
+    );
+  }
+
+  const existingCheckout = await RequestModel.findOne({
+    type: RequestType.CHECKOUT,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: RequestStatus.PENDING,
+  });
+  if (existingCheckout) {
+    throw new RequestServiceError(409, 'A checkout request is already pending.');
+  }
+
+  const session = await mongoose.startSession();
+  const createDate = new Date();
+
+  try {
+    session.startTransaction();
+
+    const [request] = await RequestModel.create(
+      [{
+        type: RequestType.CHECKOUT,
+        roomID: auth.roomID,
+        userID: auth.userID,
+        createDate,
+        status: RequestStatus.PENDING,
+      }],
+      { session },
+    );
+    await CheckoutRequest.create(
+      [{
+        requestID: request._id,
+        contractID: contract._id,
+        finalImage,
+        finalReading,
+      }],
+      { session },
+    );
+
+    await session.commitTransaction();
+
+    return {
+      requestID: String(request._id),
+      displayID: buildRequestDisplayID(
+        RequestType.CHECKOUT,
+        room.roomCode,
+        createDate,
+      ),
+      type: request.type,
+      contractID: String(contract._id),
+      finalImage,
+      finalReading,
       createDate: createDate.toISOString().split('T')[0],
       status: request.status,
     };
