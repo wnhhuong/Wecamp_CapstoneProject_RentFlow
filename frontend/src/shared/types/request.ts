@@ -60,13 +60,31 @@ export interface BackendExtendRequest {
   status?: string
 }
 
-export interface TenantExtendRequest {
+export interface TenantRequestReceipt {
   requestID: string
   displayID: string
-  contractID: string
-  yearToExtend: number
   createDate: string
   status: RequestStatus
+}
+
+export interface TenantExtendRequest extends TenantRequestReceipt {
+  contractID: string
+  yearToExtend: number
+}
+
+export interface BackendMoveoutRequest {
+  requestID: string
+  displayID?: string
+  type?: string
+  contractID?: string
+  requestMoveoutDate: string
+  createDate: string
+  status?: string
+}
+
+export interface TenantMoveoutRequest extends TenantRequestReceipt {
+  contractID: string
+  requestMoveoutDate: string
 }
 
 export interface TenantRequestInvoice {

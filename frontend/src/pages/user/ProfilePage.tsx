@@ -7,7 +7,11 @@ import { getTenantProfile } from "@/shared/api/user/profile.api";
 import { getTenantRequests } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
 import type { TenantProfile } from "@/shared/types/profile";
-import type { TenantExtendRequest, TenantRequest } from "@/shared/types/request";
+import type {
+  RequestType,
+  TenantRequest,
+  TenantRequestReceipt,
+} from "@/shared/types/request";
 
 import { ContractRequestsCard } from "./profile/ContractRequestsCard";
 import { LeaseCard } from "./profile/LeaseCard";
@@ -17,6 +21,9 @@ function ProfilePage() {
   const [profile, setProfile] = useState<TenantProfile | null>(null);
   const [contract, setContract] = useState<TenantContract | null>(null);
   const [pendingExtension, setPendingExtension] = useState<TenantRequest | null>(
+    null,
+  );
+  const [pendingMoveout, setPendingMoveout] = useState<TenantRequest | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +41,8 @@ function ProfilePage() {
       ]);
       setProfile(loadedProfile);
       setContract(loadedContract);
-      setPendingExtension(findPendingExtension(loadedRequests));
+      setPendingExtension(findPending(loadedRequests, "extend"));
+      setPendingMoveout(findPending(loadedRequests, "moveout"));
     } catch {
       setLoadError("Your profile could not be loaded.");
     } finally {
@@ -53,7 +61,8 @@ function ProfilePage() {
       .then(([loadedProfile, loadedContract, loadedRequests]) => {
         setProfile(loadedProfile);
         setContract(loadedContract);
-        setPendingExtension(findPendingExtension(loadedRequests));
+        setPendingExtension(findPending(loadedRequests, "extend"));
+        setPendingMoveout(findPending(loadedRequests, "moveout"));
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -109,8 +118,12 @@ function ProfilePage() {
               <ContractRequestsCard
                 contract={contract}
                 pendingExtension={pendingExtension}
+                pendingMoveout={pendingMoveout}
                 onExtensionRequested={(request) =>
-                  setPendingExtension(toPendingExtension(request))
+                  setPendingExtension(toPendingRequest("extend", request))
+                }
+                onMoveoutRequested={(request) =>
+                  setPendingMoveout(toPendingRequest("moveout", request))
                 }
               />
             </div>
@@ -129,19 +142,25 @@ function loadRequests(signal?: AbortSignal): Promise<TenantRequest[]> {
   return getTenantRequests(signal).catch(() => []);
 }
 
-function findPendingExtension(requests: TenantRequest[]): TenantRequest | null {
+function findPending(
+  requests: TenantRequest[],
+  type: RequestType,
+): TenantRequest | null {
   return (
     requests.find(
-      (request) => request.type === "extend" && request.status === "pending",
+      (request) => request.type === type && request.status === "pending",
     ) ?? null
   );
 }
 
-function toPendingExtension(request: TenantExtendRequest): TenantRequest {
+function toPendingRequest(
+  type: RequestType,
+  request: TenantRequestReceipt,
+): TenantRequest {
   return {
     requestID: request.requestID,
     displayID: request.displayID,
-    type: "extend",
+    type,
     createDate: request.createDate,
     resolveDate: null,
     status: request.status,

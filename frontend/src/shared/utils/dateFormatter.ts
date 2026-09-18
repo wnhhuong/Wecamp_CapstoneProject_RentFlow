@@ -71,6 +71,11 @@ export function formatBillingPeriod(period: string): string {
   return /^\d{4}-\d{2}$/.test(period) ? formatMonthYear(`${period}-01`) : '—'
 }
 
+/** Durations in whole years: "1 year", "2 years". */
+export function formatYears(years: number): string {
+  return `${years} year${years === 1 ? '' : 's'}`
+}
+
 // YYYY-MM-DD in UTC+7, for calendar-date comparisons.
 export function getDateKey(value: string | Date = new Date()): string {
   const parts = dateKeyFormatter.formatToParts(parseDate(value))

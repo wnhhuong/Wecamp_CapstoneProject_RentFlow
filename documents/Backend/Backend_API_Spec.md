@@ -587,7 +587,16 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`requestMoveoutDate`|date-only|Có|Ngày tenant dự kiến rời đi|
+|`requestMoveoutDate`|date-only|Có|Ngày tenant dự kiến rời đi, định dạng `YYYY-MM-DD`|
+
+**Rule** — backend từ chối 400 nếu ngày nằm ngoài khoảng cho phép:
+
+|Mốc|Giá trị|
+|---|---|
+|Sớm nhất|Hôm nay + 7 ngày (`MOVEOUT_NOTICE_DAYS`), cắt theo giờ VN|
+|Muộn nhất|`CONTRACT.expireDate`|
+
+Trả 409 nếu đã có move-out request đang `pending`, và 400 nếu room không ở trạng thái `rented`.
 
 **Output**
 

@@ -18,15 +18,14 @@ export const ENDPOINTS = {
   user: {
     consumptionContext: '/user/consumption-requests/context',
     consumptionRequests: '/user/consumption-requests',
+    consumptionRequest: (requestID: string | number) =>
+      `/user/consumption-requests/${encodeURIComponent(String(requestID))}`,
 
     invoices: '/user/invoices',
-
     invoice: (invoiceID: string) =>
       `/user/invoices/${encodeURIComponent(invoiceID)}`,
-
     invoicePaidRequest: (invoiceID: string) =>
       `/user/invoices/${encodeURIComponent(invoiceID)}/paid-request`,
-
     invoiceLatePaymentRequest: (invoiceID: string) =>
       `/user/invoices/${encodeURIComponent(invoiceID)}/late-payment-request`,
 
@@ -35,14 +34,10 @@ export const ENDPOINTS = {
     contract: '/user/contract',
 
     requests: '/user/requests',
-
     extendRequests: '/user/extend-requests',
-
+    moveoutRequests: '/user/moveout-requests',
     request: (requestID: string) =>
       `/user/requests/${encodeURIComponent(requestID)}`,
-
-    consumptionRequest: (requestID: string | number) =>
-      `/user/consumption-requests/${encodeURIComponent(String(requestID))}`,
   },
 
   admin: {

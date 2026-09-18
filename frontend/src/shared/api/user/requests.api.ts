@@ -3,10 +3,12 @@ import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   BackendExtendRequest,
+  BackendMoveoutRequest,
   BackendTenantRequest,
   BackendTenantRequestDetail,
   BackendTenantRequestList,
   TenantExtendRequest,
+  TenantMoveoutRequest,
   TenantRequest,
   TenantRequestDetail,
 } from '@/shared/types/request'
@@ -91,6 +93,31 @@ export async function submitExtendRequest(
     displayID: request.displayID ?? request.requestID,
     contractID: request.contractID ?? '',
     yearToExtend: request.yearToExtend,
+    createDate: request.createDate,
+    status: mapRequestStatus(request.status),
+  }
+}
+
+/** `requestMoveoutDate` is a calendar date, sent as the plain YYYY-MM-DD the tenant picked. */
+export async function submitMoveoutRequest(
+  requestMoveoutDate: string,
+  signal?: AbortSignal,
+): Promise<TenantMoveoutRequest> {
+  const request = await apiRequest<BackendMoveoutRequest>(
+    ENDPOINTS.user.moveoutRequests,
+    {
+      auth: 'user',
+      method: 'POST',
+      body: JSON.stringify({ requestMoveoutDate }),
+      signal,
+    },
+  )
+
+  return {
+    requestID: request.requestID,
+    displayID: request.displayID ?? request.requestID,
+    contractID: request.contractID ?? '',
+    requestMoveoutDate: request.requestMoveoutDate,
     createDate: request.createDate,
     status: mapRequestStatus(request.status),
   }

@@ -83,6 +83,17 @@ interface CreateExtendRequestInput {
   };
 }
 
+/** Ngày báo trước tối thiểu cho move-out; FE dùng đúng con số này để giới hạn ô chọn ngày. */
+export const MOVEOUT_NOTICE_DAYS = 7;
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** "YYYY-MM-DD" của mốc thời gian, cắt theo giờ VN, để so sánh ngày lịch với nhau. */
+const toVNDateKey = (date: Date): string => {
+  const { day, month, year } = getVNDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
 export const createMoveoutRequest = async ({
   auth,
   requestMoveoutDate,
@@ -92,6 +103,10 @@ export const createMoveoutRequest = async ({
     !mongoose.Types.ObjectId.isValid(auth.roomID)
   ) {
     throw new RequestServiceError(401, 'Invalid user or room information.');
+  }
+
+  if (!DATE_ONLY_PATTERN.test(requestMoveoutDate)) {
+    throw new RequestServiceError(400, 'requestMoveoutDate must be a YYYY-MM-DD date.');
   }
 
   const moveoutDate = new Date(requestMoveoutDate);
@@ -106,6 +121,24 @@ export const createMoveoutRequest = async ({
   });
   if (!contract) {
     throw new RequestServiceError(404, 'Active contract not found.');
+  }
+
+  const earliestDateKey = toVNDateKey(
+    new Date(Date.now() + MOVEOUT_NOTICE_DAYS * 24 * 60 * 60 * 1000),
+  );
+  if (requestMoveoutDate < earliestDateKey) {
+    throw new RequestServiceError(
+      400,
+      `requestMoveoutDate must be ${earliestDateKey} or later (${MOVEOUT_NOTICE_DAYS} days' notice).`,
+    );
+  }
+
+  const expireDateKey = toVNDateKey(new Date(contract.expireDate));
+  if (requestMoveoutDate > expireDateKey) {
+    throw new RequestServiceError(
+      400,
+      `requestMoveoutDate must not be after the contract expiry date ${expireDateKey}.`,
+    );
   }
 
   const room = await Room.findById(auth.roomID).select('roomCode status');
