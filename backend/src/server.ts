@@ -22,6 +22,7 @@ import userMoveoutRouter from "./routes/user/moveout.routes.js";
 import userCheckoutRouter from "./routes/user/checkout.routes.js";
 import userExtendRouter from "./routes/user/extend.routes.js";
 import adminUserRouter from "./routes/admin/user.routes.js";
+import adminTicketRouter from "./routes/admin/ticket.routes.js";
 
 const app = express();
 
@@ -87,6 +88,9 @@ app.use(`/api/admin/rooms`, adminRoomRoutes)
     
 //Approval routes
 app.use(`/api/admin/requests`, approvalRoutes)
+
+//Admin ticket route
+app.use(`/api/admin/tickets`, adminTicketRouter)
 
 //Admin invoice route
 app.use(`/api/admin/invoices`, adminInvoiceRouter)
