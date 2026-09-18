@@ -28,6 +28,7 @@ import {
 import type {
   AdminExtensionDetails,
   AdminInvoiceDetails,
+  AdminMoveoutDetails,
   AdminRequest,
   AdminRequestDetail,
 } from "@/shared/types/admin/request";
@@ -45,6 +46,7 @@ const APPROVE_LABELS: Partial<Record<RequestType, string>> = {
   paid: "Confirm payment",
   delay: "Approve late payment",
   extend: "Approve extension",
+  moveout: "Approve move-out",
 };
 
 const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
@@ -55,6 +57,8 @@ const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
     "Approving acknowledges that the tenant will pay after the due date. The invoice status remains NOT PAID and the due date stays the same.",
   extend:
     "Approving moves the contract expiry date forward. Nothing else on the lease changes, and the rent stays at the signed price.",
+  moveout:
+    "Approving marks the room available soon and lets the tenant submit their checkout. The lease stays active until that checkout is approved.",
 };
 
 interface RequestDetailsSheetProps {
@@ -206,6 +210,8 @@ function RequestDetailsLoader({
               />
             ) : null}
 
+            {detail.moveout ? <MoveoutSection moveout={detail.moveout} /> : null}
+
             {/* A consumption approval creates the invoice, so it is an outcome to
                 open from the footer, not evidence the owner reviews here. */}
             {detail.invoice && detail.type !== "consump" ? (
@@ -241,7 +247,7 @@ function RequestDetailsLoader({
         ) : null}
       </div>
 
-      {detail && (detail.invoice || detail.extension || canApprove) ? (
+      {detail && (detail.invoice || detail.extension || detail.moveout || canApprove) ? (
         <SheetFooter className="border-t border-hairline sm:flex-row sm:justify-end">
           {detail.invoice ? (
             <Button type="button" variant="outline" asChild>
@@ -251,7 +257,7 @@ function RequestDetailsLoader({
             </Button>
           ) : null}
 
-          {detail.extension && detail.roomID ? (
+          {(detail.extension || detail.moveout) && detail.roomID ? (
             <Button type="button" variant="outline" asChild>
               <Link to={ROUTES.admin.roomDetailsLink(detail.roomID)}>
                 View room & lease
@@ -310,6 +316,10 @@ function buildOutcome(detail: AdminRequestDetail) {
 
   if (detail.type === "consump") {
     return `Reading approved. An invoice was created for room ${detail.roomCode}.`;
+  }
+
+  if (detail.type === "moveout") {
+    return `Move-out approved. Room ${detail.roomCode} is now available soon, and the tenant can submit their checkout.`;
   }
 
   if (detail.type === "extend") {
@@ -376,6 +386,22 @@ function ExtensionSection({
           }
         />
       ) : null}
+    </DetailSection>
+  );
+}
+
+function MoveoutSection({ moveout }: { moveout: AdminMoveoutDetails }) {
+  return (
+    <DetailSection title="Contract">
+      <DetailRow label="Contract ID" value={moveout.contractDisplayID} />
+      <DetailRow
+        label="Planned move-out"
+        value={
+          moveout.requestMoveoutDate
+            ? formatDate(moveout.requestMoveoutDate)
+            : "Not set"
+        }
+      />
     </DetailSection>
   );
 }

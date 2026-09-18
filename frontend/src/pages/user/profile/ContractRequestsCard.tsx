@@ -19,7 +19,7 @@ import {
 interface ContractRequestsCardProps {
   contract: TenantContract;
   pendingExtension: TenantRequest | null;
-  pendingMoveout: TenantRequest | null;
+  moveoutRequest: TenantRequest | null;
   onExtensionRequested: (request: TenantExtendRequest) => void;
   onMoveoutRequested: (request: TenantMoveoutRequest) => void;
 }
@@ -27,7 +27,7 @@ interface ContractRequestsCardProps {
 function ContractRequestsCard({
   contract,
   pendingExtension,
-  pendingMoveout,
+  moveoutRequest,
   onExtensionRequested,
   onMoveoutRequested,
 }: ContractRequestsCardProps) {
@@ -67,7 +67,7 @@ function ContractRequestsCard({
         <ActionRow
           title="Move-out notice"
           description={moveoutDescription({
-            pendingMoveout,
+            moveoutRequest,
             hasMoveoutWindow,
             earliestMoveoutDate,
             expireDate: contract.expireDate,
@@ -76,7 +76,9 @@ function ContractRequestsCard({
             <Button
               type="button"
               disabled={
-                !isContractActive || !hasMoveoutWindow || pendingMoveout !== null
+                !isContractActive ||
+                !hasMoveoutWindow ||
+                moveoutRequest !== null
               }
               onClick={() => setIsMoveoutOpen(true)}
             >
@@ -131,18 +133,20 @@ function ActionRow({
 }
 
 function moveoutDescription({
-  pendingMoveout,
+  moveoutRequest,
   hasMoveoutWindow,
   earliestMoveoutDate,
   expireDate,
 }: {
-  pendingMoveout: TenantRequest | null;
+  moveoutRequest: TenantRequest | null;
   hasMoveoutWindow: boolean;
   earliestMoveoutDate: string;
   expireDate: string;
 }): string {
-  if (pendingMoveout) {
-    return `Notice ${pendingMoveout.displayID} is awaiting the owner's review.`;
+  if (moveoutRequest) {
+    return moveoutRequest.status === "approved"
+      ? `Notice ${moveoutRequest.displayID} is approved. Your checkout comes next.`
+      : `Notice ${moveoutRequest.displayID} is awaiting the owner's review.`;
   }
 
   if (!hasMoveoutWindow) {

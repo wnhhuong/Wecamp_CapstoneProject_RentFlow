@@ -5,6 +5,7 @@ import type {
   AdminConsumptionDetails,
   AdminExtensionDetails,
   AdminInvoiceDetails,
+  AdminMoveoutDetails,
   AdminRequest,
   AdminRequestDetail,
   ApproveRequestResult,
@@ -44,6 +45,7 @@ export async function getAdminRequest(
     roomID: detail.room ? String(detail.room.roomID) : '',
     consumption: mapConsumptionDetails(detail),
     extension: mapExtensionDetails(detail),
+    moveout: mapMoveoutDetails(detail),
     invoice: mapInvoiceDetails(detail),
   }
 }
@@ -113,6 +115,21 @@ function mapExtensionDetails(
       details.contractDisplayID ?? String(details.contractID),
     expireDate: details.contractExpireDate ?? '',
     yearToExtend: details.yearToExtend ?? 1,
+  }
+}
+
+function mapMoveoutDetails(
+  detail: BackendRequestDetail,
+): AdminMoveoutDetails | null {
+  if (detail.type !== 'moveout' || detail.details?.contractID === undefined) {
+    return null
+  }
+
+  const details = detail.details
+
+  return {
+    contractDisplayID: details.contractDisplayID ?? String(details.contractID),
+    requestMoveoutDate: details.requestMoveoutDate ?? '',
   }
 }
 

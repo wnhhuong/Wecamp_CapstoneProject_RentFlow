@@ -1199,7 +1199,7 @@ Chỉ cho `need_action → in_progress → done`; không bỏ bước hoặc chu
 |`LATE_PAYMENT_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
 |`PAID_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
 |`EXTEND_REQUEST`|`contractID`, `contractDisplayID`, `contractExpireDate` (date-only, hạn **hiện tại** của hợp đồng), `contractStatus`, `yearToExtend` (derived Parameter)|
-|`MOVEOUT_REQUEST`|`contractID`, `requestMoveoutDate`|
+|`MOVEOUT_REQUEST`|`contractID`, `contractDisplayID`, `contractExpireDate` (date-only), `contractStatus`, `requestMoveoutDate` (date-only)|
 |`CHECKOUT_REQUEST`|`contractID`, `finalImage`, `finalReading`|
 |`CONSUMP_REQUEST`|`image`, `currentReading`, `previousReading`, `usage`, `capturedAt`; khi đã approved thêm tóm tắt hoá đơn được tạo (`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`)|
 
@@ -1222,7 +1222,7 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 - `LATE_PAYMENT_REQUEST`: chuyển request sang approved và set `INVOICE.isRequestLate=true`; không đổi `dueDate` và `status` của invoice.
 - `PAID_REQUEST`: set invoice `paid`, `paymentDate=now`.
 - `EXTEND_REQUEST`: cộng `yearToExtend` vào `CONTRACT.expireDate`.
-- `MOVEOUT_REQUEST`: approve notice, mở điều kiện checkout.
+- `MOVEOUT_REQUEST`: approve notice, mở điều kiện checkout; `ROOM.status` sang `available_soon` và `ROOM.availableFrom` dời sang `requestMoveoutDate` (guest chỉ đọc `availableFrom` ở đúng trạng thái này).
 - `CHECKOUT_REQUEST`: xử lý final reading/image, expire contract và reset/deactivate account theo nghiệp vụ.
 - `CONSUMP_REQUEST`: tạo `CONSUMPTION` và invoice tương ứng; `roomBill` lấy từ `CONTRACT.rent` (active contract của room), không đọc `ROOM.price`.
 
