@@ -1,9 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 import { ErrorState, PageLoading } from "@/components/feedback";
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
+import {
+  DetailRow,
+  DetailSection,
+  IdentityHeader,
+  Timeline,
+  type TimelineStep,
+} from "@/components/ui/detail-sheet";
 import {
   Sheet,
   SheetContent,
@@ -147,14 +154,14 @@ function RequestDetailsLoader({
     <>
       <SheetHeader className="border-b border-hairline pr-12">
         <div className="flex flex-wrap items-center gap-2.5">
-          <SheetTitle className="text-xl">{request.displayID}</SheetTitle>
+          <SheetTitle className="text-xl">
+            {REQUEST_TYPE_LABELS[request.type]}
+          </SheetTitle>
           {detail ? (
             <StatusBadge domain="request" status={detail.status} />
           ) : null}
         </div>
-        <SheetDescription>
-          {REQUEST_TYPE_LABELS[request.type]} · Room {request.roomCode}
-        </SheetDescription>
+        <SheetDescription>{request.displayID}</SheetDescription>
       </SheetHeader>
 
       <div className="flex flex-1 flex-col gap-5 px-4 pb-4">
@@ -169,21 +176,17 @@ function RequestDetailsLoader({
 
         {!isLoading && !error && detail ? (
           <>
-            <section className="grid gap-3 py-2">
-              <DetailRow label="Tenant" value={detail.tenantName} />
-              <DetailRow
-                label="Submitted"
-                value={formatDate(detail.createDate, true)}
+            <div className="grid gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,4fr)_minmax(0,6fr)]">
+              <IdentityHeader
+                title="Sender"
+                bordered={false}
+                name={detail.tenantName}
+                fallbackName="Unknown tenant"
+                detail={`Room ${detail.roomCode}`}
               />
-              <DetailRow
-                label="Resolved"
-                value={
-                  detail.resolveDate
-                    ? formatDate(detail.resolveDate, true)
-                    : "Not yet"
-                }
-              />
-            </section>
+
+              <Timeline steps={buildTimeline(detail)} bordered={false} />
+            </div>
 
             {detail.consumption ? (
               <ConsumptionSection
@@ -250,6 +253,23 @@ function RequestDetailsLoader({
       ) : null}
     </>
   );
+}
+
+function buildTimeline(detail: AdminRequestDetail): TimelineStep[] {
+  return [
+    {
+      label: "Submitted",
+      value: formatDate(detail.createDate, true),
+      reached: true,
+    },
+    {
+      label: "Resolved",
+      value: detail.resolveDate
+        ? formatDate(detail.resolveDate, true)
+        : "Not yet",
+      reached: detail.status === "approved",
+    },
+  ];
 }
 
 function buildOutcome(detail: AdminRequestDetail) {
@@ -344,35 +364,6 @@ function MeterImage({ src, roomCode }: { src: string; roomCode: string }) {
         onError={() => setHasError(true)}
       />
     </a>
-  );
-}
-
-function DetailSection({
-  title,
-  badge,
-  children,
-}: {
-  title: string;
-  badge?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="grid gap-3 border-t border-hairline pt-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {badge}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium text-foreground">{value}</span>
-    </div>
   );
 }
 
