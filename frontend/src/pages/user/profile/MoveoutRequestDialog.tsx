@@ -23,12 +23,12 @@ import { ROUTES } from "@/router/routes";
 import { submitMoveoutRequest } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
 import type { TenantMoveoutRequest } from "@/shared/types/request";
-import { formatDate, getDateKey } from "@/shared/utils/dateFormatter";
+import { formatDate } from "@/shared/utils/dateFormatter";
 
-/** Matches MOVEOUT_NOTICE_DAYS in the backend, which rejects anything earlier. */
-const MOVEOUT_NOTICE_DAYS = 7;
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
+import {
+  getEarliestMoveoutDate,
+  MOVEOUT_NOTICE_DAYS,
+} from "./utils/moveoutWindow";
 
 interface MoveoutRequestDialogProps {
   open: boolean;
@@ -272,8 +272,4 @@ function toDate(dateKey: string): Date {
   return new Date(year, month - 1, day);
 }
 
-function getEarliestMoveoutDate(): string {
-  return getDateKey(new Date(Date.now() + MOVEOUT_NOTICE_DAYS * DAY_IN_MS));
-}
-
-export { getEarliestMoveoutDate, MOVEOUT_NOTICE_DAYS, MoveoutRequestDialog };
+export { MoveoutRequestDialog };

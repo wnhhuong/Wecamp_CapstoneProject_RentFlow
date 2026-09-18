@@ -10,11 +10,11 @@ import type {
 import { formatDate, formatYears } from "@/shared/utils/dateFormatter";
 
 import { ExtendLeaseDialog } from "./ExtendLeaseDialog";
+import { MoveoutRequestDialog } from "./MoveoutRequestDialog";
 import {
   getEarliestMoveoutDate,
   MOVEOUT_NOTICE_DAYS,
-  MoveoutRequestDialog,
-} from "./MoveoutRequestDialog";
+} from "./utils/moveoutWindow";
 
 interface ContractRequestsCardProps {
   contract: TenantContract;
