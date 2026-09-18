@@ -21,6 +21,7 @@ import userDashboard from "./routes/user/dashboard.routes.js";
 import userMoveoutRouter from "./routes/user/moveout.routes.js";
 import userCheckoutRouter from "./routes/user/checkout.routes.js";
 import userExtendRouter from "./routes/user/extend.routes.js";
+import adminUserRouter from "./routes/admin/user.routes.js";
 
 const app = express();
 
@@ -41,11 +42,11 @@ app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-// guess route
+// GUEST ROUTES
 app.use(`/api/guess`, guessRouter)
 app.use(`/api/auth`, authRouter)
 
-// user route
+// USER ROUTES
 // consumrequest route
 app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
@@ -56,18 +57,6 @@ app.use(`/api/user/dashboard`, userDashboard)
 // ticket route
 app.use(`/api/user/tickets`, userTicketRouter)
 
-//Parameter routes
-app.use(`/api/admin/parameters`, adminParameterRoutes)
-
-app.use(`/api/admin/dashboard`, AdminDashBoardRoutes)
-//Room routes
-app.use(`/api/admin/rooms`, adminRoomRoutes)
-    
-//Approval routes
-app.use(`/api/admin/requests`, approvalRoutes)
-
-// admin invoice route
-app.use(`/api/admin/invoices`, adminInvoiceRouter)
 // User profile routes
 app.use(`/api/user/profile`, userProfileRouter)
 
@@ -82,6 +71,25 @@ app.use(`/api/user/checkout-requests`, userCheckoutRouter)
 
 // User contract extension request routes
 app.use(`/api/user/extend-requests`, userExtendRouter)
+
+// ADMIN ROUTES
+//Admin user routes
+app.use(`/api/admin/users`, adminUserRouter)
+
+//Parameter routes
+app.use(`/api/admin/parameters`, adminParameterRoutes)
+
+//Dashboard routes
+app.use(`/api/admin/dashboard`, AdminDashBoardRoutes)
+
+//Room routes
+app.use(`/api/admin/rooms`, adminRoomRoutes)
+    
+//Approval routes
+app.use(`/api/admin/requests`, approvalRoutes)
+
+//Admin invoice route
+app.use(`/api/admin/invoices`, adminInvoiceRouter)
 
 // Global Error Handler
 app.use(errorHandler)
