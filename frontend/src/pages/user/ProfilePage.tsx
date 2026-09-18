@@ -23,7 +23,7 @@ function ProfilePage() {
   const [pendingExtension, setPendingExtension] = useState<TenantRequest | null>(
     null,
   );
-  const [pendingMoveout, setPendingMoveout] = useState<TenantRequest | null>(
+  const [moveoutRequest, setMoveoutRequest] = useState<TenantRequest | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ function ProfilePage() {
       setProfile(loadedProfile);
       setContract(loadedContract);
       setPendingExtension(findPending(loadedRequests, "extend"));
-      setPendingMoveout(findPending(loadedRequests, "moveout"));
+      setMoveoutRequest(findOpenMoveout(loadedRequests));
     } catch {
       setLoadError("Your profile could not be loaded.");
     } finally {
@@ -62,7 +62,7 @@ function ProfilePage() {
         setProfile(loadedProfile);
         setContract(loadedContract);
         setPendingExtension(findPending(loadedRequests, "extend"));
-        setPendingMoveout(findPending(loadedRequests, "moveout"));
+        setMoveoutRequest(findOpenMoveout(loadedRequests));
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -118,12 +118,12 @@ function ProfilePage() {
               <ContractRequestsCard
                 contract={contract}
                 pendingExtension={pendingExtension}
-                pendingMoveout={pendingMoveout}
+                moveoutRequest={moveoutRequest}
                 onExtensionRequested={(request) =>
                   setPendingExtension(toPendingRequest("extend", request))
                 }
                 onMoveoutRequested={(request) =>
-                  setPendingMoveout(toPendingRequest("moveout", request))
+                  setMoveoutRequest(toPendingRequest("moveout", request))
                 }
               />
             </div>
@@ -140,6 +140,20 @@ function ProfilePage() {
  */
 function loadRequests(signal?: AbortSignal): Promise<TenantRequest[]> {
   return getTenantRequests(signal).catch(() => []);
+}
+
+/**
+ * A tenancy only leaves once, so an approved notice closes the row just like a
+ * pending one; what follows an approval is the checkout, not a second notice.
+ */
+function findOpenMoveout(requests: TenantRequest[]): TenantRequest | null {
+  return (
+    requests.find(
+      (request) =>
+        request.type === "moveout" &&
+        (request.status === "pending" || request.status === "approved"),
+    ) ?? null
+  );
 }
 
 function findPending(

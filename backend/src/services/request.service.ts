@@ -145,21 +145,28 @@ export const createMoveoutRequest = async ({
   if (!room) {
     throw new RequestServiceError(404, 'Room not found.');
   }
+  // Một tenancy chỉ rời đi một lần: đơn đã duyệt cũng phải chặn, không chỉ đơn
+  // đang chờ. Sau khi duyệt, bước tiếp theo là checkout chứ không phải đơn mới.
+  const existingRequest = await RequestModel.findOne({
+    type: RequestType.MOVEOUT,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: { $in: [RequestStatus.PENDING, RequestStatus.APPROVED] },
+  });
+  if (existingRequest) {
+    throw new RequestServiceError(
+      409,
+      existingRequest.status === RequestStatus.APPROVED
+        ? 'A move-out request has already been approved; submit the checkout instead.'
+        : 'A move-out request is already pending.',
+    );
+  }
+
   if (room.status !== RoomStatus.RENTED) {
     throw new RequestServiceError(
       400,
       `Room ${room.roomCode} is "${room.status}", expected RENTED.`,
     );
-  }
-
-  const existingRequest = await RequestModel.findOne({
-    type: RequestType.MOVEOUT,
-    userID: auth.userID,
-    roomID: auth.roomID,
-    status: RequestStatus.PENDING,
-  });
-  if (existingRequest) {
-    throw new RequestServiceError(409, 'A move-out request is already pending.');
   }
 
   const session = await mongoose.startSession();
@@ -739,6 +746,7 @@ const approveMoveoutRequest = async (
   }
  
   room.status = RoomStatus.AVAILABLE_SOON;
+  room.availableFrom = moveoutRequest.requestMoveoutDate;
   await room.save({ session });
   // Contract KHÔNG đổi status — tenancy chưa kết thúc (AC: "Contract vẫn ACTIVE").
  
@@ -748,6 +756,7 @@ const approveMoveoutRequest = async (
     roomID: String(room._id),
     roomCode: room.roomCode,
     roomStatus: room.status,
+    roomAvailableFrom: room.availableFrom,
     requestMoveoutDate: moveoutRequest.requestMoveoutDate,
   };
 };
@@ -996,6 +1005,24 @@ export const getRequestDetail = async (requestID: string) => {
       : { note: `Detail record not found for request type "${request.type}".` };
   }
  
+  // MOVEOUT cũng chỉ giữ contractID, nên trả kèm mã hợp đồng cho dễ đọc và
+  // cắt ngày rời đi về ngày lịch theo giờ VN thay vì mốc thời gian ISO.
+  if (request.type === RequestType.MOVEOUT && details?.contractID) {
+    const contract = await Contract.findById(details.contractID as string);
+
+    if (contract) {
+      details.contractDisplayID = room
+        ? buildContractDisplayID(room.roomCode, new Date(contract.startDate))
+        : null;
+      details.contractExpireDate = toVNDateKey(new Date(contract.expireDate));
+      details.contractStatus = contract.status;
+    }
+
+    if (details.requestMoveoutDate) {
+      details.requestMoveoutDate = toVNDateKey(new Date(details.requestMoveoutDate as string));
+    }
+  }
+
   // EXTEND chỉ giữ contractID, nên admin không thấy được đang gia hạn hợp đồng nào
   // tới bao giờ. Trả kèm mã hợp đồng, hạn hiện tại và số năm để duyệt có căn cứ.
   if (request.type === RequestType.EXTEND && details?.contractID) {
