@@ -100,7 +100,10 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
         result = await approvePaidRequest(updatedRequest, session);
         break;
       }      
-      case RequestType.DELAY:
+      case RequestType.DELAY: {
+        result = await approveLatePaymentRequest(updatedRequest, session);
+        break;
+      }
       case RequestType.EXTEND:
       case RequestType.MOVEOUT:
       case RequestType.CHECKOUT: {
@@ -241,7 +244,7 @@ const approveConsumpRequest = async (
 };
 
 /**
- * Nhánh PAID_REQUEST (task 3):
+ * Nhánh PAID_REQUEST:
  * 1. Lấy PaidRequest -> invoiceID.
  * 2. Invoice PHẢI đang NOT_PAID.
  * 3. Set Invoice PAID + paymentDate = now (cùng transaction).
@@ -286,7 +289,46 @@ const approvePaidRequest = async (
   };
 };
 
-
+/**
+ * Nhánh LATE_PAYMENT_REQUEST (type DELAY):
+ * 1. Lấy LatePaymentRequest -> invoiceID.
+ * 2. Set Invoice.isRequestLate = true.
+ * 3. KHÔNG đụng Invoice.dueDate, KHÔNG đụng Invoice.status (không chuyển PAID).
+ *
+ * "Request không được xử lý lại" đã được đảm bảo ở tầng approveRequest() (atomic guard chung).
+ */
+const approveLatePaymentRequest = async (
+  request: HydratedDocument<IRequest>,
+  session: ClientSession,
+): Promise<Record<string, unknown>> => {
+  const lateRequest = await LatePaymentRequest.findOne({ requestID: request._id }).session(session);
+  if (!lateRequest) {
+    throw new RequestServiceError(404, `LATE_PAYMENT_REQUEST detail not found for request ${request._id}.`);
+  }
+ 
+  const invoice = await Invoice.findById(lateRequest.invoiceID).session(session);
+  if (!invoice) {
+    throw new RequestServiceError(404, `Invoice ${lateRequest.invoiceID} not found.`);
+  }
+ 
+  const dueDateBefore = invoice.dueDate;
+  const statusBefore = invoice.status;
+ 
+  invoice.isRequestLate = true;
+  await invoice.save({ session });
+ 
+  // Sanity-check: không được vô tình đổi 2 field này (bảo vệ AC, không phải logic nghiệp vụ).
+  if (invoice.dueDate.getTime() !== dueDateBefore.getTime() || invoice.status !== statusBefore) {
+    throw new RequestServiceError(500, 'Unexpected mutation of Invoice.dueDate/status while approving late-payment request.');
+  }
+ 
+  return {
+    invoiceID: String(invoice._id),
+    isRequestLate: invoice.isRequestLate,
+    dueDate: invoice.dueDate,
+    status: invoice.status,
+  };
+};
 // ---------------------------------------------------------------------------
 // #38 / #39 — GET list & detail
 // Admin xem được pending Consumption Request + meter image/current/previous reading
