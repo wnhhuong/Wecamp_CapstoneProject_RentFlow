@@ -32,6 +32,8 @@ const ROUTES = {
       root: '/admin',
       dashboard: '/admin/dashboard',
       rooms: '/admin/rooms',
+      roomDetailsLink: (roomId: string) =>
+        `/admin/rooms?room=${encodeURIComponent(roomId)}`,
       users: '/admin/users',
       invoices: '/admin/invoices',
       invoiceDetails: '/admin/invoices/:invoiceId',

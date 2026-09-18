@@ -1198,7 +1198,7 @@ Chỉ cho `need_action → in_progress → done`; không bỏ bước hoặc chu
 |---|---|
 |`LATE_PAYMENT_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
 |`PAID_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
-|`EXTEND_REQUEST`|`contractID`, `yearToExtend` (derived Parameter)|
+|`EXTEND_REQUEST`|`contractID`, `contractDisplayID`, `contractExpireDate` (date-only, hạn **hiện tại** của hợp đồng), `contractStatus`, `yearToExtend` (derived Parameter)|
 |`MOVEOUT_REQUEST`|`contractID`, `requestMoveoutDate`|
 |`CHECKOUT_REQUEST`|`contractID`, `finalImage`, `finalReading`|
 |`CONSUMP_REQUEST`|`image`, `currentReading`, `previousReading`, `usage`, `capturedAt`; khi đã approved thêm tóm tắt hoá đơn được tạo (`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`)|

@@ -25,7 +25,7 @@ import {
 
 import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
 import { getVNDateParts } from '../utils/dateFormat.js';
-import { buildInvoiceDisplayID, buildRequestDisplayID } from '../utils/displayId.js';
+import { buildContractDisplayID, buildInvoiceDisplayID, buildRequestDisplayID } from '../utils/displayId.js';
 import { parsePagination, paginateArray } from '../utils/pagination.js';
 
 /**
@@ -996,6 +996,26 @@ export const getRequestDetail = async (requestID: string) => {
       : { note: `Detail record not found for request type "${request.type}".` };
   }
  
+  // EXTEND chỉ giữ contractID, nên admin không thấy được đang gia hạn hợp đồng nào
+  // tới bao giờ. Trả kèm mã hợp đồng, hạn hiện tại và số năm để duyệt có căn cứ.
+  if (request.type === RequestType.EXTEND && details?.contractID) {
+    const [contract, yearToExtendParameter] = await Promise.all([
+      Contract.findById(details.contractID as string),
+      Parameter.findOne({ name: ParameterName.YEAR_TO_EXTEND }).select('value'),
+    ]);
+
+    if (contract) {
+      details.contractDisplayID = room
+        ? buildContractDisplayID(room.roomCode, new Date(contract.startDate))
+        : null;
+      details.contractExpireDate = toVNDateKey(new Date(contract.expireDate));
+      details.contractStatus = contract.status;
+    }
+
+    const yearToExtend = Number(yearToExtendParameter?.value);
+    details.yearToExtend = Number.isInteger(yearToExtend) && yearToExtend > 0 ? yearToExtend : 1;
+  }
+
   // Request nào gắn với một hoá đơn thì admin phải đi thẳng tới hoá đơn đó được,
   // nên detail trả kèm tóm tắt thay vì mỗi ObjectId.
   const invoice = await findRelatedInvoice(request, details);

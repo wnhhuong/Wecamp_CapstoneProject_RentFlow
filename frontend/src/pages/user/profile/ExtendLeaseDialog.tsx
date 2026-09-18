@@ -16,7 +16,7 @@ import { ROUTES } from "@/router/routes";
 import { submitExtendRequest } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
 import type { TenantExtendRequest } from "@/shared/types/request";
-import { formatDate, formatYears } from "@/shared/utils/dateFormatter";
+import { addYears, formatDate, formatYears } from "@/shared/utils/dateFormatter";
 
 interface ExtendLeaseDialogProps {
   open: boolean;
@@ -193,17 +193,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <dd className="text-right font-medium text-foreground">{value}</dd>
     </div>
   );
-}
-
-/**
- * Mirrors the approval step, which adds whole years to the stored expiry. The
- * date only ever previews what approval would do, so it is never persisted.
- */
-function addYears(expireDate: string, years: number): string {
-  const parts = /^(\d{4})(-\d{2}-\d{2})$/.exec(expireDate);
-  if (!parts) return expireDate;
-
-  return `${Number(parts[1]) + years}${parts[2]}`;
 }
 
 export { ExtendLeaseDialog };

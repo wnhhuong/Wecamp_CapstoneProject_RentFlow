@@ -26,19 +26,25 @@ import {
   getAdminRequest,
 } from "@/shared/api/admin/requests.api";
 import type {
+  AdminExtensionDetails,
   AdminInvoiceDetails,
   AdminRequest,
   AdminRequestDetail,
 } from "@/shared/types/admin/request";
 import type { RequestType } from "@/shared/types/request";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
-import { formatDate } from "@/shared/utils/dateFormatter";
+import {
+  addYears,
+  formatDate,
+  formatYears,
+} from "@/shared/utils/dateFormatter";
 import { REQUEST_TYPE_LABELS } from "@/shared/utils/requestTypes";
 
 const APPROVE_LABELS: Partial<Record<RequestType, string>> = {
   consump: "Approve and create invoice",
   paid: "Confirm payment",
   delay: "Approve late payment",
+  extend: "Approve extension",
 };
 
 const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
@@ -47,6 +53,8 @@ const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
   paid: "Approving marks the invoice PAID. Confirm only after the money has arrived.",
   delay:
     "Approving acknowledges that the tenant will pay after the due date. The invoice status remains NOT PAID and the due date stays the same.",
+  extend:
+    "Approving moves the contract expiry date forward. Nothing else on the lease changes, and the rent stays at the signed price.",
 };
 
 interface RequestDetailsSheetProps {
@@ -176,22 +184,25 @@ function RequestDetailsLoader({
 
         {!isLoading && !error && detail ? (
           <>
-            <div className="grid gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,4fr)_minmax(0,6fr)]">
-              <IdentityHeader
-                title="Sender"
-                bordered={false}
-                name={detail.tenantName}
-                fallbackName="Unknown tenant"
-                detail={`Room ${detail.roomCode}`}
-              />
-
-              <Timeline steps={buildTimeline(detail)} bordered={false} />
-            </div>
+            <IdentityHeader
+              title=""
+              name={detail.tenantName}
+              fallbackName="Unknown tenant"
+              detail={`Room ${detail.roomCode}`}
+              bordered={false}
+            />
 
             {detail.consumption ? (
               <ConsumptionSection
                 roomCode={detail.roomCode}
                 consumption={detail.consumption}
+              />
+            ) : null}
+
+            {detail.extension ? (
+              <ExtensionSection
+                extension={detail.extension}
+                isPending={detail.status === "pending"}
               />
             ) : null}
 
@@ -219,6 +230,8 @@ function RequestDetailsLoader({
               </p>
             )}
 
+            <Timeline steps={buildTimeline(detail)} />
+
             {approveError ? (
               <p role="alert" className="text-sm text-destructive">
                 {approveError}
@@ -228,12 +241,20 @@ function RequestDetailsLoader({
         ) : null}
       </div>
 
-      {detail && (detail.invoice || canApprove) ? (
+      {detail && (detail.invoice || detail.extension || canApprove) ? (
         <SheetFooter className="border-t border-hairline sm:flex-row sm:justify-end">
           {detail.invoice ? (
             <Button type="button" variant="outline" asChild>
               <Link to={ROUTES.admin.invoiceDetailsLink(detail.invoice.invoiceID)}>
                 View invoice
+              </Link>
+            </Button>
+          ) : null}
+
+          {detail.extension && detail.roomID ? (
+            <Button type="button" variant="outline" asChild>
+              <Link to={ROUTES.admin.roomDetailsLink(detail.roomID)}>
+                View room & lease
               </Link>
             </Button>
           ) : null}
@@ -291,6 +312,13 @@ function buildOutcome(detail: AdminRequestDetail) {
     return `Reading approved. An invoice was created for room ${detail.roomCode}.`;
   }
 
+  if (detail.type === "extend") {
+    // The re-read detail already carries the moved expiry date.
+    return detail.extension
+      ? `Extension approved. The lease now runs to ${formatDate(detail.extension.expireDate)}.`
+      : "Extension approved. The contract expiry date has moved.";
+  }
+
   return `${detail.displayID} was approved.`;
 }
 
@@ -317,6 +345,37 @@ function ConsumptionSection({
         label="Captured"
         value={formatDate(consumption.capturedAt, true)}
       />
+    </DetailSection>
+  );
+}
+
+function ExtensionSection({
+  extension,
+  isPending,
+}: {
+  extension: AdminExtensionDetails;
+  isPending: boolean;
+}) {
+  return (
+    <DetailSection title="Contract">
+      <DetailRow label="Contract ID" value={extension.contractDisplayID} />
+      <DetailRow
+        label={isPending ? "Current expiry" : "Expiry date"}
+        value={
+          extension.expireDate ? formatDate(extension.expireDate) : "Not set"
+        }
+      />
+      <DetailRow label="Extension" value={formatYears(extension.yearToExtend)} />
+      {isPending ? (
+        <DetailRow
+          label="New expiry if approved"
+          value={
+            extension.expireDate
+              ? formatDate(addYears(extension.expireDate, extension.yearToExtend))
+              : "Not set"
+          }
+        />
+      ) : null}
     </DetailSection>
   );
 }
