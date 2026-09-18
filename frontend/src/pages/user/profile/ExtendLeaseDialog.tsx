@@ -16,7 +16,7 @@ import { ROUTES } from "@/router/routes";
 import { submitExtendRequest } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
 import type { TenantExtendRequest } from "@/shared/types/request";
-import { formatDate } from "@/shared/utils/dateFormatter";
+import { formatDate, formatYears } from "@/shared/utils/dateFormatter";
 
 interface ExtendLeaseDialogProps {
   open: boolean;
@@ -193,10 +193,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <dd className="text-right font-medium text-foreground">{value}</dd>
     </div>
   );
-}
-
-function formatYears(years: number): string {
-  return `${years} year${years === 1 ? "" : "s"}`;
 }
 
 /**
