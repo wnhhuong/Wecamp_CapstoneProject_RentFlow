@@ -20,6 +20,7 @@ import userContractRouter from "./routes/user/contract.routes.js";
 import userDashboard from "./routes/user/dashboard.routes.js";
 import userMoveoutRouter from "./routes/user/moveout.routes.js";
 import userCheckoutRouter from "./routes/user/checkout.routes.js";
+import userExtendRouter from "./routes/user/extend.routes.js";
 
 const app = express();
 
@@ -78,6 +79,9 @@ app.use(`/api/user/moveout-requests`, userMoveoutRouter)
 
 // User checkout request routes
 app.use(`/api/user/checkout-requests`, userCheckoutRouter)
+
+// User contract extension request routes
+app.use(`/api/user/extend-requests`, userExtendRouter)
 
 // Global Error Handler
 app.use(errorHandler)
