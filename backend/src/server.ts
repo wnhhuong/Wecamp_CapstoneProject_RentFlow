@@ -17,6 +17,7 @@ import userTicketRouter from "./routes/user/ticket.routes.js";
 import userProfileRouter from "./routes/user/profile.routes.js";
 import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
 import userContractRouter from "./routes/user/contract.routes.js";
+import userDashboard from "./routes/user/dashboard.routes.js";
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 // invoice route
 app.use(`/api/user/invoices`, userInvoiceRouter)
 app.use(`/api/user/requests`, userRequestRouter)
+app.use(`/api/user/dashboard`, userDashboard)
 
 // ticket route
 app.use(`/api/user/tickets`, userTicketRouter)
