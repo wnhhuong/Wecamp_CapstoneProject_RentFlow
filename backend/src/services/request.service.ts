@@ -11,11 +11,13 @@ import Consumption from '../models/Consumption.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/User.js';
 import Room from '../models/Room.js';
+import Parameter from '../models/Parameter.js';
 import { 
   RequestType, 
   RequestStatus, 
   ContractStatus,
   InvoiceStatus,
+  ParameterName,
   RoomStatus, 
 } from '../models/enums.js';
 
@@ -69,6 +71,14 @@ interface CreateCheckoutRequestInput {
   };
   finalImage: string;
   finalReading: number;
+}
+
+interface CreateExtendRequestInput {
+  auth: {
+    userID: string;
+    roomID: string;
+    contractID: string;
+  };
 }
 
 export const createMoveoutRequest = async ({
@@ -266,6 +276,100 @@ export const createCheckoutRequest = async ({
       contractID: String(contract._id),
       finalImage,
       finalReading,
+      createDate: createDate.toISOString().split('T')[0],
+      status: request.status,
+    };
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+export const createExtendRequest = async ({ auth }: CreateExtendRequestInput) => {
+  if (
+    !mongoose.Types.ObjectId.isValid(auth.userID) ||
+    !mongoose.Types.ObjectId.isValid(auth.roomID) ||
+    !mongoose.Types.ObjectId.isValid(auth.contractID)
+  ) {
+    throw new RequestServiceError(401, 'Invalid user, room, or contract information.');
+  }
+
+  const [contract, room, yearToExtendParameter] = await Promise.all([
+    Contract.findOne({
+      _id: auth.contractID,
+      userID: auth.userID,
+      roomID: auth.roomID,
+      status: ContractStatus.ACTIVE,
+    }),
+    Room.findById(auth.roomID).select('roomCode'),
+    Parameter.findOne({ name: ParameterName.YEAR_TO_EXTEND }).select('value'),
+  ]);
+
+  if (!contract) {
+    throw new RequestServiceError(404, 'Active contract not found.');
+  }
+  if (!room) {
+    throw new RequestServiceError(404, 'Room not found.');
+  }
+  if (!yearToExtendParameter) {
+    throw new RequestServiceError(500, 'yearToExtend parameter is not configured.');
+  }
+
+  const yearToExtend = Number(yearToExtendParameter.value);
+  if (!Number.isInteger(yearToExtend) || yearToExtend <= 0) {
+    throw new RequestServiceError(500, 'yearToExtend parameter is invalid.');
+  }
+
+  const existingRequest = await RequestModel.findOne({
+    type: RequestType.EXTEND,
+    userID: auth.userID,
+    roomID: auth.roomID,
+    status: RequestStatus.PENDING,
+  });
+  if (existingRequest) {
+    throw new RequestServiceError(409, 'An extension request is already pending.');
+  }
+
+  const session = await mongoose.startSession();
+  const createDate = new Date();
+
+  try {
+    session.startTransaction();
+
+    const [request] = await RequestModel.create(
+      [{
+        type: RequestType.EXTEND,
+        roomID: auth.roomID,
+        userID: auth.userID,
+        createDate,
+        status: RequestStatus.PENDING,
+      }],
+      { session },
+    );
+    await ExtendRequest.create(
+      [{
+        requestID: request._id,
+        contractID: contract._id,
+      }],
+      { session },
+    );
+
+    await session.commitTransaction();
+
+    return {
+      requestID: String(request._id),
+      displayID: buildRequestDisplayID(
+        RequestType.EXTEND,
+        room.roomCode,
+        createDate,
+      ),
+      type: request.type,
+      contractID: String(contract._id),
+      yearToExtend,
       createDate: createDate.toISOString().split('T')[0],
       status: request.status,
     };
