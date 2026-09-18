@@ -82,8 +82,10 @@ function StatTile({
       >
         {label}
       </p>
-      <div className="flex items-baseline gap-3">
-        <p className="text-xl font-semibold tabular-nums">{format(shown)}</p>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="text-xl font-semibold whitespace-nowrap tabular-nums">
+          {format(shown)}
+        </p>
         {hint ? (
           <p
             className={cn(

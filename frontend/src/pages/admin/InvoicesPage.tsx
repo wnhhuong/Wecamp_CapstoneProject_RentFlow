@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
@@ -19,6 +19,7 @@ import { ROUTES } from "@/router/routes";
 import { getAdminInvoices } from "@/shared/api/admin/invoices.api";
 import type {
   AdminInvoice,
+  AdminInvoiceQuery,
   AdminInvoiceSummary,
 } from "@/shared/types/admin/invoice";
 import type { ApiPagination } from "@/shared/types/api";
@@ -61,77 +62,33 @@ function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [hasDefaultedPeriod, setHasDefaultedPeriod] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const hasDefaultedPeriod = useRef(false);
 
   const selectedPeriods = filters[PERIOD_FILTER_ID] ?? [];
   const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
-  const selectedLate = filters[LATE_FILTER_ID] ?? [];
 
-  const loadInvoices = useCallback(
-    async (signal?: AbortSignal) => {
-      setIsLoading(true);
-      setLoadError("");
+  const query = useMemo<AdminInvoiceQuery>(() => {
+    const periods = filters[PERIOD_FILTER_ID] ?? [];
+    const statuses = filters[STATUS_FILTER_ID] ?? [];
+    const late = filters[LATE_FILTER_ID] ?? [];
 
-      try {
-        const result = await getAdminInvoices(
-          {
-            search: appliedSearch || undefined,
-            // The API takes one value per filter, so a widened selection is
-            // resolved on the client instead of sending an unsupported list.
-            billingPeriod:
-              selectedPeriods.length === 1 ? selectedPeriods[0] : undefined,
-            status:
-              selectedStatuses.length === 1
-                ? selectedStatuses[0] === "paid"
-                  ? "paid"
-                  : "not_paid"
-                : undefined,
-            isRequestLate:
-              selectedLate.length === 1 ? selectedLate[0] === "yes" : undefined,
-            page,
-            limit: PAGE_SIZE,
-          },
-          signal,
-        );
-
-        setInvoices(result.items);
-        setPagination(result.pagination);
-        setBillingPeriods(result.billingPeriods);
-        setSummary(result.summary);
-
-        if (!hasDefaultedPeriod) {
-          setHasDefaultedPeriod(true);
-          if (result.billingPeriods.length > 0) {
-            setFilters((current) => ({
-              ...current,
-              [PERIOD_FILTER_ID]: [result.billingPeriods[0]],
-            }));
-            return;
-          }
-        }
-
-        setIsLoading(false);
-      } catch (error: unknown) {
-        if (signal?.aborted) return;
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : "The invoices could not be loaded.",
-        );
-        setIsLoading(false);
-      }
-    },
-    [
-      appliedSearch,
-      hasDefaultedPeriod,
+    return {
+      search: appliedSearch || undefined,
+      billingPeriod: periods.length === 1 ? periods[0] : undefined,
+      status:
+        statuses.length === 1
+          ? statuses[0] === "paid"
+            ? "paid"
+            : "not_paid"
+          : undefined,
+      isRequestLate: late.length === 1 ? late[0] === "yes" : undefined,
       page,
-      selectedLate,
-      selectedPeriods,
-      selectedStatuses,
-    ],
-  );
+      limit: PAGE_SIZE,
+    };
+  }, [appliedSearch, filters, page]);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -143,13 +100,58 @@ function InvoicesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadInvoices(controller.signal);
+
+    getAdminInvoices(query, controller.signal)
+      .then((result) => {
+        setInvoices(result.items);
+        setPagination(result.pagination);
+        setBillingPeriods(result.billingPeriods);
+        setSummary(result.summary);
+        setLoadError("");
+
+        // The newest period is only known once the first response lands, so the
+        // default month filter is applied after it rather than on mount.
+        if (!hasDefaultedPeriod.current) {
+          hasDefaultedPeriod.current = true;
+          if (result.billingPeriods.length > 0) {
+            setFilters((current) => ({
+              ...current,
+              [PERIOD_FILTER_ID]: [result.billingPeriods[0]],
+            }));
+            return;
+          }
+        }
+
+        setIsLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "The invoices could not be loaded.",
+        );
+        setIsLoading(false);
+      });
+
     return () => controller.abort();
-  }, [loadInvoices]);
+  }, [query, reloadToken]);
 
   function changeFilter(id: string, selected: string[]) {
+    setIsLoading(true);
     setPage(1);
     setFilters((current) => ({ ...current, [id]: selected }));
+  }
+
+  function goToPage(nextPage: number) {
+    setIsLoading(true);
+    setPage(nextPage);
+  }
+
+  function retry() {
+    setIsLoading(true);
+    setLoadError("");
+    setReloadToken((token) => token + 1);
   }
 
   const periodLabel =
@@ -223,15 +225,6 @@ function InvoicesPage() {
               { value: "paid", label: "Paid" },
             ],
           },
-          // {
-          //   id: LATE_FILTER_ID,
-          //   label: "Late payment",
-          //   selected: selectedLate,
-          //   options: [
-          //     { value: "yes", label: "Allowed to pay late" },
-          //     { value: "no", label: "No late payment" },
-          //   ],
-          // },
         ]}
         onFilterChange={changeFilter}
         onClearFilters={() => {
@@ -257,7 +250,7 @@ function InvoicesPage() {
       {loadError ? (
         <ErrorState
           description={loadError}
-          onRetry={() => void loadInvoices()}
+          onRetry={retry}
         />
       ) : null}
 
@@ -346,7 +339,7 @@ function InvoicesPage() {
             totalItems={pagination.totalItems}
             itemNoun="invoice"
             isBusy={isLoading}
-            onPageChange={setPage}
+            onPageChange={goToPage}
           />
         </>
       ) : null}
