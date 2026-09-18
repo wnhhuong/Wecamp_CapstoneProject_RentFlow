@@ -447,10 +447,8 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
         break;
       }      
       case RequestType.EXTEND: {
-        throw new RequestServiceError(
-          501,
-          `Approve logic for request type "${updatedRequest.type}" is not implemented yet (out of scope of this task).`,
-        );
+        result = await approveExtendRequest(updatedRequest, session);
+        break;
       }
 
       default: {
@@ -746,7 +744,7 @@ const approveCheckoutRequest = async (
   if (contract.status !== ContractStatus.ACTIVE) {
     throw new RequestServiceError(
       400,
-      `Contract ${contract._id} is "${contract.status}", must be ACTIVE to approve checkout.`,
+      `Contract ${contract._id} is ${contract.status}, must be ACTIVE to approve checkout.`,
     );
   }
  
@@ -800,6 +798,50 @@ const approveCheckoutRequest = async (
     accountStatus: account?.status ?? null,
     finalReading: checkoutRequest.finalReading, // dùng cho Billing (task khác), không tự tạo Invoice ở đây
     finalImage: checkoutRequest.finalImage,
+  };
+};
+/**
+ * Nhánh EXTEND_REQUEST:
+ * 1. Lấy ExtendRequest -> contractID.
+ * 2. Contract PHẢI ACTIVE.
+ * 3. expireDate += yearToExtend (Parameter, fallback 1 năm nếu Parameter thiếu).
+ * 4. Không đụng field nào khác của Contract.
+ */
+const approveExtendRequest = async (
+  request: HydratedDocument<IRequest>,
+  session: ClientSession,
+): Promise<Record<string, unknown>> => {
+  const extendRequest = await ExtendRequest.findOne({ requestID: request._id }).session(session);
+  if (!extendRequest) {
+    throw new RequestServiceError(404, `EXTEND_REQUEST detail not found for request ${request._id}.`);
+  }
+ 
+  const contract = await Contract.findById(extendRequest.contractID).session(session);
+  if (!contract) {
+    throw new RequestServiceError(404, `Contract ${extendRequest.contractID} not found.`);
+  }
+  if (contract.status !== ContractStatus.ACTIVE) {
+    throw new RequestServiceError(
+      400,
+      `Contract ${contract._id} is ${contract.status}, must be ACTIVE to approve extension.`,
+    );
+  }
+ 
+  const yearsParam = await Parameter.findOne({ name: ParameterName.YEAR_TO_EXTEND }).session(session);
+  const rawYears = yearsParam ? Number(yearsParam.value) : NaN;
+  const yearsToExtend = Number.isInteger(rawYears) && rawYears > 0 ? rawYears : 1; // fallback 1 năm nếu Parameter thiếu/lỗi
+ 
+  const previousExpireDate = new Date(contract.expireDate);
+  const newExpireDate = new Date(contract.expireDate);
+  newExpireDate.setUTCFullYear(newExpireDate.getUTCFullYear() + yearsToExtend);
+  contract.expireDate = newExpireDate;
+  await contract.save({ session });
+ 
+  return {
+    contractID: String(contract._id),
+    yearsExtended: yearsToExtend,
+    previousExpireDate,
+    expireDate: contract.expireDate,
   };
 };
 // ---------------------------------------------------------------------------
