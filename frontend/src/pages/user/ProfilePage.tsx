@@ -94,19 +94,7 @@ function ProfilePage() {
 
       {!isLoading && !loadError && profile ? (
         <div className="grid items-start gap-5 lg:grid-cols-2">
-          <div className="flex flex-col gap-5">
-            <ProfileCard profile={profile} onSaved={setProfile} />
-
-            {contract ? (
-              <ContractRequestsCard
-                contract={contract}
-                pendingExtension={pendingExtension}
-                onExtensionRequested={(request) =>
-                  setPendingExtension(toPendingExtension(request))
-                }
-              />
-            ) : null}
-          </div>
+          <ProfileCard profile={profile} onSaved={setProfile} />
 
           {contract ? (
             <LeaseCard contract={contract} profile={profile} />
@@ -115,6 +103,18 @@ function ProfilePage() {
               No active lease is recorded for your room right now.
             </p>
           )}
+
+          {contract ? (
+            <div className="lg:col-span-2">
+              <ContractRequestsCard
+                contract={contract}
+                pendingExtension={pendingExtension}
+                onExtensionRequested={(request) =>
+                  setPendingExtension(toPendingExtension(request))
+                }
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </PageContainer>
