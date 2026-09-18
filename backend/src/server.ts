@@ -18,6 +18,7 @@ import userProfileRouter from "./routes/user/profile.routes.js";
 import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
 import userContractRouter from "./routes/user/contract.routes.js";
 import userDashboard from "./routes/user/dashboard.routes.js";
+import userMoveoutRouter from "./routes/user/moveout.routes.js";
 
 const app = express();
 
@@ -70,6 +71,9 @@ app.use(`/api/user/profile`, userProfileRouter)
 
 // User contract routes
 app.use(`/api/user/contract`, userContractRouter)
+
+// User move-out request routes
+app.use(`/api/user/moveout-requests`, userMoveoutRouter)
 
 // Global Error Handler
 app.use(errorHandler)
