@@ -12,7 +12,7 @@ import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js"
 import { formatVNShortDate } from "../../utils/dateFormat.js";
 import LatePaymentRequest from "../../models/LatePaymentRequest.js";
 
-const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
+export const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, now: Date): boolean => {
     if (!paymentDate) return now > dueDate;
     return paymentDate > dueDate;
 };

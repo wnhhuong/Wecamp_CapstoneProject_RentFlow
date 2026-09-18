@@ -24,3 +24,13 @@ export const getVNDateParts = (date: Date): { day: number; month: number; year: 
         year: vnTime.getUTCFullYear(),
     };
 };
+
+//Trả Date đại diện đúng "00:00:00 giờ Việt Nam" của ngày (year, month, day)
+export const startOfVNDay = (year: number, month: number, day: number): Date => {
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0) - VN_OFFSET_MS);
+};
+
+/** Tương tự startOfVNDay, nhưng là "23:59:59.999 giờ Việt Nam" của ngày đó. */
+export const endOfVNDay = (year: number, month: number, day: number): Date => {
+    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999) - VN_OFFSET_MS);
+};
