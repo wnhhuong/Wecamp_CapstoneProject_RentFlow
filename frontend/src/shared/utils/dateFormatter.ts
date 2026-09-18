@@ -66,6 +66,11 @@ export function formatMonthYear(value: string | Date): string {
   return monthYearFormatter.format(date)
 }
 
+/** Billing periods arrive as "2026-08"; render them as "August 2026". */
+export function formatBillingPeriod(period: string): string {
+  return /^\d{4}-\d{2}$/.test(period) ? formatMonthYear(`${period}-01`) : '—'
+}
+
 // YYYY-MM-DD in UTC+7, for calendar-date comparisons.
 export function getDateKey(value: string | Date = new Date()): string {
   const parts = dateKeyFormatter.formatToParts(parseDate(value))

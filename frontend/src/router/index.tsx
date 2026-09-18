@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
 import App from "@/App";
+import { InvoicesPage } from "@/pages/admin/InvoicesPage";
+import { InvoiceDetailsSheet } from "@/pages/admin/invoices/InvoiceDetailsSheet";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
@@ -45,11 +47,19 @@ const router = createBrowserRouter([
       },
       {
         path: ROUTES.auth.firstLoginProfile,
-        element: <RequireOnboarding><FirstLoginProfilePage /></RequireOnboarding>,
+        element: (
+          <RequireOnboarding>
+            <FirstLoginProfilePage />
+          </RequireOnboarding>
+        ),
       },
       {
         path: ROUTES.auth.firstLoginContract,
-        element: <RequireOnboarding><FirstLoginContractPage /></RequireOnboarding>,
+        element: (
+          <RequireOnboarding>
+            <FirstLoginContractPage />
+          </RequireOnboarding>
+        ),
       },
 
       {
@@ -153,17 +163,11 @@ const router = createBrowserRouter([
         path: ROUTES.admin.invoices,
         element: (
           <RequireAuth role="admin">
-            <RoutePlaceholder title="Invoices" />
+            <InvoicesPage />
           </RequireAuth>
         ),
-      },
-      {
-        path: ROUTES.admin.invoiceDetails,
-        element: (
-          <RequireAuth role="admin">
-            <RoutePlaceholder title="Invoice details" />
-          </RequireAuth>
-        ),
+        // Nested so opening an invoice keeps the list, its filters and its page.
+        children: [{ path: ":invoiceId", element: <InvoiceDetailsSheet /> }],
       },
       {
         path: ROUTES.admin.parameters,
@@ -199,5 +203,3 @@ const router = createBrowserRouter([
 ]);
 
 export { router };
-
-

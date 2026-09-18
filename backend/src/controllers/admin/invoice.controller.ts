@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 import Invoice from '../../models/Invoice.js';
 import Consumption from '../../models/Consumption.js';
 import Room from '../../models/Room.js';
-import Contract from '../../models/Contract.js';
+import Contract, { IContract } from '../../models/Contract.js';
 import User from '../../models/User.js';
-import { InvoiceStatus, ContractStatus } from '../../models/enums.js';
+import { InvoiceStatus } from '../../models/enums.js';
 import { computeBillingPeriod, computeUsageAndUnitPrice } from '../../services/invoice.service.js';
 import { buildInvoiceDisplayID } from '../../utils/displayId.js';
 import { parsePagination, paginateArray } from '../../utils/pagination.js';
@@ -15,6 +15,15 @@ const computeIsOverdue = (paymentDate: Date | null | undefined, dueDate: Date, n
   if (!paymentDate) return now > dueDate;
   return paymentDate > dueDate;
 };
+
+const BILLING_PERIOD_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/**
+ * Người thuê của một hoá đơn là người đang thuê LÚC hoá đơn được phát hành, không phải
+ * người đang thuê hiện tại: phòng đổi người thì hoá đơn cũ vẫn phải mang tên người cũ.
+ */
+const findContractAtDate = (contracts: IContract[], issuedAt: Date) =>
+  contracts.find((contract) => contract.startDate <= issuedAt) ?? null;
 
 /**
  * #34 — GET /api/admin/invoices
@@ -28,23 +37,23 @@ export const getAdminInvoiceList = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { search, status, isRequestLate, page, limit } = req.query;
+    const { search, status, isRequestLate, billingPeriod, page, limit } = req.query;
 
-    const filter: Record<string, unknown> = {};
-    if (status) {
-      if (!Object.values(InvoiceStatus).includes(status as InvoiceStatus)) {
-        sendError(res, 400, `Invalid status filter "${status}".`);
-        return;
-      }
-      filter.status = status;
+    if (billingPeriod !== undefined && !BILLING_PERIOD_PATTERN.test(String(billingPeriod))) {
+      sendError(res, 400, `Invalid billingPeriod filter "${billingPeriod}", expected YYYY-MM.`);
+      return;
     }
-    if (isRequestLate !== undefined) {
-      filter.isRequestLate = isRequestLate === 'true';
+
+    if (status && !Object.values(InvoiceStatus).includes(status as InvoiceStatus)) {
+      sendError(res, 400, `Invalid status filter "${status}".`);
+      return;
     }
 
     const { page: pageNum, limit: limitNum } = parsePagination(page, limit);
 
-    const invoices = await Invoice.find(filter).sort({ createdDate: -1 });
+    // Mọi filter chạy trong memory: tổng tiền của kỳ phải cộng trước khi lọc
+    // status/search, nếu không con số sẽ đổi theo cách admin đang lọc bảng.
+    const invoices = await Invoice.find({}).sort({ createdDate: -1 });
 
     // Batch resolve Consumption -> Room -> active Contract -> User, tránh N+1 query
     const consumptionIds = invoices.map((inv) => inv.consumptionID);
@@ -55,22 +64,26 @@ export const getAdminInvoiceList = async (
     const rooms = await Room.find({ _id: { $in: roomIds } });
     const roomMap = new Map(rooms.map((r) => [String(r._id), r]));
 
-    const activeContracts = await Contract.find({
-      roomID: { $in: roomIds },
-      status: ContractStatus.ACTIVE,
-    });
-    const contractByRoom = new Map(activeContracts.map((c) => [String(c.roomID), c]));
+    // Mọi hợp đồng của các phòng, mới nhất trước, để dò theo ngày phát hành invoice.
+    const contracts = await Contract.find({ roomID: { $in: roomIds } }).sort({ startDate: -1 });
+    const contractsByRoom = new Map<string, IContract[]>();
+    for (const contract of contracts) {
+      const key = String(contract.roomID);
+      contractsByRoom.set(key, [...(contractsByRoom.get(key) ?? []), contract]);
+    }
 
-    const userIds = [...new Set(activeContracts.map((c) => String(c.userID)))];
+    const userIds = [...new Set(contracts.map((c) => String(c.userID)))];
     const users = await User.find({ _id: { $in: userIds } });
     const userMap = new Map(users.map((u) => [String(u._id), u]));
 
     const now = new Date();
 
-    let mapped = invoices.map((inv) => {
+    const allInvoices = invoices.map((inv) => {
       const consumption = consumptionMap.get(String(inv.consumptionID));
       const room = consumption ? roomMap.get(String(consumption.roomID)) : undefined;
-      const contract = consumption ? contractByRoom.get(String(consumption.roomID)) : undefined;
+      const contract = consumption
+        ? findContractAtDate(contractsByRoom.get(String(consumption.roomID)) ?? [], inv.createdDate)
+        : null;
       const tenant = contract ? userMap.get(String(contract.userID)) : undefined;
 
       const received = inv.status === InvoiceStatus.PAID ? inv.totalBill : 0;
@@ -93,6 +106,39 @@ export const getAdminInvoiceList = async (
       };
     });
 
+    // Mọi kỳ có dữ liệu, không phụ thuộc filter nào, để bộ lọc tháng trên UI đứng yên.
+    const billingPeriods = [
+      ...new Set(
+        allInvoices.map((item) => item.billingPeriod).filter((period): period is string => Boolean(period)),
+      ),
+    ].sort((a, b) => b.localeCompare(a));
+
+    const summaryPeriod = billingPeriods[0] ?? null;
+    const summaryTotals = allInvoices
+      .filter((item) => item.billingPeriod === summaryPeriod)
+      .reduce(
+        (totals, item) => ({
+          billed: totals.billed + item.totalBill,
+          received: totals.received + item.received,
+          stillOwed: totals.stillOwed + item.stillOwed,
+        }),
+        { billed: 0, received: 0, stillOwed: 0 },
+      );
+    const summary = { billingPeriod: summaryPeriod, ...summaryTotals };
+
+    let mapped = billingPeriod
+      ? allInvoices.filter((item) => item.billingPeriod === billingPeriod)
+      : allInvoices;
+
+    if (status) {
+      mapped = mapped.filter((item) => item.status === status);
+    }
+
+    if (isRequestLate !== undefined) {
+      const wantsLate = isRequestLate === 'true';
+      mapped = mapped.filter((item) => item.isRequestLate === wantsLate);
+    }
+
     if (search) {
       const s = String(search).trim().toLowerCase();
       mapped = mapped.filter(
@@ -107,6 +153,8 @@ export const getAdminInvoiceList = async (
 
     sendSuccess(res, {
       items,
+      billingPeriods,
+      summary,
       pagination: meta, // { page, limit, total, totalPages } — total, KHÔNG phải totalItems (xem cảnh báo)
     });
   } catch (error) {
@@ -149,13 +197,9 @@ export const getAdminInvoiceDetail = async (
       return;
     }
 
-    // Tenant theo ACTIVE CONTRACT hiện tại (đã xác nhận) — có thể không khớp tenant lịch sử
-    // nếu phòng đã đổi người thuê sau khi invoice này được tạo.
-    const activeContract = await Contract.findOne({
-      roomID: room._id,
-      status: ContractStatus.ACTIVE,
-    });
-    const tenant = activeContract ? await User.findById(activeContract.userID) : null;
+    const roomContracts = await Contract.find({ roomID: room._id }).sort({ startDate: -1 });
+    const contract = findContractAtDate(roomContracts, invoice.createdDate);
+    const tenant = contract ? await User.findById(contract.userID) : null;
 
     const { usageKwh, electricityUnitPrice, electricityUnitPriceIsApprox } =
       await computeUsageAndUnitPrice(invoice, consumption);

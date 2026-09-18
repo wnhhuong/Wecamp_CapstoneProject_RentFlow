@@ -1001,6 +1001,7 @@ Không có body.
 |`search`|string|Không|Tìm display ID, roomCode, tenant name|
 |`status`|enum|Không|`not_paid`, `pending`, `paid`|
 |`isRequestLate`|boolean|Không|Lọc request late payment|
+|`billingPeriod`|string|Không|Lọc theo kỳ tính tiền, dạng `YYYY-MM`|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -1010,8 +1011,9 @@ Không có body.
 |---|---|---|---|
 |`invoiceID`|integer|Có|ERD|
 |`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
-|`tenantName`|string|Có|Join USER|
+|`tenantName`|string, nullable|Có|Người thuê tại ngày phát hành hoá đơn|
 |`roomCode`|string|Có|Join ROOM|
+|`billingPeriod`|string|Có|Kỳ tính tiền `YYYY-MM`, từ CONSUMPTION|
 |`createDate`|timestamp|Có|ERD|
 |`dueDate`|date-only|Có|ERD|
 |`totalBill`|integer|Có|ERD|
@@ -1020,6 +1022,11 @@ Không có body.
 |`status`|enum|Có|ERD|
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
+
+Ngoài `items` và `pagination`, response trả thêm hai khối:
+
+- `billingPeriods`: mảng các kỳ có dữ liệu, mới nhất trước, dùng để dựng bộ lọc tháng. Tính trên toàn bộ invoice, không phụ thuộc filter nào, nên bộ lọc đứng yên khi admin đổi lựa chọn.
+- `summary`: `billingPeriod`, `billed`, `received`, `stillOwed` — tổng tiền của **kỳ mới nhất có dữ liệu**, kèm mã kỳ đó. `billingPeriod` là `null` và ba số bằng 0 khi chưa có invoice nào.
 
 ## #35 — GET `/api/admin/invoices/:invoiceID`
 
@@ -1035,8 +1042,9 @@ Không có body.
 |---|---|---|---|
 |`invoiceID`|integer|Có|ERD|
 |`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
-|`tenant`|object|Có|`userID`, `fullName`|
+|`tenant`|object, nullable|Có|Người thuê tại ngày phát hành hoá đơn|
 |`roomCode`|string|Có|Join ROOM|
+|`billingPeriod`|string|Có|Kỳ tính tiền `YYYY-MM`, từ CONSUMPTION|
 |`createDate`|timestamp|Có|ERD|
 |`paymentDate`|timestamp, nullable|Không|ERD|
 |`dueDate`|date-only|Có|ERD|
@@ -1044,6 +1052,9 @@ Không có body.
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
 |`meterReading`|integer|Có|Chỉ số duy nhất từ CONSUMPTION|
+|`usageKwh`|integer|Có|Derived: chỉ số kỳ này trừ kỳ trước|
+|`electricityUnitPrice`|integer|Có|Derived: `electricalBill / usageKwh`|
+|`electricityUnitPriceIsApprox`|boolean|Có|true khi usage = 0 và phải fallback giá hiện tại|
 |`breakdown`|object|Có|Các bill component|
 |`totalBill`|integer|Có|ERD|
 |`received`|integer|Có|Derived|
