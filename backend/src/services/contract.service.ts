@@ -23,6 +23,7 @@ export interface ActiveContractResponse {
     waterPrice: number;
     wifiFee: number;
     otherFees: number;
+    yearToExtend: number;
   };
 }
 
@@ -62,6 +63,7 @@ export class ContractService {
           ParameterName.WATER_PRICE,
           ParameterName.WIFI_FEE,
           ParameterName.OTHER_FEES,
+          ParameterName.YEAR_TO_EXTEND,
         ],
       },
     }).lean();
@@ -95,6 +97,7 @@ export class ContractService {
         waterPrice: Number(paramMap.get(ParameterName.WATER_PRICE) || 0),
         wifiFee: Number(paramMap.get(ParameterName.WIFI_FEE) || 0),
         otherFees: Number(paramMap.get(ParameterName.OTHER_FEES) || 0),
+        yearToExtend: Number(paramMap.get(ParameterName.YEAR_TO_EXTEND)) || 1,
       },
     };
   }

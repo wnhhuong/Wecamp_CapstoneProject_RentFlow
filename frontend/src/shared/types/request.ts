@@ -50,6 +50,25 @@ export interface TenantRequest {
   status: RequestStatus
 }
 
+export interface BackendExtendRequest {
+  requestID: string
+  displayID?: string
+  type?: string
+  contractID?: string
+  yearToExtend: number
+  createDate: string
+  status?: string
+}
+
+export interface TenantExtendRequest {
+  requestID: string
+  displayID: string
+  contractID: string
+  yearToExtend: number
+  createDate: string
+  status: RequestStatus
+}
+
 export interface TenantRequestInvoice {
   invoiceID: string
   displayID: string

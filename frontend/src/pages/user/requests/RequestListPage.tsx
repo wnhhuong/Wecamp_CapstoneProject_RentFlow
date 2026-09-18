@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -24,12 +25,11 @@ import { RequestDetailsSheet } from "./RequestDetailsSheet";
 
 const STATUS_FILTER_ID = "status";
 const TYPE_FILTER_ID = "type";
+const REQUEST_PARAM = "request";
 
 function RequestListPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState<TenantRequest[]>([]);
-  const [openedRequest, setOpenedRequest] = useState<TenantRequest | null>(
-    null,
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
@@ -67,6 +67,24 @@ function RequestListPage() {
 
     return () => controller.abort();
   }, []);
+
+  const openedRequestID = searchParams.get(REQUEST_PARAM);
+  const openedRequest =
+    requests.find((request) => request.requestID === openedRequestID) ?? null;
+
+  function openRequest(requestID: string | null) {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+
+        if (requestID) next.set(REQUEST_PARAM, requestID);
+        else next.delete(REQUEST_PARAM);
+
+        return next;
+      },
+      { replace: true },
+    );
+  }
 
   const filteredRequests = useMemo(() => {
     const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
@@ -172,7 +190,7 @@ function RequestListPage() {
                     <TableRow
                       key={request.requestID}
                       className="cursor-pointer"
-                      onClick={() => setOpenedRequest(request)}
+                      onClick={() => openRequest(request.requestID)}
                     >
                       <TableCell className="px-4 font-medium text-foreground">
                         {request.displayID}
@@ -204,7 +222,7 @@ function RequestListPage() {
       <RequestDetailsSheet
         request={openedRequest}
         onOpenChange={(open) => {
-          if (!open) setOpenedRequest(null);
+          if (!open) openRequest(null);
         }}
       />
     </PageContainer>

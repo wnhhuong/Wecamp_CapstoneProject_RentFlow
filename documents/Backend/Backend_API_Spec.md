@@ -567,6 +567,7 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 |`tenant`|object|Có|`userID`, `fullName`|
 |`electricityUnitPrice`|integer|Có|Parameter|
 |`monthlyServices`|object|Có|Các phí cố định từ Parameter|
+|`terms.yearToExtend`|integer|Có|Parameter `yearToExtend` — số năm mỗi lần gia hạn, để tenant biết trước khi gửi request #23|
 
 ## #20 — GET `/api/user/contract/signature`
 
