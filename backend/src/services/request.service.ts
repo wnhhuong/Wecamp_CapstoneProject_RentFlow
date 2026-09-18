@@ -10,6 +10,7 @@ import Contract from '../models/Contract.js';
 import Consumption from '../models/Consumption.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/User.js';
+import Account from '../models/Account.js';
 import Room from '../models/Room.js';
 import { 
   RequestType, 
@@ -17,6 +18,7 @@ import {
   ContractStatus,
   InvoiceStatus,
   RoomStatus, 
+  AccountStatus,
 } from '../models/enums.js';
 
 import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
@@ -331,12 +333,16 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
         result = await approveLatePaymentRequest(updatedRequest, session);
         break;
       }
-      case RequestType.EXTEND:
+
       case RequestType.MOVEOUT: {
         result = await approveMoveoutRequest(updatedRequest, session);
         break;
       }
       case RequestType.CHECKOUT: {
+        result = await approveCheckoutRequest(updatedRequest, session);
+        break;
+      }      
+      case RequestType.EXTEND: {
         throw new RequestServiceError(
           501,
           `Approve logic for request type "${updatedRequest.type}" is not implemented yet (out of scope of this task).`,
@@ -608,6 +614,88 @@ const approveMoveoutRequest = async (
     roomCode: room.roomCode,
     roomStatus: room.status,
     requestMoveoutDate: moveoutRequest.requestMoveoutDate,
+  };
+};
+/**
+ * Nhánh CHECKOUT_REQUEST:
+ * 1. Lấy CheckoutRequest -> contractID, finalReading, finalImage.
+ * 2. Bắt buộc: đã có 1 MOVEOUT_REQUEST APPROVED cho đúng contract này (checkout chỉ tồn tại
+ *    SAU move-out approved — AC).
+ * 3. Contract ACTIVE -> EXPIRED.
+ * 4. Room AVAILABLE_SOON -> AVAILABLE_NOW (KHÔNG qua NOT_AVAILABLE — đúng AC).
+ * 5. Account của room -> BANNED (xem cảnh báo giới hạn "revoke session" ở đầu câu trả lời).
+ * 6. finalReading trả ra để Billing (task khác) dùng — task này KHÔNG tự tạo Invoice/Consumption.
+ */
+const approveCheckoutRequest = async (
+  request: HydratedDocument<IRequest>,
+  session: ClientSession,
+): Promise<Record<string, unknown>> => {
+  const checkoutRequest = await CheckoutRequest.findOne({ requestID: request._id }).session(session);
+  if (!checkoutRequest) {
+    throw new RequestServiceError(404, `CHECKOUT_REQUEST detail not found for request ${request._id}.`);
+  }
+ 
+  const contract = await Contract.findById(checkoutRequest.contractID).session(session);
+  if (!contract) {
+    throw new RequestServiceError(404, `Contract ${checkoutRequest.contractID} not found.`);
+  }
+  if (contract.status !== ContractStatus.ACTIVE) {
+    throw new RequestServiceError(
+      400,
+      `Contract ${contract._id} is "${contract.status}", must be ACTIVE to approve checkout.`,
+    );
+  }
+ 
+  // Bắt buộc: move-out cho ĐÚNG contract này đã APPROVED trước đó.
+  const moveoutRequest = await MoveoutRequest.findOne({ contractID: contract._id }).session(session);
+  if (!moveoutRequest) {
+    throw new RequestServiceError(
+      400,
+      `No move-out request found for contract ${contract._id}; checkout requires an approved move-out first.`,
+    );
+  }
+  const moveoutParentRequest = await RequestModel.findById(moveoutRequest.requestID).session(session);
+  if (!moveoutParentRequest || moveoutParentRequest.status !== RequestStatus.APPROVED) {
+    throw new RequestServiceError(
+      400,
+      `Move-out request for contract ${contract._id} has not been approved yet; cannot approve checkout.`,
+    );
+  }
+ 
+  const room = await Room.findById(contract.roomID).session(session);
+  if (!room) {
+    throw new RequestServiceError(404, `Room ${contract.roomID} not found.`);
+  }
+  if (room.status !== RoomStatus.AVAILABLE_SOON) {
+    throw new RequestServiceError(
+      400,
+      `Room ${room.roomCode} is ${room.status}, expected AVAILABLE_SOON (move-out must be approved first).`,
+    );
+  }
+ 
+  const account = await Account.findOne({ roomID: room._id }).session(session);
+ 
+  contract.status = ContractStatus.EXPIRED;
+  await contract.save({ session });
+ 
+  room.status = RoomStatus.AVAILABLE_NOW; // KHÔNG qua NOT_AVAILABLE (đúng AC)
+  await room.save({ session });
+ 
+  if (account) {
+    account.status = AccountStatus.BANNED;
+    await account.save({ session });
+  }
+ 
+  return {
+    contractID: String(contract._id),
+    contractStatus: contract.status,
+    roomID: String(room._id),
+    roomCode: room.roomCode,
+    roomStatus: room.status,
+    accountID: account ? String(account._id) : null,
+    accountStatus: account?.status ?? null,
+    finalReading: checkoutRequest.finalReading, // dùng cho Billing (task khác), không tự tạo Invoice ở đây
+    finalImage: checkoutRequest.finalImage,
   };
 };
 // ---------------------------------------------------------------------------
