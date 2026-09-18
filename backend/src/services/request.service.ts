@@ -15,7 +15,8 @@ import {
   RequestType, 
   RequestStatus, 
   ContractStatus,
-  InvoiceStatus, 
+  InvoiceStatus,
+  RoomStatus, 
 } from '../models/enums.js';
 
 import { buildInvoiceForConsumption, computeBillingPeriod } from './invoice.service.js';
@@ -105,7 +106,10 @@ export const approveRequest = async (requestID: string): Promise<ApproveRequestR
         break;
       }
       case RequestType.EXTEND:
-      case RequestType.MOVEOUT:
+      case RequestType.MOVEOUT: {
+        result = await approveMoveoutRequest(updatedRequest, session);
+        break;
+      }
       case RequestType.CHECKOUT: {
         throw new RequestServiceError(
           501,
@@ -327,6 +331,57 @@ const approveLatePaymentRequest = async (
     isRequestLate: invoice.isRequestLate,
     dueDate: invoice.dueDate,
     status: invoice.status,
+  };
+};
+
+/**
+ * Nhánh MOVEOUT_REQUEST:
+ * 1. Lấy MoveoutRequest -> contractID.
+ * 2. Contract PHẢI đang ACTIVE (giữ nguyên ACTIVE sau approve — tenancy chưa kết thúc).
+ * 3. Room PHẢI đang RENTED -> chuyển AVAILABLE_SOON.
+ */
+const approveMoveoutRequest = async (
+  request: HydratedDocument<IRequest>,
+  session: ClientSession,
+): Promise<Record<string, unknown>> => {
+  const moveoutRequest = await MoveoutRequest.findOne({ requestID: request._id }).session(session);
+  if (!moveoutRequest) {
+    throw new RequestServiceError(404, `MOVEOUT_REQUEST detail not found for request ${request._id}.`);
+  }
+ 
+  const contract = await Contract.findById(moveoutRequest.contractID).session(session);
+  if (!contract) {
+    throw new RequestServiceError(404, `Contract ${moveoutRequest.contractID} not found.`);
+  }
+  if (contract.status !== ContractStatus.ACTIVE) {
+    throw new RequestServiceError(
+      400,
+      `Contract ${contract._id} is "${contract.status}", must be ACTIVE to approve move-out.`,
+    );
+  }
+ 
+  const room = await Room.findById(contract.roomID).session(session);
+  if (!room) {
+    throw new RequestServiceError(404, `Room ${contract.roomID} not found.`);
+  }
+  if (room.status !== RoomStatus.RENTED) {
+    throw new RequestServiceError(
+      400,
+      `Room ${room.roomCode} is "${room.status}", expected RENTED to approve move-out.`,
+    );
+  }
+ 
+  room.status = RoomStatus.AVAILABLE_SOON;
+  await room.save({ session });
+  // Contract KHÔNG đổi status — tenancy chưa kết thúc (AC: "Contract vẫn ACTIVE").
+ 
+  return {
+    contractID: String(contract._id),
+    contractStatus: contract.status,
+    roomID: String(room._id),
+    roomCode: room.roomCode,
+    roomStatus: room.status,
+    requestMoveoutDate: moveoutRequest.requestMoveoutDate,
   };
 };
 // ---------------------------------------------------------------------------
