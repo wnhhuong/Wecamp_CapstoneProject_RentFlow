@@ -208,7 +208,7 @@ export const createMoveoutRequest = async ({
       type: request.type,
       contractID: String(contract._id),
       requestMoveoutDate: moveoutRequest.requestMoveoutDate.toISOString().split('T')[0],
-      createDate: createDate.toISOString().split('T')[0],
+      createDate: createDate.toISOString(),
       status: request.status,
     };
   } catch (error) {
@@ -322,7 +322,7 @@ export const createCheckoutRequest = async ({
       contractID: String(contract._id),
       finalImage,
       finalReading,
-      createDate: createDate.toISOString().split('T')[0],
+      createDate: createDate.toISOString(),
       status: request.status,
     };
   } catch (error) {
@@ -416,7 +416,7 @@ export const createExtendRequest = async ({ auth }: CreateExtendRequestInput) =>
       type: request.type,
       contractID: String(contract._id),
       yearToExtend,
-      createDate: createDate.toISOString().split('T')[0],
+      createDate: createDate.toISOString(),
       status: request.status,
     };
   } catch (error) {

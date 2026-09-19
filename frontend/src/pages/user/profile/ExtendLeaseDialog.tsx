@@ -158,6 +158,7 @@ function SentState({
 
       <dl className="mt-4">
         <Row label="Request ID" value={request.displayID} />
+        <Row label="Sent" value={formatDate(request.createDate)} />
         <Row label="Extension" value={formatYears(request.yearToExtend)} />
         <div className="flex items-start justify-between gap-4 border-b border-hairline py-2.5 text-sm last:border-b-0">
           <dt className="text-muted-foreground">Status</dt>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { StatusBadge } from "@/components/status";
+import { formatDate } from "@/shared/utils/dateFormatter";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -288,6 +289,7 @@ function SentState({
 
       <dl className="mt-4">
         <Row label="Request ID" value={request.displayID} />
+        <Row label="Sent" value={formatDate(request.createDate)} />
         <Row
           label="Final reading"
           value={`${request.finalReading} kWh`}
