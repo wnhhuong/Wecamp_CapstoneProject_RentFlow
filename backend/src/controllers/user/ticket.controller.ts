@@ -88,6 +88,7 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
 
             let description = "";
             let location = "";
+            let image = "";
 
             if (tick.ticketType === TicketType.COMPLAIN) {
                 const complain = complainByTicketID.get(tick._id.toString());
@@ -104,6 +105,7 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
                 if (repair) {
                     description = repair.description;
                     location = typeNameByFacilityID.get(repair.facilityID.toString()) ?? "";
+                    image = repair.facilityImage;
                 }
             }
 
@@ -112,6 +114,7 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
                 displayID,
                 description,
                 location,
+                image,
                 roomCode: room.roomCode,
                 ticketType: tick.ticketType,
                 createDate: tick.createDate.toISOString(),

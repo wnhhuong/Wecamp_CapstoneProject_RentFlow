@@ -395,6 +395,7 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 |`displayID`|string|Có|`<prefix>-<roomCode>-ddmmyy-<3 ký tự cuối của ticketID>`|
 |`description`|string|Có|Child description|
 |`location`|string|Có|Facility type (repair) hoặc area/room label (complain)|
+|`image`|string|Có|Ảnh của repair; complain trả chuỗi rỗng|
 |`roomCode`|string|Có|Phòng của tenant|
 |`ticketType`|enum|Có|`repair`, `complain` — derived từ bảng con|
 |`createDate`|timestamp|Có|ERD, ISO|
@@ -441,7 +442,7 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 **Payload mẫu**
 
 ```json
-{"facilityID":18,"description":"Bathroom tap is leaking","facilityImage":"<file>"}
+{"facilityID":18,"description":"Bathroom tap is leaking","image":"<file>"}
 ```
 
 **Output**
@@ -449,13 +450,13 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
-|`type`|enum|Có|`REPAIR`|
+|`type`|enum|Có|`repair`|
 |`ticketName`|string|Có|Backend sinh DisplayID|
 |`roomID`|integer|Có|Room của tenant|
 |`facilityID`|integer|Có|Facility được chọn|
 |`description`|string|Có|Nội dung repair|
 |`facilityImage`|string|Có|Path ảnh đã lưu|
-|`createDate`|date-only|Có|Ngày tạo|
+|`createDate`|timestamp|Có|Ngày tạo, ISO|
 |`status`|enum|Có|`need_action`|
 
 ## #16 — POST `/api/user/tickets/complains`
