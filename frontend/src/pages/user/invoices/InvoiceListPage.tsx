@@ -64,7 +64,7 @@ function InvoiceListPage() {
 
   const years = useMemo(() => {
     const found = new Set(
-      invoices.map((invoice) => String(new Date(invoice.createDate).getFullYear())),
+      invoices.map((invoice) => String(new Date(`${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`).getFullYear())),
     );
 
     return Array.from(found).sort((left, right) => right.localeCompare(left));
@@ -74,7 +74,7 @@ function InvoiceListPage() {
     const normalizedSearch = search.trim().toLowerCase();
 
     return invoices.filter((invoice) => {
-      const billingMonth = formatMonthYear(invoice.createDate).toLowerCase();
+      const billingMonth = formatMonthYear(`${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`).toLowerCase();
       const matchesSearch =
         !normalizedSearch ||
         invoice.displayID.toLowerCase().includes(normalizedSearch) ||
@@ -83,7 +83,7 @@ function InvoiceListPage() {
         filters.status.length === 0 || filters.status.includes(invoice.status);
       const matchesYear =
         filters.year.length === 0 ||
-        filters.year.includes(String(new Date(invoice.createDate).getFullYear()));
+        filters.year.includes(String(new Date(`${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`).getFullYear()));
 
       return matchesSearch && matchesStatus && matchesYear;
     });
@@ -194,7 +194,7 @@ function InvoiceListPage() {
                     <TableCell className="px-4 font-medium">
                       {invoice.displayID}
                     </TableCell>
-                    <TableCell>{formatMonthYear(invoice.createDate)}</TableCell>
+                    <TableCell>{formatMonthYear(`${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`)}</TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(invoice.totalBill)}
                     </TableCell>

@@ -15,6 +15,7 @@ export interface BackendTenantInvoice {
   displayID?: string
   roomCode?: string
   createDate: string
+  billingMonth: string | null
   dueDate: string
   totalBill: number
   status?: string
@@ -32,6 +33,7 @@ export interface TenantInvoice {
   displayID: string
   roomCode: string
   createDate: string
+  billingMonth: string | null
   dueDate: string
   totalBill: number
   status: InvoiceStatus
@@ -47,6 +49,7 @@ export interface BackendTenantInvoiceDetail {
   invoiceID: string
   roomCode: string
   createDate: string
+  billingMonth?: string | null
   paymentDate: string | null
   dueDate: string
   status?: string
@@ -64,6 +67,7 @@ export interface TenantInvoiceDetail {
   displayID: string
   roomCode: string
   createDate: string
+  billingMonth: string | null
   paymentDate: string | null
   dueDate: string
   status: InvoiceStatus
