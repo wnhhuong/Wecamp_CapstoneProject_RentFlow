@@ -10,24 +10,23 @@ import { TicketsPage as AdminTicketsPage } from "@/pages/admin/TicketsPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { UsersPage } from "@/pages/admin/UsersPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
-import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
-import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
-import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
+import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
+import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
+import { RoomsPage as GuestRoomsPage } from "@/pages/guest/RoomsPage";
+import { RoomDetailsPage } from "@/pages/guest/RoomDetailsPage";
+import { ConsumptionPage } from "@/pages/user/ConsumptionPage";
 import { DashboardPage as TenantDashboardPage } from "@/pages/user/DashboardPage";
+import { InvoiceListPage } from "@/pages/user/InvoiceListPage";
 import { ProfilePage } from "@/pages/user/ProfilePage";
-import { TicketListPage } from "@/pages/user/tickets/TicketListPage";
+import { RequestListPage } from "@/pages/user/RequestListPage";
+import { TicketListPage } from "@/pages/user/TicketListPage";
+import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
 import { RequestDetailsSheet as TenantRequestDetailsSheet } from "@/pages/user/requests/RequestDetailsSheet";
-import { RequestListPage } from "@/pages/user/requests/RequestListPage";
 import { RequireAuth } from "@/router/require-auth";
+import { RequireOnboarding } from "@/router/require-onboarding";
 import { RoutePlaceholder } from "@/router/route-placeholder";
 import { RouterErrorPage } from "@/router/router-error-page";
 import { ROUTES } from "@/router/routes";
-
-import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
-import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
-import { RequireOnboarding } from "@/router/require-onboarding";
-import { RoomsPage as GuestRoomsPage } from "@/pages/guest/RoomsPage";
-import { RoomDetailsPage } from "@/pages/guest/RoomDetailsPage";
 
 const router = createBrowserRouter([
   {

@@ -1,5 +1,6 @@
 import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
+import { toApiPagination } from '@/shared/api/pagination'
 import type {
   AdminTicket,
   AdminTicketList,
@@ -8,7 +9,6 @@ import type {
   BackendAdminTicketListResponse,
   BackendTicketStatusUpdate,
 } from '@/shared/types/admin/ticket'
-import type { BackendPagination } from '@/shared/types/api'
 import type { TicketStatus } from '@/shared/types/status'
 import { toAbsoluteAssetUrl } from '@/shared/utils/assetUrl'
 import { mapTicketStatus } from '@/shared/utils/statusMapper'
@@ -27,23 +27,19 @@ export async function getAdminTickets(
   params.set('page', String(query.page ?? 1))
   params.set('limit', String(query.limit ?? DEFAULT_LIMIT))
 
-  const response = await apiRequest<
-    BackendAdminTicketListResponse & { pagination?: BackendPagination }
-  >(`${ENDPOINTS.admin.tickets}?${params.toString()}`, {
-    auth: 'admin',
-    signal,
-  })
+  const response = await apiRequest<BackendAdminTicketListResponse>(
+    `${ENDPOINTS.admin.tickets}?${params.toString()}`,
+    { auth: 'admin', signal },
+  )
 
   const items = (response.items ?? []).map(mapTicket)
 
   return {
     items,
-    pagination: {
-      page: response.pagination?.page ?? 1,
-      limit: response.pagination?.limit ?? query.limit ?? DEFAULT_LIMIT,
-      totalItems: response.pagination?.total ?? items.length,
-      totalPages: response.pagination?.totalPages ?? 1,
-    },
+    pagination: toApiPagination(response.pagination, {
+      limit: query.limit ?? DEFAULT_LIMIT,
+      totalItems: items.length,
+    }),
   }
 }
 

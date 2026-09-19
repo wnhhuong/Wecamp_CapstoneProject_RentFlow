@@ -3,14 +3,14 @@ import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useConsumptionSubmission } from "./hooks/useConsumptionSubmission";
+import { useConsumptionSubmission } from "./consumption/hooks/useConsumptionSubmission";
 import type { ConsumptionContext } from "@/shared/types/consumption";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDate, getDateKey } from "@/shared/utils/dateFormatter";
 
-import { CaptureStep } from "./CaptureStep";
-import { ReviewStep } from "./ReviewStep";
-import { SentStep } from "./SentStep";
+import { CaptureStep } from "./consumption/CaptureStep";
+import { ReviewStep } from "./consumption/ReviewStep";
+import { SentStep } from "./consumption/SentStep";
 
 const steps = [
   { id: "capture", label: "Upload" },
@@ -47,7 +47,7 @@ function getAvailabilityMessage(context: ConsumptionContext) {
   };
 }
 
-export default function ConsumptionPage() {
+export function ConsumptionPage() {
   const flow = useConsumptionSubmission();
   const context = flow.context;
   const currentStep = flow.result?.status === "approved"

@@ -1,8 +1,9 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { ApiPagination, BackendPagination } from '@/shared/types/api'
 import type { TicketStatus } from '@/shared/types/status'
 
 export interface BackendTenantTicketListResponse {
   items?: BackendTenantTicket[]
+  pagination?: BackendPagination
 }
 
 export interface BackendTenantTicket {

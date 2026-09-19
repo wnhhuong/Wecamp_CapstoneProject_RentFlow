@@ -1,6 +1,8 @@
 import { apiRequest } from '@/shared/api/client'
 import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
+import { toApiPagination } from '@/shared/api/pagination'
+import type { ApiPagination } from '@/shared/types/api'
 import type {
   BackendGuestRoom,
   BackendGuestRoomDetail,
@@ -13,7 +15,7 @@ import { mapRoomStatus } from '@/shared/utils/statusMapper'
 
 export async function getGuestRooms(
   filters: GuestRoomFilters = {},
-): Promise<{ items: GuestRoom[]; pagination: GuestRoomsResponse['pagination'] }> {
+): Promise<{ items: GuestRoom[]; pagination: ApiPagination }> {
   const params = new URLSearchParams()
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== '') params.set(key, String(value))
@@ -23,9 +25,14 @@ export async function getGuestRooms(
     `${ENDPOINTS.guest.rooms}?${params.toString()}`,
   )
 
+  const items = response.items.map(mapGuestRoom)
+
   return {
-    items: response.items.map(mapGuestRoom),
-    pagination: response.pagination,
+    items,
+    pagination: toApiPagination(response.pagination, {
+      limit: filters.limit ?? items.length,
+      totalItems: items.length,
+    }),
   }
 }
 

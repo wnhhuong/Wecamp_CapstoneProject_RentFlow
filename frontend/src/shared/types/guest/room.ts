@@ -1,4 +1,4 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { BackendPagination } from '@/shared/types/api'
 import type { RoomStatus } from '@/shared/types/status'
 
 export interface BackendGuestRoom {
@@ -31,7 +31,7 @@ export interface GuestRoom {
 
 export interface GuestRoomsResponse {
   items: BackendGuestRoom[]
-  pagination: ApiPagination
+  pagination?: BackendPagination
 }
 
 export interface BackendGuestRoomDetail {

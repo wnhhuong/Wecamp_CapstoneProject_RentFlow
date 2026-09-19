@@ -143,6 +143,7 @@ export interface BackendAdminRoom {
 
 export interface AdminRoomsResponse {
   items: BackendAdminRoom[]
+  /** The one endpoint that renames `total` itself, so no mapping is needed. */
   pagination?: ApiPagination
 }
 

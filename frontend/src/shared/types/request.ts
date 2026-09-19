@@ -1,4 +1,4 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { BackendPagination } from '@/shared/types/api'
 import type { RequestStatus } from '@/shared/types/status'
 
 export type RequestType =
@@ -21,7 +21,7 @@ export interface BackendTenantRequest {
 
 export interface BackendTenantRequestList {
   items: BackendTenantRequest[]
-  pagination?: ApiPagination
+  pagination?: BackendPagination
 }
 
 export interface BackendTenantRequestDetail extends BackendTenantRequest {

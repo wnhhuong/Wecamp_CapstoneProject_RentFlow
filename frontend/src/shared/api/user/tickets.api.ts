@@ -1,6 +1,6 @@
 import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
-import type { BackendPagination } from '@/shared/types/api'
+import { toApiPagination } from '@/shared/api/pagination'
 import type {
   BackendComplaintArea,
   BackendComplaintOptions,
@@ -36,20 +36,19 @@ export async function getTenantTickets(
   params.set('page', String(query.page ?? 1))
   params.set('limit', String(query.limit ?? DEFAULT_LIMIT))
 
-  const response = await apiRequest<
-    BackendTenantTicketListResponse & { pagination?: BackendPagination }
-  >(`${ENDPOINTS.user.tickets}?${params.toString()}`, { auth: 'user', signal })
+  const response = await apiRequest<BackendTenantTicketListResponse>(
+    `${ENDPOINTS.user.tickets}?${params.toString()}`,
+    { auth: 'user', signal },
+  )
 
   const items = (response.items ?? []).map(mapTicket)
 
   return {
     items,
-    pagination: {
-      page: response.pagination?.page ?? 1,
-      limit: response.pagination?.limit ?? query.limit ?? DEFAULT_LIMIT,
-      totalItems: response.pagination?.total ?? items.length,
-      totalPages: response.pagination?.totalPages ?? 1,
-    },
+    pagination: toApiPagination(response.pagination, {
+      limit: query.limit ?? DEFAULT_LIMIT,
+      totalItems: items.length,
+    }),
   }
 }
 

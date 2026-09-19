@@ -1,57 +1,16 @@
 import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
+import { toApiPagination } from '@/shared/api/pagination'
 import type {
   AdminInvoice,
   AdminInvoiceDetail,
   AdminInvoiceList,
   AdminInvoiceQuery,
-  AdminInvoiceSummary,
+  BackendAdminInvoice,
+  BackendAdminInvoiceDetail,
+  BackendAdminInvoiceList,
 } from '@/shared/types/admin/invoice'
-import type { ApiPagination } from '@/shared/types/api'
-import type { InvoiceBreakdown } from '@/shared/types/invoice'
 import { mapInvoiceStatus } from '@/shared/utils/statusMapper'
-
-interface BackendAdminInvoice {
-  invoiceID: string | number
-  displayID?: string | null
-  tenantName?: string | null
-  roomCode?: string | null
-  billingPeriod?: string | null
-  createDate: string
-  dueDate: string
-  totalBill: number
-  received?: number
-  stillOwed?: number
-  status?: string
-  isOverdue?: boolean
-  isRequestLate?: boolean
-}
-
-/** The backend calls the row count `total`; the shared UI type calls it `totalItems`. */
-interface BackendPagination {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
-
-interface BackendAdminInvoiceList {
-  items?: BackendAdminInvoice[]
-  billingPeriods?: string[]
-  summary?: AdminInvoiceSummary
-  pagination?: BackendPagination
-}
-
-interface BackendAdminInvoiceDetail extends BackendAdminInvoice {
-  room?: { roomID: string | number; roomCode: string } | null
-  tenant?: { userID: string | number; fullName: string } | null
-  paymentDate?: string | null
-  meterReading?: number
-  usageKwh?: number
-  electricityUnitPrice?: number
-  electricityUnitPriceIsApprox?: boolean
-  breakdown: Partial<InvoiceBreakdown>
-}
 
 const DEFAULT_LIMIT = 50
 
@@ -83,7 +42,10 @@ export async function getAdminInvoices(
       received: 0,
       stillOwed: 0,
     },
-    pagination: mapPagination(response, query.limit ?? DEFAULT_LIMIT),
+    pagination: toApiPagination(response.pagination, {
+      limit: query.limit ?? DEFAULT_LIMIT,
+      totalItems: response.items?.length ?? 0,
+    }),
   }
 }
 
@@ -118,21 +80,6 @@ export async function getAdminInvoice(
       parking: detail.breakdown.parking ?? 0,
       other: detail.breakdown.other ?? 0,
     },
-  }
-}
-
-function mapPagination(
-  response: BackendAdminInvoiceList,
-  limit: number,
-): ApiPagination {
-  const items = response.items?.length ?? 0
-  const pagination = response.pagination
-
-  return {
-    page: pagination?.page ?? 1,
-    limit: pagination?.limit ?? limit,
-    totalItems: pagination?.total ?? items,
-    totalPages: pagination?.totalPages ?? 1,
   }
 }
 
