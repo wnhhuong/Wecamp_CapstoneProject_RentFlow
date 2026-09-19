@@ -41,7 +41,7 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
             createDate: { $gte: new Date(startDate) },
         };
         if (status) filter.status = status;
-        if (type) filter.type = type;
+        if (type) filter.ticketType = type;
         const allTickets = await Ticket.find(filter).sort({ createDate: -1 });
 
         // tách ticketID theo loại để batch-fetch

@@ -26,7 +26,8 @@ import type { ApiPagination } from "@/shared/types/api";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 import {
   formatBillingPeriod,
-  formatDate,
+  formatBillingPeriodShort,
+  formatDateShort,
 } from "@/shared/utils/dateFormatter";
 
 const PERIOD_FILTER_ID = "billingPeriod";
@@ -295,9 +296,9 @@ function InvoicesPage() {
                     <TableCell>{invoice.roomCode}</TableCell>
                     <TableCell>{invoice.tenantName || "—"}</TableCell>
                     <TableCell>
-                      {formatBillingPeriod(invoice.billingPeriod)}
+                      {formatBillingPeriodShort(invoice.billingPeriod)}
                     </TableCell>
-                    <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                    <TableCell>{formatDateShort(invoice.dueDate)}</TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(invoice.totalBill)}
                     </TableCell>

@@ -30,6 +30,8 @@ export const ENDPOINTS = {
     invoiceLatePaymentRequest: (invoiceID: string) =>
       `/user/invoices/${encodeURIComponent(invoiceID)}/late-payment-request`,
 
+    tickets: '/user/tickets',
+
     profile: '/user/profile',
 
     contract: '/user/contract',

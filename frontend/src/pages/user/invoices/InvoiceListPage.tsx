@@ -17,7 +17,11 @@ import { ROUTES } from "@/router/routes";
 import { getTenantInvoices } from "@/shared/api/user/invoices.api";
 import { useAuth } from "@/shared/auth/useAuth";
 import type { TenantInvoice } from "@/shared/types/invoice";
-import { formatDate, formatMonthYear } from "@/shared/utils/dateFormatter";
+import {
+  formatDateShort,
+  formatMonthYear,
+  formatMonthYearShort,
+} from "@/shared/utils/dateFormatter";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
 
 function InvoiceListPage() {
@@ -194,13 +198,17 @@ function InvoiceListPage() {
                     <TableCell className="px-4 font-medium">
                       {invoice.displayID}
                     </TableCell>
-                    <TableCell>{formatMonthYear(`${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`)}</TableCell>
+                    <TableCell>
+                      {formatMonthYearShort(
+                        `${invoice.billingMonth ?? invoice.createDate.slice(0, 7)}-01`,
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(invoice.totalBill)}
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
-                        {formatDate(invoice.dueDate)}
+                        {formatDateShort(invoice.dueDate)}
                         {invoice.isOverdue ? (
                           <span className="rounded-full bg-status-danger-bg px-2 py-0.5 text-xs font-medium text-status-danger-fg">
                             Overdue
