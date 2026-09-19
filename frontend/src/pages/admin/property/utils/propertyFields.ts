@@ -10,7 +10,7 @@ export interface PropertyFieldConfig {
   label: string
   description: string
   placeholder: string
-  group: 'identity' | 'contact'
+  group: 'identity' | 'contact' | 'bank'
   maxLength: number
   inputMode?: 'text' | 'tel' | 'email' | 'url'
   optional?: boolean
@@ -69,6 +69,31 @@ export const propertyFieldConfigs: PropertyFieldConfig[] = [
     inputMode: 'url',
     optional: true,
   },
+  {
+    name: 'bankAccountHolder',
+    label: 'Account holder',
+    description: 'Exactly as the bank prints it, usually without accents.',
+    placeholder: 'NGUYEN THI BINH',
+    group: 'bank',
+    maxLength: 120,
+  },
+  {
+    name: 'bankName',
+    label: 'Bank',
+    description: 'Bank the account belongs to.',
+    placeholder: 'Vietcombank (VCB)',
+    group: 'bank',
+    maxLength: 120,
+  },
+  {
+    name: 'bankAccountNumber',
+    label: 'Account number',
+    description: 'Digits only, 6 to 20 of them.',
+    placeholder: '0071000999999',
+    group: 'bank',
+    maxLength: 20,
+    inputMode: 'text',
+  },
 ]
 
 // Mirrors the rules in backend/src/controllers/admin/parameter.controller.ts so
@@ -76,6 +101,7 @@ export const propertyFieldConfigs: PropertyFieldConfig[] = [
 const VN_PHONE = /^(03|05|07|08|09)\d{8}$/
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const URL = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i
+const BANK_ACCOUNT = /^\d{6,20}$/
 
 export function validatePropertyValues(
   values: Partial<PropertyFormValues>,
@@ -111,6 +137,18 @@ export function validatePropertyValues(
   const facebook = read('adminFacebook')
   if (facebook && !URL.test(facebook)) {
     errors.adminFacebook = 'Enter a link starting with http, or leave it empty.'
+  }
+
+  if (!read('bankAccountHolder')) {
+    errors.bankAccountHolder = 'Enter the account holder name.'
+  }
+
+  if (!read('bankName')) {
+    errors.bankName = 'Enter the bank name.'
+  }
+
+  if (!BANK_ACCOUNT.test(read('bankAccountNumber'))) {
+    errors.bankAccountNumber = 'Enter 6 to 20 digits.'
   }
 
   return errors

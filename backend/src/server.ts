@@ -18,6 +18,7 @@ import userProfileRouter from "./routes/user/profile.routes.js";
 import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
 import userContractRouter from "./routes/user/contract.routes.js";
 import userDashboard from "./routes/user/dashboard.routes.js";
+import userParameterRouter from "./routes/user/paymentInfo.routes.js";
 import userMoveoutRouter from "./routes/user/moveout.routes.js";
 import userCheckoutRouter from "./routes/user/checkout.routes.js";
 import userExtendRouter from "./routes/user/extend.routes.js";
@@ -54,6 +55,7 @@ app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 app.use(`/api/user/invoices`, userInvoiceRouter)
 app.use(`/api/user/requests`, userRequestRouter)
 app.use(`/api/user/dashboard`, userDashboard)
+app.use(`/api/user/parameters`, userParameterRouter)
 
 // ticket route
 app.use(`/api/user/tickets`, userTicketRouter)

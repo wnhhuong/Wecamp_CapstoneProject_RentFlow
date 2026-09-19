@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import Parameter from '../../models/Parameter.js';
 import { ParameterName } from '../../models/enums.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
@@ -7,6 +9,7 @@ import { sendSuccess, sendError } from '../../utils/response.js';
 const VN_PHONE_REGEX = /^(03|05|07|08|09)\d{8}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_REGEX = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
+const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
 
 /**
  * Validate định dạng và giá trị của từng loại parameter theo AC3
@@ -82,8 +85,26 @@ const validateParameterValue = (name: ParameterName | string, rawValue: unknown)
       return { isValid: true };
     }
 
+    case ParameterName.BANK_ACCOUNT_NUMBER: {
+      if (!BANK_ACCOUNT_REGEX.test(value)) {
+        return { isValid: false, message: 'bankAccountNumber must be 6 to 20 digits.' };
+      }
+      return { isValid: true };
+    }
+
+    case ParameterName.BANK_QR_IMAGE: {
+      // Chỉ ghi qua endpoint upload, không gõ tay. Chưa có ảnh thì KHÔNG seed bản ghi
+      // này: PARAMETER.value là required nên Mongoose coi chuỗi rỗng là thiếu.
+      if (!value.startsWith('/uploads/')) {
+        return { isValid: false, message: 'bankQrImage must be an uploaded image path.' };
+      }
+      return { isValid: true };
+    }
+
     case ParameterName.ADDRESS:
     case ParameterName.PROPERTY_NAME:
+    case ParameterName.BANK_ACCOUNT_HOLDER:
+    case ParameterName.BANK_NAME:
     case ParameterName.CONTRACT_PLACEHOLDER: {
       if (!value) {
         return { isValid: false, message: `${name} must not be empty.` };
@@ -329,4 +350,53 @@ export const updateParameter = async (req: Request, res: Response, next: NextFun
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * POST /api/admin/parameters/bank-qr
+ * Nhận ảnh QR chuyển khoản, lưu path vào Parameter bankQrImage. Ảnh cũ bị xoá
+ * khỏi đĩa để thư mục không phình theo mỗi lần chủ trọ đổi mã.
+ */
+export const uploadBankQrImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const file = req.file;
+    if (!file) {
+      sendError(res, 400, 'An image file is required.');
+      return;
+    }
+
+    const imagePath = `/uploads/bank-qr/${file.filename}`;
+
+    const parameter = await Parameter.findOneAndUpdate(
+      { name: ParameterName.BANK_QR_IMAGE },
+      { value: imagePath },
+      { new: true, upsert: true },
+    );
+
+    const previousPath = (req as any).previousBankQrPath as string | undefined;
+    if (previousPath && previousPath !== imagePath && previousPath.startsWith('/uploads/')) {
+      await fs.promises
+        .unlink(path.join(process.cwd(), previousPath.replace(/^\//, '')))
+        .catch(() => undefined);
+    }
+
+    sendSuccess(res, {
+      id: parameter ? String(parameter._id) : '',
+      name: ParameterName.BANK_QR_IMAGE,
+      value: imagePath,
+    }, 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Đọc path cũ TRƯỚC khi multer ghi đè, để controller còn biết mà xoá. */
+export const rememberBankQrPath = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const existing = await Parameter.findOne({ name: ParameterName.BANK_QR_IMAGE }).lean();
+    (req as any).previousBankQrPath = existing?.value ?? '';
+  } catch {
+    (req as any).previousBankQrPath = '';
+  }
+  next();
 };

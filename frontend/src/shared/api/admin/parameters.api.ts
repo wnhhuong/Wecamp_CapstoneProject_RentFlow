@@ -28,6 +28,10 @@ const propertyParameterNames = new Set<PropertyParameterName>([
   'adminEmail',
   'adminFacebook',
   'adminZalo',
+  'bankAccountHolder',
+  'bankName',
+  'bankAccountNumber',
+  'bankQrImage',
 ])
 
 const allowedParameterNames = new Set<ParameterName>([
@@ -109,4 +113,21 @@ function mapAdminParameter(
     name: parameter.name,
     value: parameter.value,
   }
+}
+
+/** Replaces the owner's QR image and returns the stored parameter. */
+export async function uploadBankQrImage(image: File): Promise<AdminParameter> {
+  const body = new FormData()
+  body.append('image', image)
+
+  const parameter = await apiRequest<BackendAdminParameter>(
+    ENDPOINTS.admin.bankQrImage,
+    { auth: 'admin', method: 'POST', body },
+  )
+
+  if (!isAllowedAdminParameter(parameter)) {
+    throw new Error('The uploaded parameter is not supported by this page.')
+  }
+
+  return mapAdminParameter(parameter)
 }

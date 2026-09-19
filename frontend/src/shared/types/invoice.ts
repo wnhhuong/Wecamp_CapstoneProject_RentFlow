@@ -100,3 +100,12 @@ export interface TenantInvoiceRequest {
   createDate: string
   status: RequestStatus
 }
+
+/** Where a tenant sends the transfer, configured by the owner in Parameters. */
+export interface TenantPaymentInfo {
+  bankAccountHolder: string
+  bankName: string
+  bankAccountNumber: string
+  /** Absolute URL of the owner's QR image, null when none was uploaded. */
+  bankQrImage: string | null
+}

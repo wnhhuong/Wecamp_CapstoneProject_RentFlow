@@ -9,7 +9,9 @@ import type {
   TenantInvoice,
   TenantInvoiceDetail,
   TenantInvoiceRequest,
+  TenantPaymentInfo,
 } from '@/shared/types/invoice'
+import { toAbsoluteAssetUrl } from '@/shared/utils/assetUrl'
 import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
 /**
@@ -148,5 +150,20 @@ function mapBreakdown(
     wifi: breakdown.wifi ?? 0,
     parking: breakdown.parking ?? 0,
     other: breakdown.other ?? 0,
+  }
+}
+
+export async function getTenantPaymentInfo(
+  signal?: AbortSignal,
+): Promise<TenantPaymentInfo> {
+  const info = await apiRequest<TenantPaymentInfo>(ENDPOINTS.user.parameters, {
+    auth: 'user',
+    signal,
+  })
+
+  // toAbsoluteAssetUrl gives '' for a missing path; the UI wants an explicit null.
+  return {
+    ...info,
+    bankQrImage: toAbsoluteAssetUrl(info.bankQrImage ?? '') || null,
   }
 }

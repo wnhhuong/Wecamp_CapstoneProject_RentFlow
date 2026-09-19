@@ -1318,6 +1318,10 @@ Không cho sửa `id`/`name` — chỉ `value`. Field lạ khác trong body → 
  
 | `name` | Rule |
 |---|---|
+| `bankAccountHolder` | chuỗi, không rỗng |
+| `bankName` | chuỗi, không rỗng |
+| `bankAccountNumber` | 6–20 chữ số |
+| `bankQrImage` | path ảnh đã upload, bắt đầu bằng `/uploads/`. Chỉ ghi qua `POST /api/admin/parameters/bank-qr` (multipart, field `image`), không gõ tay. Chưa có ảnh thì KHÔNG tồn tại bản ghi — `PARAMETER.value` là required nên không lưu được chuỗi rỗng |
 | `electricityUnitPrice` | số, `> 0` |
 | `waterPrice` | số, `> 0` |
 | `wifiFee` | số, `>= 0` |

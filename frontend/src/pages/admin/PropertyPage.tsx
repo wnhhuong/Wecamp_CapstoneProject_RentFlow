@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import {
   Alert,
@@ -14,7 +15,9 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   getAdminPropertyParameters,
   updateAdminParameters,
+  uploadBankQrImage,
 } from "@/shared/api/admin/parameters.api";
+import { toAbsoluteAssetUrl } from "@/shared/utils/assetUrl";
 import type {
   AdminParameter,
   PropertyParameterName,
@@ -37,6 +40,8 @@ function PropertyPage() {
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const [qrError, setQrError] = useState("");
 
   async function loadParameters() {
     setIsLoading(true);
@@ -147,6 +152,31 @@ function PropertyPage() {
     }
   }
 
+  async function handleQrSelected(file: File) {
+    setIsUploadingQr(true);
+    setQrError("");
+    setSaveMessage("");
+
+    try {
+      const uploaded = await uploadBankQrImage(file);
+      setParameters((current) => {
+        const withoutQr = current.filter(
+          (parameter) => parameter.name !== "bankQrImage",
+        );
+        return [...withoutQr, uploaded];
+      });
+      setSaveMessage("The QR image was uploaded successfully.");
+    } catch (error) {
+      setQrError(
+        error instanceof Error
+          ? error.message
+          : "The QR image could not be uploaded.",
+      );
+    } finally {
+      setIsUploadingQr(false);
+    }
+  }
+
   function handleReset() {
     setValues(toFormValues(parameters));
     setErrors({});
@@ -159,6 +189,9 @@ function PropertyPage() {
   );
   const contactConfigs = propertyFieldConfigs.filter(
     (config) => config.group === "contact",
+  );
+  const bankConfigs = propertyFieldConfigs.filter(
+    (config) => config.group === "bank",
   );
 
   return (
@@ -250,6 +283,27 @@ function PropertyPage() {
             disabled={isSaving}
             onChange={updateValue}
           />
+
+          <PropertyGroup
+            title="Bank transfer"
+            description="Shown to tenants when they pay an invoice."
+            configs={bankConfigs}
+            values={values}
+            errors={errors}
+            parameterByName={parameterByName}
+            disabled={isSaving}
+            onChange={updateValue}
+          >
+            <QrImageField
+              imageUrl={toAbsoluteAssetUrl(
+                parameterByName.get("bankQrImage")?.value ?? "",
+              )}
+              isUploading={isUploadingQr}
+              error={qrError}
+              disabled={isSaving}
+              onSelect={(file) => void handleQrSelected(file)}
+            />
+          </PropertyGroup>
         </>
       ) : null}
     </PageContainer>
@@ -265,6 +319,7 @@ function PropertyGroup({
   parameterByName,
   disabled,
   onChange,
+  children,
 }: {
   title: string;
   description: string;
@@ -274,6 +329,7 @@ function PropertyGroup({
   parameterByName: Map<string, AdminParameter>;
   disabled: boolean;
   onChange: (name: PropertyParameterName, value: string) => void;
+  children?: ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-hairline bg-surface">
@@ -332,6 +388,100 @@ function PropertyGroup({
             </div>
           );
         })}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function QrImageField({
+  imageUrl,
+  isUploading,
+  error,
+  disabled,
+  onSelect,
+}: {
+  imageUrl: string;
+  isUploading: boolean;
+  error: string;
+  disabled: boolean;
+  onSelect: (file: File) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isBroken, setIsBroken] = useState(false);
+
+  return (
+    <div className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(13rem,1fr)_minmax(14rem,24rem)] md:items-start">
+      <div>
+        <Label htmlFor="bankQrImage">
+          QR image
+          <span className="ml-1 font-normal text-muted-foreground">
+            (optional)
+          </span>
+        </Label>
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">
+          Save the code from your banking app and upload it here. PNG, JPG or
+          WebP, up to 5 MB.
+        </p>
+      </div>
+
+      <div className="grid gap-2">
+        <div className="flex items-start gap-3">
+          <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-md border border-hairline bg-white">
+            {imageUrl && !isBroken ? (
+              <img
+                src={imageUrl}
+                alt="Bank transfer QR code"
+                className="size-full object-contain"
+                onError={() => setIsBroken(true)}
+              />
+            ) : (
+              <span className="px-2 text-center text-xs text-muted-foreground">
+                No image
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-1.5">
+            <input
+              ref={inputRef}
+              id="bankQrImage"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                // Reset so picking the same file twice still fires a change.
+                event.target.value = "";
+                setIsBroken(false);
+                if (file) onSelect(file);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={disabled || isUploading}
+              onClick={() => inputRef.current?.click()}
+            >
+              {isUploading ? <Spinner /> : null}
+              {isUploading
+                ? "Uploading..."
+                : imageUrl
+                  ? "Replace image"
+                  : "Upload image"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Uploading saves it straight away.
+            </p>
+          </div>
+        </div>
+
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {imageUrl && isBroken ? (
+          <p className="text-xs text-destructive">
+            The stored image could not be loaded. Upload it again.
+          </p>
+        ) : null}
       </div>
     </div>
   );

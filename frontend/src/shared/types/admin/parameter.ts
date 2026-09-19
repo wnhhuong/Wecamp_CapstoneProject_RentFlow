@@ -18,6 +18,10 @@ export type PropertyParameterName =
   | 'adminEmail'
   | 'adminFacebook'
   | 'adminZalo'
+  | 'bankAccountHolder'
+  | 'bankName'
+  | 'bankAccountNumber'
+  | 'bankQrImage'
 
 export type ParameterName = BillingParameterName | PropertyParameterName
 
