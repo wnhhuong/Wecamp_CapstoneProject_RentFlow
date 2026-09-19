@@ -6,10 +6,8 @@ import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js"
 import Room from "../../models/Room.js";
 import RequestModel from "../../models/Request.js";
 import mongoose from "mongoose";
-import { buildDetails, DETAIL_MODEL_MAP } from "../../services/request.service.js";
-import Invoice from "../../models/Invoice.js";
-import Contract from "../../models/Contract.js";
-import { buildContractDisplayID, buildInvoiceDisplayID, buildRequestDisplayID } from "../../utils/displayId.js";
+import { buildDetails, DETAIL_MODEL_MAP, enrichRequestDetails } from "../../services/request.service.js";
+import { buildRequestDisplayID } from "../../utils/displayId.js";
 
 // Get user's list requests
 // GET /api/user/requests
@@ -120,27 +118,8 @@ export const getRequestDetails = async (req: UserAuthRequest, res: Response, nex
             return;
         }
 
-        // Với type có invoiceID (delay, paid) -> thêm invoiceDisplayID cho dễ đọc, giữ nguyên invoiceID thật
-        if ((request.type === RequestType.DELAY || request.type === RequestType.PAID) && details.invoiceID) {
-            const relatedInvoice = await Invoice.findById(details.invoiceID);
-            if (relatedInvoice) {
-                details.invoiceDisplayID = buildInvoiceDisplayID(room.roomCode, new Date(relatedInvoice.createdDate));
-            }
-        }
-
-        // Với type có contractID (checkout, extend, moveout) -> thêm contractDisplayID cho dễ đọc
-        if (
-            (request.type === RequestType.CHECKOUT || request.type === RequestType.EXTEND || request.type === RequestType.MOVEOUT) &&
-            details.contractID
-        ) {
-            const relatedContract = await Contract.findById(details.contractID);
-            if (relatedContract) {
-                details.contractDisplayID = buildContractDisplayID(
-                    room.roomCode,
-                    new Date(relatedContract.startDate),
-                );
-            }
-        }
+        // Cùng một hàm enrich với admin, nên tenant không còn thấy ít hơn trên cùng dữ liệu.
+        const enriched = await enrichRequestDetails(request, room, details);
 
         const displayID = buildRequestDisplayID(request.type, room.roomCode, new Date(request.createDate));
 
@@ -152,7 +131,7 @@ export const getRequestDetails = async (req: UserAuthRequest, res: Response, nex
             status: request.status,
             createDate: request.createDate.toISOString(),
             resolveDate: request.resolveDate ? request.resolveDate.toISOString() : null,
-            details,
+            details: enriched,
         });
 
     } catch (error) {

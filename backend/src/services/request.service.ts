@@ -11,7 +11,7 @@ import Consumption from '../models/Consumption.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/User.js';
 import Account from '../models/Account.js';
-import Room from '../models/Room.js';
+import Room, { type IRoom } from '../models/Room.js';
 import Parameter from '../models/Parameter.js';
 import { 
   RequestType, 
@@ -1015,6 +1015,32 @@ export const getRequestDetail = async (requestID: string) => {
       : { note: `Detail record not found for request type "${request.type}".` };
   }
  
+  details = await enrichRequestDetails(request, room, details);
+
+  return {
+    requestID: String(request._id),
+    displayID: room
+      ? buildRequestDisplayID(request.type, room.roomCode, new Date(request.createDate))
+      : null,
+    type: request.type,
+    room: room ? { roomID: String(room._id), roomCode: room.roomCode } : null,
+    user: user ? { userID: String(user._id), fullName: user.fullName } : null,
+    createDate: request.createDate,
+    resolveDate: request.resolveDate ?? null,
+    status: request.status,
+    details,
+  };
+};
+
+/**
+ * Mọi thứ detail thô không có: mã hợp đồng, hạn hiện tại, số năm gia hạn, chỉ số kỳ trước
+ * và tóm tắt hoá đơn liên quan. Cả admin lẫn tenant đều đi qua đây để hai bên không lệch.
+ */
+export const enrichRequestDetails = async (
+  request: HydratedDocument<IRequest>,
+  room: HydratedDocument<IRoom> | null,
+  details: Record<string, unknown> | null,
+): Promise<Record<string, unknown> | null> => {
   // MOVEOUT cũng chỉ giữ contractID, nên trả kèm mã hợp đồng cho dễ đọc và
   // cắt ngày rời đi về ngày lịch theo giờ VN thay vì mốc thời gian ISO.
   if (request.type === RequestType.MOVEOUT && details?.contractID) {
@@ -1092,19 +1118,7 @@ export const getRequestDetail = async (requestID: string) => {
     details.invoiceIsRequestLate = invoice.isRequestLate;
   }
 
-  return {
-    requestID: String(request._id),
-    displayID: room
-      ? buildRequestDisplayID(request.type, room.roomCode, new Date(request.createDate))
-      : null,
-    type: request.type,
-    room: room ? { roomID: String(room._id), roomCode: room.roomCode } : null,
-    user: user ? { userID: String(user._id), fullName: user.fullName } : null,
-    createDate: request.createDate,
-    resolveDate: request.resolveDate ?? null,
-    status: request.status,
-    details,
-  };
+  return details;
 };
 
 /**
@@ -1126,7 +1140,7 @@ const findRelatedInvoice = async (
   }
 
   const capturedAt = details?.capturedAt as Date | undefined;
-  const reading = details?.currentReading as number | undefined;
+  const reading = (details?.currentReading ?? details?.reading) as number | undefined;
   if (!capturedAt || reading === undefined) return null;
 
   // Khớp cả meterReading: dữ liệu cũ có thể có sẵn một CONSUMPTION khác cùng trackingTime,
