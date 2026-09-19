@@ -1,0 +1,8 @@
+import type { AdminDashboardRequest } from '@/shared/types/admin/dashboard'
+import { formatDate } from '@/shared/utils/dateFormatter'
+
+function RequestsCard({ requests, onOpen, onRequestOpen }: { requests: AdminDashboardRequest[]; onOpen: () => void; onRequestOpen: (requestID: string) => void }) {
+  return <section className="grid gap-3 rounded-xl bg-ink p-5 text-page"><div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">Request summary</h2><p className="mt-1 text-sm text-page/60">Requests that need your approval</p></div><div className="flex items-center gap-3"><span className="rounded-full bg-clay px-2.5 py-1 text-sm font-medium">{requests.length}</span><button type="button" onClick={onOpen} className="text-sm font-medium text-[#FFB162] hover:underline">View all →</button></div></div>{requests.slice(0, 3).map((request) => <button type="button" key={request.requestID} onClick={() => onRequestOpen(request.requestID)} className="flex items-center gap-3 border-b border-page/10 py-2.5 text-left last:border-0"><span className="h-2 w-2 shrink-0 rounded-full bg-[#FFB162]" /><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{request.typeLabel}</strong><span className="block truncate text-xs text-page/60">{request.roomCode || 'No room'} · {request.userFullName || 'Unknown tenant'} · {formatDate(request.createDate)}</span></span><span className="text-xs text-[#FFB162]">Review →</span></button>)}{requests.length === 0 ? <div className="rounded-lg border border-dashed border-page/20 px-3 py-6 text-center text-sm text-page/60">No requests need approval right now.</div> : null}</section>
+}
+
+export { RequestsCard }

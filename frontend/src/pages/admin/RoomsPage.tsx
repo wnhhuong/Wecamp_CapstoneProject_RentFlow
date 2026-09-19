@@ -44,7 +44,7 @@ function RoomsPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<string, string[]>>({
     area: [],
-    status: [],
+    status: searchParams.get("status") ? [searchParams.get("status") as string] : [],
     capacity: [],
     balance: [],
   });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -46,6 +46,8 @@ const EMPTY_PAGINATION: ApiPagination = {
 
 function InvoicesPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const overdueOnly = searchParams.get("overdue") === "true";
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
   const [billingPeriods, setBillingPeriods] = useState<string[]>([]);
   const [summary, setSummary] = useState<AdminInvoiceSummary>({
@@ -56,8 +58,8 @@ function InvoicesPage() {
   });
   const [pagination, setPagination] = useState<ApiPagination>(EMPTY_PAGINATION);
   const [filters, setFilters] = useState<Record<string, string[]>>({
-    [PERIOD_FILTER_ID]: [],
-    [STATUS_FILTER_ID]: [],
+    [PERIOD_FILTER_ID]: overdueOnly ? [] : [],
+    [STATUS_FILTER_ID]: overdueOnly ? ["not_paid"] : [],
     [LATE_FILTER_ID]: [],
   });
   const [search, setSearch] = useState("");
@@ -104,7 +106,7 @@ function InvoicesPage() {
 
     getAdminInvoices(query, controller.signal)
       .then((result) => {
-        setInvoices(result.items);
+        setInvoices(overdueOnly ? result.items.filter((invoice) => invoice.isOverdue && invoice.status === "not_paid") : result.items);
         setPagination(result.pagination);
         setBillingPeriods(result.billingPeriods);
         setSummary(result.summary);
@@ -114,7 +116,7 @@ function InvoicesPage() {
         // default month filter is applied after it rather than on mount.
         if (!hasDefaultedPeriod.current) {
           hasDefaultedPeriod.current = true;
-          if (result.billingPeriods.length > 0) {
+          if (!overdueOnly && result.billingPeriods.length > 0) {
             setFilters((current) => ({
               ...current,
               [PERIOD_FILTER_ID]: [result.billingPeriods[0]],
@@ -136,7 +138,7 @@ function InvoicesPage() {
       });
 
     return () => controller.abort();
-  }, [query, reloadToken]);
+  }, [overdueOnly, query, reloadToken]);
 
   function changeFilter(id: string, selected: string[]) {
     setIsLoading(true);
@@ -174,6 +176,8 @@ function InvoicesPage() {
           Invoices for {periodLabel} · open an invoice to see its full breakdown
         </p>
       </div>
+
+      {overdueOnly ? <div className="rounded-md border border-[#E5B9AD] bg-[#FBEEEA] px-4 py-3 text-sm text-clay">Showing overdue invoices only.</div> : null}
 
       {!loadError && summary.billingPeriod ? (
         <section className="grid gap-2.5">
