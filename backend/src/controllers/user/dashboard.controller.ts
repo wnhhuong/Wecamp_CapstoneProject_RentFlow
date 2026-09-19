@@ -5,7 +5,7 @@ import { sendError, sendSuccess } from "../../utils/response.js";
 import { endOfVNDay, getVNDateParts, startOfVNDay } from "../../utils/dateFormat.js";
 import Consumption from "../../models/Consumption.js";
 import Invoice from "../../models/Invoice.js";
-import { ParameterName, RequestStatus, RequestType, TicketStatus, TicketType } from "../../models/enums.js";
+import { InvoiceStatus, ParameterName, RequestStatus, RequestType, TicketStatus, TicketType } from "../../models/enums.js";
 import { computeIsOverdue } from "./invoice.controller.js";
 import Parameter from "../../models/Parameter.js";
 import RequestModel from "../../models/Request.js";
@@ -26,26 +26,37 @@ export const getDashboard = async (req: UserAuthRequest, res: Response, next: Ne
         const now = new Date();
         const { year: vnYear, month: vnMonth } = getVNDateParts(now);
 
-         // 1. currentInvoice: invoice của tháng hiện tại (theo createdDate), thuộc current tenancy ----
+        // 1. currentInvoice: hoá đơn tenant đang nợ, thuộc current tenancy ----
+        // Lấy theo "chưa trả, mới nhất" chứ không theo tháng tạo: đầu tháng chưa có
+        // hoá đơn mới thì cái đang nợ vẫn phải hiện, và không phụ thuộc thứ tự Mongo.
         const consumptions = await Consumption.find({
             roomID,
             trackingTime: { $gte: new Date(startDate) },
         }).select("_id");
         const consumptionIds = consumptions.map((c) => c._id);
  
-        const monthStart = startOfVNDay(vnYear, vnMonth, 1);
-        const nextMonth = vnMonth === 12 ? 1 : vnMonth + 1;
-        const nextMonthYear = vnMonth === 12 ? vnYear + 1 : vnYear;
-        const monthEnd = startOfVNDay(nextMonthYear, nextMonth, 1); // mốc đầu tháng sau (exclusive)
+        const invoiceThisMonth =
+            (await Invoice.findOne({
+                consumptionID: { $in: consumptionIds },
+                status: { $ne: InvoiceStatus.PAID },
+            }).sort({ createdDate: -1 })) ??
+            (await Invoice.findOne({
+                consumptionID: { $in: consumptionIds },
+            }).sort({ createdDate: -1 }));
  
-        const invoiceThisMonth = await Invoice.findOne({
-            consumptionID: { $in: consumptionIds },
-            createdDate: { $gte: monthStart, $lt: monthEnd },
-        });
- 
+        // Kỳ tính tiền nằm ở CONSUMPTION chứ không ở INVOICE, và lệch tháng với
+        // createdDate lẫn dueDate, nên phải tra ngược đúng như list hoá đơn làm.
+        const invoiceConsumption = invoiceThisMonth
+            ? await Consumption.findById(invoiceThisMonth.consumptionID).select("trackingTime")
+            : null;
+        const billingPeriod = invoiceConsumption
+            ? `${new Date(invoiceConsumption.trackingTime).getUTCFullYear()}-${String(new Date(invoiceConsumption.trackingTime).getUTCMonth() + 1).padStart(2, '0')}`
+            : null;
+
         const currentInvoice = invoiceThisMonth
             ? {
                   invoiceID: invoiceThisMonth._id,
+                  billingPeriod,
                   totalBill: invoiceThisMonth.totalBill,
                   status: invoiceThisMonth.status,
                   isOverdue: computeIsOverdue(invoiceThisMonth.paymentDate, invoiceThisMonth.dueDate, now),
@@ -124,7 +135,7 @@ export const getDashboard = async (req: UserAuthRequest, res: Response, next: Ne
                 return {
                     ticketID: t._id,
                     ticketType: t.ticketType,
-                    discription: description,
+                    description,
                     status: t.status,
                     createDate: t.createDate,
                 };
