@@ -19,10 +19,7 @@ import {
 import { CloseIcon, UploadIcon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+import { SelectPopover } from "@/components/ui/select-popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/shared/utils/cn";
@@ -41,6 +38,17 @@ import type {
 const MAX_IMAGES = 4;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ROOM_NUMBER_LENGTH = 2;
+
+const CAPACITY_OPTIONS = [1, 2, 3, 4].map((capacity) => ({
+  value: String(capacity),
+  label: `${capacity} ${capacity === 1 ? "person" : "people"}`,
+}));
+
+const STATUS_OPTIONS = [
+  { value: "available now", label: "AVAILABLE NOW" },
+  { value: "available soon", label: "AVAILABLE SOON" },
+  { value: "not available", label: "NOT AVAILABLE" },
+];
 
 /** "Building A" -> "A", so the code prefix follows the chosen building. */
 function deriveBuildingLetter(areaName?: string) {
@@ -313,24 +321,19 @@ function AddRoomDialog({
             </div>
           ) : null}
 
-          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-hairline pt-5 [&_[data-slot=native-select-wrapper]]:w-full sm:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-hairline pt-5 sm:grid-cols-2">
             <FormField label="Building" error={errors.areaID} required>
-              <NativeSelect
+              <SelectPopover
+                items={areas.map((area) => ({
+                  value: area.areaID,
+                  label: area.areaName,
+                }))}
                 value={values.areaID}
-                onChange={(event) => updateValue("areaID", event.target.value)}
-                aria-invalid={Boolean(errors.areaID)}
-                aria-label="Building"
-                className="w-full"
-              >
-                <NativeSelectOption value="">
-                  Select a building
-                </NativeSelectOption>
-                {areas.map((area) => (
-                  <NativeSelectOption key={area.areaID} value={area.areaID}>
-                    {area.areaName}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                onChange={(areaID) => updateValue("areaID", areaID)}
+                placeholder="Select a building"
+                emptyLabel="No building is recorded yet."
+                invalid={Boolean(errors.areaID)}
+              />
             </FormField>
 
             <FormField label="Floor" error={errors.floor} required>
@@ -375,21 +378,13 @@ function AddRoomDialog({
             </FormField>
 
             <FormField label="Maximum people" error={errors.maxPeople} required>
-              <NativeSelect
+              <SelectPopover
+                items={CAPACITY_OPTIONS}
                 value={values.maxPeople}
-                onChange={(event) =>
-                  updateValue("maxPeople", event.target.value)
-                }
-                aria-invalid={Boolean(errors.maxPeople)}
-                aria-label="Maximum people"
-                className="w-full"
-              >
-                {[1, 2, 3, 4].map((capacity) => (
-                  <NativeSelectOption key={capacity} value={capacity}>
-                    {capacity} {capacity === 1 ? "person" : "people"}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                onChange={(maxPeople) => updateValue("maxPeople", maxPeople)}
+                placeholder="Select a capacity"
+                invalid={Boolean(errors.maxPeople)}
+              />
             </FormField>
 
             <FormField label="Monthly rent (VND)" error={errors.price} required>
@@ -419,25 +414,15 @@ function AddRoomDialog({
             </FormField>
 
             <FormField label="Status" error={errors.status} required>
-              <NativeSelect
+              <SelectPopover
+                items={STATUS_OPTIONS}
                 value={values.status}
-                onChange={(event) =>
-                  updateValue("status", event.target.value as CreateRoomStatus)
+                onChange={(status) =>
+                  updateValue("status", status as CreateRoomStatus)
                 }
-                aria-invalid={Boolean(errors.status)}
-                aria-label="Status"
-                className="w-full"
-              >
-                <NativeSelectOption value="available now">
-                  AVAILABLE NOW
-                </NativeSelectOption>
-                <NativeSelectOption value="available soon">
-                  AVAILABLE SOON
-                </NativeSelectOption>
-                <NativeSelectOption value="not available">
-                  NOT AVAILABLE
-                </NativeSelectOption>
-              </NativeSelect>
+                placeholder="Select a status"
+                invalid={Boolean(errors.status)}
+              />
             </FormField>
 
             <FormField
