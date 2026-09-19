@@ -2,13 +2,16 @@ import { apiRequest } from '@/shared/api/client'
 import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
+  BackendCheckoutRequest,
   BackendExtendRequest,
   BackendMoveoutRequest,
   BackendTenantRequest,
   BackendTenantRequestDetail,
   BackendTenantRequestList,
-  TenantExtendRequest,
-  TenantMoveoutRequest,
+  SubmitCheckoutInput,
+  TenantCheckoutReceipt,
+  TenantExtendReceipt,
+  TenantMoveoutReceipt,
   TenantRequest,
   TenantRequestDetail,
 } from '@/shared/types/request'
@@ -82,7 +85,7 @@ export async function getTenantRequest(
 
 export async function submitExtendRequest(
   signal?: AbortSignal,
-): Promise<TenantExtendRequest> {
+): Promise<TenantExtendReceipt> {
   const request = await apiRequest<BackendExtendRequest>(
     ENDPOINTS.user.extendRequests,
     { auth: 'user', method: 'POST', signal },
@@ -102,7 +105,7 @@ export async function submitExtendRequest(
 export async function submitMoveoutRequest(
   requestMoveoutDate: string,
   signal?: AbortSignal,
-): Promise<TenantMoveoutRequest> {
+): Promise<TenantMoveoutReceipt> {
   const request = await apiRequest<BackendMoveoutRequest>(
     ENDPOINTS.user.moveoutRequests,
     {
@@ -118,6 +121,31 @@ export async function submitMoveoutRequest(
     displayID: request.displayID ?? request.requestID,
     contractID: request.contractID ?? '',
     requestMoveoutDate: request.requestMoveoutDate,
+    createDate: request.createDate,
+    status: mapRequestStatus(request.status),
+  }
+}
+
+/** Multipart: the backend reads the photo from a field named `finalImage`. */
+export async function submitCheckoutRequest(
+  { finalImage, finalReading }: SubmitCheckoutInput,
+  signal?: AbortSignal,
+): Promise<TenantCheckoutReceipt> {
+  const body = new FormData()
+
+  body.append('finalImage', finalImage)
+  body.append('finalReading', String(finalReading))
+
+  const request = await apiRequest<BackendCheckoutRequest>(
+    ENDPOINTS.user.checkoutRequests,
+    { auth: 'user', method: 'POST', body, signal },
+  )
+
+  return {
+    requestID: request.requestID,
+    displayID: request.displayID ?? request.requestID,
+    contractID: request.contractID ?? '',
+    finalReading: request.finalReading,
     createDate: request.createDate,
     status: mapRequestStatus(request.status),
   }

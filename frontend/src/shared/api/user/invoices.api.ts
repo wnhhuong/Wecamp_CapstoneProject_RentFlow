@@ -69,6 +69,22 @@ function toUsage(usage: number | undefined): number | null {
   return usage === undefined || usage < 0 ? null : usage
 }
 
+/**
+ * Newest invoice first, so its reading is the last one the owner approved.
+ * Null when the tenancy has no invoice yet, or the invoice carries no reading.
+ */
+export async function getLatestMeterReading(
+  signal?: AbortSignal,
+): Promise<number | null> {
+  const invoices = await getTenantInvoices(signal)
+  const latest = invoices[0]
+  if (!latest) return null
+
+  const detail = await getTenantInvoice(latest.invoiceID, signal)
+
+  return detail.meterReading
+}
+
 export async function submitPaidRequest(
   invoiceID: string,
   signal?: AbortSignal,

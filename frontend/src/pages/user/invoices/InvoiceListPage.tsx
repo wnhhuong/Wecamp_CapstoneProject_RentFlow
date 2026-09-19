@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -218,6 +218,8 @@ function InvoiceListPage() {
           </div>
         )
       ) : null}
+
+      <Outlet />
     </PageContainer>
   );
 }

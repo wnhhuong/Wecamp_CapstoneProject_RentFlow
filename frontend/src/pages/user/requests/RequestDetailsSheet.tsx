@@ -1,45 +1,50 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 
 import { ErrorState, PageLoading } from "@/components/feedback";
 import { StatusBadge } from "@/components/status";
+import { Button } from "@/components/ui/button";
+import {
+  DetailRow,
+  DetailSection,
+  Timeline,
+  type TimelineStep,
+} from "@/components/ui/detail-sheet";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ROUTES } from "@/router/routes";
 import { getTenantRequest } from "@/shared/api/user/requests.api";
-import type {
-  TenantRequest,
-  TenantRequestDetail,
-} from "@/shared/types/request";
+import type { TenantRequestDetail } from "@/shared/types/request";
 import { formatDate } from "@/shared/utils/dateFormatter";
 import { REQUEST_TYPE_LABELS } from "@/shared/utils/requestTypes";
 
-interface RequestDetailsSheetProps {
-  request: TenantRequest | null;
-  onOpenChange: (open: boolean) => void;
-}
+function RequestDetailsSheet() {
+  const { requestId = "" } = useParams();
+  const navigate = useNavigate();
 
-function RequestDetailsSheet({
-  request,
-  onOpenChange,
-}: RequestDetailsSheetProps) {
   return (
-    <Sheet open={request !== null} onOpenChange={onOpenChange}>
+    <Sheet
+      open={requestId !== ""}
+      onOpenChange={(open) => {
+        if (!open) void navigate(ROUTES.user.requests);
+      }}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        {request ? (
-          <RequestDetailsLoader key={request.requestID} request={request} />
+        {requestId ? (
+          <RequestDetailsLoader key={requestId} requestID={requestId} />
         ) : null}
       </SheetContent>
     </Sheet>
   );
 }
 
-function RequestDetailsLoader({ request }: { request: TenantRequest }) {
+function RequestDetailsLoader({ requestID }: { requestID: string }) {
   const [detail, setDetail] = useState<TenantRequestDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,7 +52,7 @@ function RequestDetailsLoader({ request }: { request: TenantRequest }) {
   useEffect(() => {
     let isActive = true;
 
-    getTenantRequest(request.requestID)
+    getTenantRequest(requestID)
       .then((requestDetail) => {
         if (isActive) setDetail(requestDetail);
       })
@@ -61,24 +66,41 @@ function RequestDetailsLoader({ request }: { request: TenantRequest }) {
     return () => {
       isActive = false;
     };
-  }, [request.requestID]);
+  }, [requestID]);
 
   function retry() {
     setIsLoading(true);
     setError("");
-    getTenantRequest(request.requestID)
+    getTenantRequest(requestID)
       .then(setDetail)
       .catch(() => setError("This request could not be loaded."))
       .finally(() => setIsLoading(false));
   }
 
+  // The header already draws a line, so whichever section comes first must not
+  // draw another one under it.
+  const firstSection = detail
+    ? ([
+        detail.consumption && "consumption",
+        detail.checkout && "checkout",
+        detail.contract && "contract",
+        detail.invoice && "invoice",
+      ].find(Boolean) as string | undefined)
+    : undefined;
+
   return (
     <>
       <SheetHeader className="border-b border-hairline pr-12">
-        <SheetTitle className="text-xl">{request.displayID}</SheetTitle>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SheetTitle className="text-xl">
+            {detail ? REQUEST_TYPE_LABELS[detail.type] : "Request"}
+          </SheetTitle>
+          {detail ? (
+            <StatusBadge domain="request" status={detail.status} />
+          ) : null}
+        </div>
         <SheetDescription>
-          {REQUEST_TYPE_LABELS[request.type]} · sent{" "}
-          {formatDate(request.createDate)}
+          {detail ? detail.displayID : "Loading what you sent the owner"}
         </SheetDescription>
       </SheetHeader>
 
@@ -94,127 +116,107 @@ function RequestDetailsLoader({ request }: { request: TenantRequest }) {
 
         {!isLoading && !error && detail ? (
           <>
-            <section className="grid gap-3 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <StatusBadge domain="request" status={detail.status} />
-              </div>
-              <DetailRow label="Room">{detail.roomCode}</DetailRow>
-              <DetailRow label="Sent">
-                {formatDate(detail.createDate, true)}
-              </DetailRow>
-              <DetailRow label="Answered">
-                {detail.resolveDate
-                  ? formatDate(detail.resolveDate, true)
-                  : "Not yet"}
-              </DetailRow>
-            </section>
-
-            {detail.invoice ? (
-              <Section
-                title="Invoice"
-                action={
-                  <Link
-                    to={ROUTES.user.invoiceDetailsLink(
-                      detail.invoice.invoiceID,
-                    )}
-                    className="text-sm font-medium underline underline-offset-2"
-                  >
-                    View details
-                  </Link>
-                }
-              >
-                <DetailRow label="Invoice ID">
-                  {detail.invoice.displayID}
-                </DetailRow>
-              </Section>
-            ) : null}
-
-            {detail.contract ? (
-              <Section title="Contract">
-                <DetailRow label="Contract ID">
-                  {detail.contract.displayID}
-                </DetailRow>
-                {detail.contract.requestedMoveoutDate ? (
-                  <DetailRow label="Requested move-out">
-                    {formatDate(detail.contract.requestedMoveoutDate)}
-                  </DetailRow>
-                ) : null}
-              </Section>
-            ) : null}
-
             {detail.consumption ? (
-              <Section title="Meter reading">
+              <DetailSection title="Meter reading" bordered={false}>
+                <DetailRow
+                  label="Reading"
+                  value={`${detail.consumption.reading} kWh`}
+                />
+                <DetailRow
+                  label="Captured"
+                  value={formatDate(detail.consumption.capturedAt, true)}
+                />
                 <MeterImage
                   src={detail.consumption.meterImage}
                   displayID={detail.displayID}
                 />
-                <DetailRow label="Reading">
-                  {detail.consumption.reading} kWh
-                </DetailRow>
-                <DetailRow label="Captured">
-                  {formatDate(detail.consumption.capturedAt, true)}
-                </DetailRow>
-              </Section>
+              </DetailSection>
             ) : null}
 
             {detail.checkout ? (
-              <Section title="Checkout reading">
+              <DetailSection
+                title="Checkout reading"
+                bordered={firstSection !== "checkout"}
+              >
+                <DetailRow
+                  label="Final reading"
+                  value={`${detail.checkout.finalReading} kWh`}
+                />
                 <MeterImage
                   src={detail.checkout.meterImage}
                   displayID={detail.displayID}
                 />
-                <DetailRow label="Final reading">
-                  {detail.checkout.finalReading} kWh
-                </DetailRow>
-              </Section>
+              </DetailSection>
+            ) : null}
+
+            {detail.contract ? (
+              <DetailSection bordered={firstSection !== "contract"} title="Contract">
+                <DetailRow
+                  label="Contract ID"
+                  value={detail.contract.displayID}
+                />
+                {detail.contract.requestedMoveoutDate ? (
+                  <DetailRow
+                    label="Requested move-out"
+                    value={formatDate(detail.contract.requestedMoveoutDate)}
+                  />
+                ) : null}
+              </DetailSection>
+            ) : null}
+
+            {detail.invoice ? (
+              <DetailSection bordered={firstSection !== "invoice"} title="Invoice">
+                <DetailRow
+                  label="Invoice ID"
+                  value={detail.invoice.displayID}
+                />
+              </DetailSection>
             ) : null}
 
             {detail.status === "pending" ? (
-              <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+              <p
+                role="status"
+                className="rounded-md border border-hairline bg-status-info-bg px-3 py-2 text-sm leading-6 text-status-info-fg"
+              >
                 The owner has not answered this request yet.
               </p>
             ) : null}
+
+            <Timeline steps={buildTimeline(detail)} />
           </>
         ) : null}
       </div>
+
+      {detail?.invoice ? (
+        <SheetFooter className="border-t border-hairline sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" asChild>
+            <Link
+              to={ROUTES.user.invoiceDetailsLink(detail.invoice.invoiceID)}
+            >
+              View invoice
+            </Link>
+          </Button>
+        </SheetFooter>
+      ) : null}
     </>
   );
 }
 
-function Section({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="grid gap-3 border-t border-hairline pt-4">
-      <div className="flex items-center justify-between gap-4">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium text-foreground">{children}</span>
-    </div>
-  );
+function buildTimeline(detail: TenantRequestDetail): TimelineStep[] {
+  return [
+    {
+      label: "Sent",
+      value: formatDate(detail.createDate, true),
+      reached: true,
+    },
+    {
+      label: "Answered",
+      value: detail.resolveDate
+        ? formatDate(detail.resolveDate, true)
+        : "Not yet",
+      reached: detail.status === "approved",
+    },
+  ];
 }
 
 /** The stored path can point at a file that is no longer on disk. */
@@ -223,19 +225,27 @@ function MeterImage({ src, displayID }: { src: string; displayID: string }) {
 
   if (!src || hasError) {
     return (
-      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
+      <div className="flex h-28 w-full items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
         Photo unavailable
       </div>
     );
   }
 
   return (
-    <img
-      src={src}
-      alt={`Photo sent with request ${displayID}`}
-      className="aspect-[4/3] w-full rounded-md border border-hairline object-cover"
-      onError={() => setHasError(true)}
-    />
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      title="Open the full-size photo"
+      className="block overflow-hidden rounded-md border border-hairline"
+    >
+      <img
+        src={src}
+        alt={`Photo sent with request ${displayID}`}
+        className="max-h-52 w-full object-cover"
+        onError={() => setHasError(true)}
+      />
+    </a>
   );
 }
 

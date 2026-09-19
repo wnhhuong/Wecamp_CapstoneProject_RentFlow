@@ -67,7 +67,7 @@ export interface TenantRequestReceipt {
   status: RequestStatus
 }
 
-export interface TenantExtendRequest extends TenantRequestReceipt {
+export interface TenantExtendReceipt extends TenantRequestReceipt {
   contractID: string
   yearToExtend: number
 }
@@ -82,9 +82,30 @@ export interface BackendMoveoutRequest {
   status?: string
 }
 
-export interface TenantMoveoutRequest extends TenantRequestReceipt {
+export interface TenantMoveoutReceipt extends TenantRequestReceipt {
   contractID: string
   requestMoveoutDate: string
+}
+
+export interface BackendCheckoutRequest {
+  requestID: string
+  displayID?: string
+  type?: string
+  contractID?: string
+  finalImage?: string
+  finalReading: number
+  createDate: string
+  status?: string
+}
+
+export interface TenantCheckoutReceipt extends TenantRequestReceipt {
+  contractID: string
+  finalReading: number
+}
+
+export interface SubmitCheckoutInput {
+  finalImage: File
+  finalReading: number
 }
 
 export interface TenantRequestInvoice {

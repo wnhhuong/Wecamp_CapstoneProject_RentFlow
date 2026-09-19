@@ -8,9 +8,10 @@ import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
-import { InvoiceDetailsPage } from "@/pages/user/invoices/InvoiceDetailsPage";
+import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
 import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
 import { ProfilePage } from "@/pages/user/ProfilePage";
+import { RequestDetailsSheet as TenantRequestDetailsSheet } from "@/pages/user/requests/RequestDetailsSheet";
 import { RequestListPage } from "@/pages/user/requests/RequestListPage";
 import { RequireAuth } from "@/router/require-auth";
 import { RoutePlaceholder } from "@/router/route-placeholder";
@@ -95,14 +96,9 @@ const router = createBrowserRouter([
             <InvoiceListPage />
           </RequireAuth>
         ),
-      },
-      {
-        path: ROUTES.user.invoiceDetails,
-        element: (
-          <RequireAuth role="user">
-            <InvoiceDetailsPage />
-          </RequireAuth>
-        ),
+        children: [
+          { path: ":invoiceId", element: <TenantInvoiceDetailsSheet /> },
+        ],
       },
       {
         path: ROUTES.user.requests,
@@ -111,6 +107,9 @@ const router = createBrowserRouter([
             <RequestListPage />
           </RequireAuth>
         ),
+        children: [
+          { path: ":requestId", element: <TenantRequestDetailsSheet /> },
+        ],
       },
       {
         path: ROUTES.user.tickets,

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,6 +11,7 @@ interface ReviewStepProps {
   capturedAt: string
   reading: string
   validReading: boolean
+  lastReading: number | null
   submitting: boolean
   error: string | null
   onReadingChange: (value: string) => void
@@ -21,13 +24,17 @@ export function ReviewStep({
   capturedAt,
   reading,
   validReading,
+  lastReading,
   submitting,
   error,
   onReadingChange,
   onBack,
   onSubmit,
 }: ReviewStepProps) {
-  const invalid = reading !== '' && !validReading
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
+
+  const invalid =
+    (reading !== '' && !validReading) || (hasTriedSubmit && reading === '')
 
   return (
     <Card>
@@ -37,6 +44,9 @@ export function ReviewStep({
           aria-busy={submitting}
           onSubmit={(event) => {
             event.preventDefault()
+            setHasTriedSubmit(true)
+            if (!validReading) return
+
             void onSubmit()
           }}
         >
@@ -64,8 +74,6 @@ export function ReviewStep({
               id="meter-reading"
               type="text"
               inputMode="numeric"
-              pattern="[0-9]+"
-              required
               value={reading}
               disabled={submitting}
               aria-invalid={invalid}
@@ -77,7 +85,9 @@ export function ReviewStep({
               id="meter-reading-help"
               className={invalid ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}
             >
-              Enter the full meter reading as a whole number, zero or greater.
+              {lastReading === null
+                ? 'Enter the full meter reading as a whole number.'
+                : `This reading cannot be lower than your previous reading (${lastReading} kWh).`}
             </p>
           </div>
 
@@ -96,7 +106,7 @@ export function ReviewStep({
             >
               Change photo
             </Button>
-            <Button type="submit" disabled={!validReading || submitting}>
+            <Button type="submit" disabled={submitting}>
               {submitting ? 'Sending…' : 'Confirm & send to owner'}
             </Button>
           </div>
