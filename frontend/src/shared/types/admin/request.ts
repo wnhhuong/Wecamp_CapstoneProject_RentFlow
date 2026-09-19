@@ -35,6 +35,8 @@ export interface BackendRequestDetail extends BackendRequestListItem {
     contractExpireDate?: string
     yearToExtend?: number
     requestMoveoutDate?: string
+    finalImage?: string
+    finalReading?: number
   } | null
 }
 
@@ -85,6 +87,15 @@ export interface AdminMoveoutDetails {
   requestMoveoutDate: string
 }
 
+export interface AdminCheckoutDetails {
+  contractDisplayID: string
+  expireDate: string
+  meterImage: string
+  previousReading: number
+  finalReading: number
+  usage: number
+}
+
 /**
  * Only the types the owner can act on carry a detail block; the rest are listed
  * with their shared fields until their approval flow exists.
@@ -94,6 +105,7 @@ export interface AdminRequestDetail extends AdminRequest {
   consumption: AdminConsumptionDetails | null
   extension: AdminExtensionDetails | null
   moveout: AdminMoveoutDetails | null
+  checkout: AdminCheckoutDetails | null
   invoice: AdminInvoiceDetails | null
 }
 

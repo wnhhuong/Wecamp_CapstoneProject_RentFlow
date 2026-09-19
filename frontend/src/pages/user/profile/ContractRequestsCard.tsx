@@ -15,7 +15,7 @@ import { ExtendLeaseDialog } from "./ExtendLeaseDialog";
 import { MoveoutRequestDialog } from "./MoveoutRequestDialog";
 import {
   getEarliestMoveoutDate,
-  MOVEOUT_NOTICE_DAYS,
+  MOVEOUT_NOTICE_LABEL,
 } from "./utils/moveoutWindow";
 
 interface ContractRequestsCardProps {
@@ -212,7 +212,7 @@ function moveoutDescription({
   }
 
   if (!hasMoveoutWindow) {
-    return `Your lease ends on ${formatDate(expireDate)}, sooner than the ${MOVEOUT_NOTICE_DAYS} days' notice needs. Speak to the owner directly.`;
+    return `Your lease ends on ${formatDate(expireDate)}, sooner than the ${MOVEOUT_NOTICE_LABEL} notice needs. Speak to the owner directly.`;
   }
 
   return `Tell the owner you are leaving, any date from ${formatDate(earliestMoveoutDate)} to ${formatDate(expireDate)}.`;

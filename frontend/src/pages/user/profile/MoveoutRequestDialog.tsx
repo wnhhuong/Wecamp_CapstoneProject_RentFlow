@@ -27,7 +27,7 @@ import { formatDate } from "@/shared/utils/dateFormatter";
 
 import {
   getEarliestMoveoutDate,
-  MOVEOUT_NOTICE_DAYS,
+  MOVEOUT_NOTICE_LABEL,
 } from "./utils/moveoutWindow";
 
 interface MoveoutRequestDialogProps {
@@ -175,7 +175,7 @@ function MoveoutRequestDialog({
                 }
               >
                 Between {formatDate(earliestDate)} and {formatDate(latestDate)}.
-                The owner needs {MOVEOUT_NOTICE_DAYS} days&rsquo; notice.
+                The owner needs {MOVEOUT_NOTICE_LABEL} notice.
               </p>
             </div>
 

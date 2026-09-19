@@ -84,7 +84,11 @@ interface CreateExtendRequestInput {
 }
 
 /** Ngày báo trước tối thiểu cho move-out; FE dùng đúng con số này để giới hạn ô chọn ngày. */
-export const MOVEOUT_NOTICE_DAYS = 7;
+export const MOVEOUT_NOTICE_DAYS = 1;
+
+/** "1 day's" / "7 days'" — câu báo lỗi phải đi theo hằng số, không chép cứng số ngày. */
+const formatNoticeDays = (): string =>
+  MOVEOUT_NOTICE_DAYS === 1 ? "1 day's" : `${MOVEOUT_NOTICE_DAYS} days'`;
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -129,7 +133,7 @@ export const createMoveoutRequest = async ({
   if (requestMoveoutDate < earliestDateKey) {
     throw new RequestServiceError(
       400,
-      `requestMoveoutDate must be ${earliestDateKey} or later (${MOVEOUT_NOTICE_DAYS} days' notice).`,
+      `requestMoveoutDate must be ${earliestDateKey} or later (${formatNoticeDays()} notice).`,
     );
   }
 
@@ -1041,6 +1045,30 @@ export const getRequestDetail = async (requestID: string) => {
 
     const yearToExtend = Number(yearToExtendParameter?.value);
     details.yearToExtend = Number.isInteger(yearToExtend) && yearToExtend > 0 ? yearToExtend : 1;
+  }
+
+  // CHECKOUT cũng chỉ giữ contractID và số cuối. Thiếu mã hợp đồng thì admin không đọc được
+  // đang đóng hợp đồng nào, thiếu chỉ số kỳ gần nhất thì không biết số cuối có hợp lý không.
+  if (request.type === RequestType.CHECKOUT && details?.contractID) {
+    const contract = await Contract.findById(details.contractID as string);
+
+    if (contract) {
+      details.contractDisplayID = room
+        ? buildContractDisplayID(room.roomCode, new Date(contract.startDate))
+        : null;
+      details.contractExpireDate = toVNDateKey(new Date(contract.expireDate));
+      details.contractStatus = contract.status;
+    }
+
+    const previousConsumption = await Consumption.findOne({
+      roomID: request.roomID,
+      trackingTime: { $lt: request.createDate },
+    }).sort({ trackingTime: -1 });
+    const previousReading = previousConsumption ? previousConsumption.meterReading : 0;
+    const finalReading = Number(details.finalReading) || 0;
+
+    details.previousReading = previousReading;
+    details.usage = finalReading - previousReading;
   }
 
   // Request nào gắn với một hoá đơn thì admin phải đi thẳng tới hoá đơn đó được,

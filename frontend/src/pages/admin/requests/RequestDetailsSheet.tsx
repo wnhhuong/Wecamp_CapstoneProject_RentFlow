@@ -5,6 +5,14 @@ import { ErrorState, PageLoading } from "@/components/feedback";
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DetailRow,
   DetailSection,
   IdentityHeader,
@@ -26,6 +34,7 @@ import {
   getAdminRequest,
 } from "@/shared/api/admin/requests.api";
 import type {
+  AdminCheckoutDetails,
   AdminExtensionDetails,
   AdminInvoiceDetails,
   AdminMoveoutDetails,
@@ -47,6 +56,7 @@ const APPROVE_LABELS: Partial<Record<RequestType, string>> = {
   delay: "Approve late payment",
   extend: "Approve extension",
   moveout: "Approve move-out",
+  checkout: "Approve checkout",
 };
 
 const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
@@ -59,6 +69,8 @@ const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
     "Approving moves the contract expiry date forward. Nothing else on the lease changes, and the rent stays at the signed price.",
   moveout:
     "Approving marks the room available soon and lets the tenant submit their checkout. The lease stays active until that checkout is approved.",
+  checkout:
+    "Approving closes the lease for good: the room goes back on the market as available now, and the tenant loses access to their account. This cannot be undone.",
 };
 
 interface RequestDetailsSheetProps {
@@ -99,6 +111,7 @@ function RequestDetailsLoader({
   const [error, setError] = useState("");
   const [isApproving, setIsApproving] = useState(false);
   const [approveError, setApproveError] = useState("");
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -145,6 +158,7 @@ function RequestDetailsLoader({
         })),
       );
       onApproved();
+      setIsConfirmOpen(false);
     } catch (approvalError: unknown) {
       setApproveError(
         approvalError instanceof Error
@@ -212,6 +226,13 @@ function RequestDetailsLoader({
 
             {detail.moveout ? <MoveoutSection moveout={detail.moveout} /> : null}
 
+            {detail.checkout ? (
+              <CheckoutSection
+                roomCode={detail.roomCode}
+                checkout={detail.checkout}
+              />
+            ) : null}
+
             {/* A consumption approval creates the invoice, so it is an outcome to
                 open from the footer, not evidence the owner reviews here. */}
             {detail.invoice && detail.type !== "consump" ? (
@@ -225,29 +246,26 @@ function RequestDetailsLoader({
               >
                 {outcome}
               </p>
-            ) : APPROVE_NOTES[detail.type] ? (
-              <p className="rounded-md border border-hairline bg-status-info-bg px-3 py-2 text-sm leading-6 text-status-info-fg">
-                {APPROVE_NOTES[detail.type]}
-              </p>
-            ) : (
+            ) : null}
+
+            {!outcome && !approveLabel ? (
               <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
                 Approving {REQUEST_TYPE_LABELS[detail.type].toLowerCase()}{" "}
                 requests is not available yet.
               </p>
-            )}
+            ) : null}
 
             <Timeline steps={buildTimeline(detail)} />
-
-            {approveError ? (
-              <p role="alert" className="text-sm text-destructive">
-                {approveError}
-              </p>
-            ) : null}
           </>
         ) : null}
       </div>
 
-      {detail && (detail.invoice || detail.extension || detail.moveout || canApprove) ? (
+      {detail &&
+      (detail.invoice ||
+        detail.extension ||
+        detail.moveout ||
+        detail.checkout ||
+        canApprove) ? (
         <SheetFooter className="border-t border-hairline sm:flex-row sm:justify-end">
           {detail.invoice ? (
             <Button type="button" variant="outline" asChild>
@@ -257,7 +275,8 @@ function RequestDetailsLoader({
             </Button>
           ) : null}
 
-          {(detail.extension || detail.moveout) && detail.roomID ? (
+          {(detail.extension || detail.moveout || detail.checkout) &&
+          detail.roomID ? (
             <Button type="button" variant="outline" asChild>
               <Link to={ROUTES.admin.roomDetailsLink(detail.roomID)}>
                 View room & lease
@@ -269,16 +288,95 @@ function RequestDetailsLoader({
             <Button
               type="button"
               variant="dark"
-              disabled={isApproving}
-              onClick={() => void approve()}
+              onClick={() => {
+                setApproveError("");
+                setIsConfirmOpen(true);
+              }}
             >
-              {isApproving ? <Spinner /> : null}
               {approveLabel}
             </Button>
           ) : null}
         </SheetFooter>
       ) : null}
+
+      {detail && approveLabel ? (
+        <ApproveConfirmDialog
+          open={isConfirmOpen}
+          onOpenChange={setIsConfirmOpen}
+          label={approveLabel}
+          note={APPROVE_NOTES[detail.type] ?? ""}
+          displayID={detail.displayID}
+          isApproving={isApproving}
+          error={approveError}
+          onConfirm={() => void approve()}
+        />
+      ) : null}
     </>
+  );
+}
+
+function ApproveConfirmDialog({
+  open,
+  onOpenChange,
+  label,
+  note,
+  displayID,
+  isApproving,
+  error,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  label: string;
+  note: string;
+  displayID: string;
+  isApproving: boolean;
+  error: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!isApproving) onOpenChange(next);
+      }}
+    >
+      {/* Sits above the sheet it is opened from, whose overlay is already z-50. */}
+      <DialogContent className="z-[60] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{label}?</DialogTitle>
+          <DialogDescription>{note}</DialogDescription>
+        </DialogHeader>
+
+        <p className="text-sm text-body">Request {displayID}</p>
+
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isApproving}
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="dark"
+            disabled={isApproving}
+            onClick={onConfirm}
+          >
+            {isApproving ? <Spinner /> : null}
+            {isApproving ? "Approving\u2026" : label}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -322,6 +420,10 @@ function buildOutcome(detail: AdminRequestDetail) {
     return `Move-out approved. Room ${detail.roomCode} is now available soon, and the tenant can submit their checkout.`;
   }
 
+  if (detail.type === "checkout") {
+    return `Checkout approved. The lease is closed, room ${detail.roomCode} is available now, and the tenant can no longer sign in.`;
+  }
+
   if (detail.type === "extend") {
     // The re-read detail already carries the moved expiry date.
     return detail.extension
@@ -341,7 +443,10 @@ function ConsumptionSection({
 }) {
   return (
     <DetailSection title={`Meter reading · ${consumption.billingPeriod}`}>
-      <MeterImage src={consumption.meterImage} roomCode={roomCode} />
+      <MeterImage
+        src={consumption.meterImage}
+        alt={`Meter reading submitted for room ${roomCode}`}
+      />
       <DetailRow
         label="Previous reading"
         value={`${consumption.previousReading} kWh`}
@@ -390,6 +495,39 @@ function ExtensionSection({
   );
 }
 
+function CheckoutSection({
+  roomCode,
+  checkout,
+}: {
+  roomCode: string;
+  checkout: AdminCheckoutDetails;
+}) {
+  return (
+    <>
+      <DetailSection title="Final meter reading">
+        <MeterImage
+          src={checkout.meterImage}
+          alt={`Final meter reading submitted for room ${roomCode}`}
+        />
+        <DetailRow
+          label="Last recorded reading"
+          value={`${checkout.previousReading} kWh`}
+        />
+        <DetailRow label="Final reading" value={`${checkout.finalReading} kWh`} />
+        <DetailRow label="Usage" value={`${checkout.usage} kWh`} />
+      </DetailSection>
+
+      <DetailSection title="Contract">
+        <DetailRow label="Contract ID" value={checkout.contractDisplayID} />
+        <DetailRow
+          label="Lease expiry"
+          value={checkout.expireDate ? formatDate(checkout.expireDate) : "Not set"}
+        />
+      </DetailSection>
+    </>
+  );
+}
+
 function MoveoutSection({ moveout }: { moveout: AdminMoveoutDetails }) {
   return (
     <DetailSection title="Contract">
@@ -423,7 +561,7 @@ function InvoiceSection({ invoice }: { invoice: AdminInvoiceDetails }) {
 }
 
 /** The stored path can point at a file that is no longer on disk. */
-function MeterImage({ src, roomCode }: { src: string; roomCode: string }) {
+function MeterImage({ src, alt }: { src: string; alt: string }) {
   const [hasError, setHasError] = useState(false);
 
   if (!src || hasError) {
@@ -444,7 +582,7 @@ function MeterImage({ src, roomCode }: { src: string; roomCode: string }) {
     >
       <img
         src={src}
-        alt={`Meter reading submitted for room ${roomCode}`}
+        alt={alt}
         className="max-h-52 w-full object-cover"
         onError={() => setHasError(true)}
       />

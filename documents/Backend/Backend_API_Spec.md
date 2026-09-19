@@ -593,7 +593,7 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 
 |Mốc|Giá trị|
 |---|---|
-|Sớm nhất|Hôm nay + 7 ngày (`MOVEOUT_NOTICE_DAYS`), cắt theo giờ VN|
+|Sớm nhất|Hôm nay + 1 ngày (`MOVEOUT_NOTICE_DAYS`), cắt theo giờ VN|
 |Muộn nhất|`CONTRACT.expireDate`|
 
 Trả 409 nếu đã có move-out request đang `pending`, và 400 nếu room không ở trạng thái `rented`.
