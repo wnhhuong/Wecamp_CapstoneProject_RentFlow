@@ -48,34 +48,8 @@ function RoomsPage() {
   }, [filters, page, search])
 
   useEffect(() => {
-    let isActive = true
-    setLoading(true)
-    setError(false)
-
-    getGuestRooms({
-      search: search.trim() || undefined,
-      floor: numberFilter(filters.floor),
-      maxPeople: numberFilter(filters.capacity),
-      status: statusFilter(filters.availability),
-      priceMin: priceFilter(filters.price)?.min,
-      priceMax: priceFilter(filters.price)?.max,
-      page,
-      limit: 12,
-    })
-      .then((result) => {
-        if (!isActive) return
-        setRooms(result.items)
-        setPagination(result.pagination)
-      })
-      .catch(() => {
-        if (isActive) setError(true)
-      })
-      .finally(() => {
-        if (isActive) setLoading(false)
-      })
-
-    return () => { isActive = false }
-  }, [filters, page, search])
+    void Promise.resolve().then(load)
+  }, [load])
   useEffect(() => { void getGuestProperty().then(setProperty).catch(() => undefined) }, [])
 
   const filterGroups: FilterGroup[] = useMemo(() => [
