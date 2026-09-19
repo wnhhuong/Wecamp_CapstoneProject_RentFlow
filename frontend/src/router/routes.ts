@@ -42,6 +42,7 @@ const ROUTES = {
       invoiceDetailsLink: (invoiceId: string) =>
         `/admin/invoices/${invoiceId}`,
       parameters: '/admin/parameters',
+      property: '/admin/property',
       tickets: '/admin/tickets',
       ticketDetails: '/admin/tickets/:ticketId',
       ticketDetailsLink: (ticketId: string) =>

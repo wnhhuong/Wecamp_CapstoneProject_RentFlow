@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { Alert, EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { CloseIcon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  getAdminParameters,
+  getAdminBillingParameters,
   updateAdminParameters,
 } from "@/shared/api/admin/parameters.api";
 import {
@@ -141,7 +140,7 @@ function ParametersPage() {
     setLoadError("");
 
     try {
-      const loadedParameters = await getAdminParameters();
+      const loadedParameters = await getAdminBillingParameters();
       setParameters(loadedParameters);
       setValues(toFormValues(loadedParameters));
       setErrors({});
@@ -157,7 +156,7 @@ function ParametersPage() {
   useEffect(() => {
     let isActive = true;
 
-    getAdminParameters()
+    getAdminBillingParameters()
       .then((loadedParameters) => {
         if (!isActive) return;
         setParameters(loadedParameters);
@@ -459,40 +458,6 @@ function ParameterGroup({
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function Alert({
-  tone,
-  children,
-  onDismiss,
-}: {
-  tone: "success" | "danger";
-  children: React.ReactNode;
-  onDismiss: () => void;
-}) {
-  const className =
-    tone === "success"
-      ? "border-[#bfd2bf] bg-status-success-bg text-status-success-fg"
-      : "border-[#e0c2bc] bg-status-danger-bg text-status-danger-fg";
-
-  return (
-    <div
-      role={tone === "danger" ? "alert" : "status"}
-      className={`flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm ${className}`}
-    >
-      <span>{children}</span>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label="Dismiss message"
-        className="text-current hover:bg-black/5"
-        onClick={onDismiss}
-      >
-        <CloseIcon />
-      </Button>
     </div>
   );
 }

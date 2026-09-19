@@ -9,6 +9,7 @@ import { RoomDetailsSheet } from "@/pages/admin/rooms/RoomDetailsSheet";
 import { TicketDetailsSheet } from "@/pages/admin/tickets/TicketDetailsSheet";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
+import { PropertyPage } from "@/pages/admin/PropertyPage";
 import { TicketsPage as AdminTicketsPage } from "@/pages/admin/TicketsPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { UsersPage } from "@/pages/admin/UsersPage";
@@ -182,6 +183,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth role="admin">
             <ParametersPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: ROUTES.admin.property,
+        element: (
+          <RequireAuth role="admin">
+            <PropertyPage />
           </RequireAuth>
         ),
       },

@@ -4,10 +4,12 @@ import type {
   AdminParameter,
   AdminParameterUpdate,
   BackendAdminParameter,
+  BillingParameterName,
   ParameterName,
+  PropertyParameterName,
 } from '@/shared/types/admin/parameter'
 
-const allowedParameterNames = new Set<ParameterName>([
+const billingParameterNames = new Set<BillingParameterName>([
   'electricityUnitPrice',
   'waterPrice',
   'wifiFee',
@@ -19,9 +21,33 @@ const allowedParameterNames = new Set<ParameterName>([
   'yearToExtend',
 ])
 
-export async function getAdminParameters(): Promise<
-  AdminParameter[]
-> {
+const propertyParameterNames = new Set<PropertyParameterName>([
+  'propertyName',
+  'address',
+  'adminPhone',
+  'adminEmail',
+  'adminFacebook',
+  'adminZalo',
+])
+
+const allowedParameterNames = new Set<ParameterName>([
+  ...billingParameterNames,
+  ...propertyParameterNames,
+])
+
+/** Numbers behind invoice creation, shown on the Parameters page. */
+export function getAdminBillingParameters(): Promise<AdminParameter[]> {
+  return getParametersIn(billingParameterNames)
+}
+
+/** Property name, address and owner contacts, shown on the Property page. */
+export function getAdminPropertyParameters(): Promise<AdminParameter[]> {
+  return getParametersIn(propertyParameterNames)
+}
+
+async function getParametersIn(
+  names: ReadonlySet<ParameterName>,
+): Promise<AdminParameter[]> {
   const parameters = await apiRequest<BackendAdminParameter[]>(
     ENDPOINTS.admin.parameters,
     {
@@ -31,6 +57,7 @@ export async function getAdminParameters(): Promise<
 
   return parameters
     .filter(isAllowedAdminParameter)
+    .filter((parameter) => names.has(parameter.name))
     .map(mapAdminParameter)
 }
 
