@@ -15,14 +15,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { ROUTES } from "@/router/routes";
 import { submitExtendRequest } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
-import type { TenantExtendRequest } from "@/shared/types/request";
+import type { TenantExtendReceipt } from "@/shared/types/request";
 import { addYears, formatDate, formatYears } from "@/shared/utils/dateFormatter";
 
 interface ExtendLeaseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contract: TenantContract;
-  onSubmitted: (request: TenantExtendRequest) => void;
+  onSubmitted: (request: TenantExtendReceipt) => void;
 }
 
 function ExtendLeaseDialog({
@@ -33,7 +33,7 @@ function ExtendLeaseDialog({
 }: ExtendLeaseDialogProps) {
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [sentRequest, setSentRequest] = useState<TenantExtendRequest | null>(
+  const [sentRequest, setSentRequest] = useState<TenantExtendReceipt | null>(
     null,
   );
 
@@ -140,7 +140,7 @@ function SentState({
   expireDate,
   onClose,
 }: {
-  request: TenantExtendRequest;
+  request: TenantExtendReceipt;
   expireDate: string;
   onClose: () => void;
 }) {

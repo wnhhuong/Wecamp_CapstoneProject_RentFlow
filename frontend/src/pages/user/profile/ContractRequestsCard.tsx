@@ -3,12 +3,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { TenantContract } from "@/shared/types/contract";
 import type {
-  TenantExtendRequest,
-  TenantMoveoutRequest,
+  TenantCheckoutReceipt,
+  TenantExtendReceipt,
+  TenantMoveoutReceipt,
   TenantRequest,
 } from "@/shared/types/request";
 import { formatDate, formatYears } from "@/shared/utils/dateFormatter";
 
+import { CheckoutRequestDialog } from "./CheckoutRequestDialog";
 import { ExtendLeaseDialog } from "./ExtendLeaseDialog";
 import { MoveoutRequestDialog } from "./MoveoutRequestDialog";
 import {
@@ -20,24 +22,35 @@ interface ContractRequestsCardProps {
   contract: TenantContract;
   pendingExtension: TenantRequest | null;
   moveoutRequest: TenantRequest | null;
-  onExtensionRequested: (request: TenantExtendRequest) => void;
-  onMoveoutRequested: (request: TenantMoveoutRequest) => void;
+  checkoutRequest: TenantRequest | null;
+  onExtensionRequested: (request: TenantExtendReceipt) => void;
+  onMoveoutRequested: (request: TenantMoveoutReceipt) => void;
+  onCheckoutRequested: (request: TenantCheckoutReceipt) => void;
 }
 
 function ContractRequestsCard({
   contract,
   pendingExtension,
   moveoutRequest,
+  checkoutRequest,
   onExtensionRequested,
   onMoveoutRequested,
+  onCheckoutRequested,
 }: ContractRequestsCardProps) {
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isMoveoutOpen, setIsMoveoutOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const isContractActive = contract.status === "active";
   const years = contract.terms.yearToExtend;
 
   const earliestMoveoutDate = getEarliestMoveoutDate();
   const hasMoveoutWindow = earliestMoveoutDate <= contract.expireDate;
+
+  // The backend refuses a checkout until a move-out notice has been approved.
+  const canRequestCheckout =
+    isContractActive &&
+    moveoutRequest?.status === "approved" &&
+    checkoutRequest === null;
 
   return (
     <section className="rounded-lg border border-hairline bg-surface p-5">
@@ -86,6 +99,24 @@ function ContractRequestsCard({
             </Button>
           }
         />
+
+        <ActionRow
+          title="Final checkout"
+          description={checkoutDescription({
+            checkoutRequest,
+            moveoutRequest,
+            roomCode: contract.roomCode,
+          })}
+          action={
+            <Button
+              type="button"
+              disabled={!canRequestCheckout}
+              onClick={() => setIsCheckoutOpen(true)}
+            >
+              Submit checkout
+            </Button>
+          }
+        />
       </div>
 
       {isContractActive ? (
@@ -103,6 +134,15 @@ function ContractRequestsCard({
           onOpenChange={setIsMoveoutOpen}
           contract={contract}
           onSubmitted={onMoveoutRequested}
+        />
+      ) : null}
+
+      {canRequestCheckout || isCheckoutOpen ? (
+        <CheckoutRequestDialog
+          open={isCheckoutOpen}
+          onOpenChange={setIsCheckoutOpen}
+          contract={contract}
+          onSubmitted={onCheckoutRequested}
         />
       ) : null}
     </section>
@@ -130,6 +170,28 @@ function ActionRow({
       {action}
     </div>
   );
+}
+
+function checkoutDescription({
+  checkoutRequest,
+  moveoutRequest,
+  roomCode,
+}: {
+  checkoutRequest: TenantRequest | null;
+  moveoutRequest: TenantRequest | null;
+  roomCode: string;
+}): string {
+  if (checkoutRequest) {
+    return checkoutRequest.status === "approved"
+      ? `Checkout ${checkoutRequest.displayID} is approved. Your lease has ended.`
+      : `Checkout ${checkoutRequest.displayID} is awaiting the owner's review.`;
+  }
+
+  if (moveoutRequest?.status !== "approved") {
+    return "Available once the owner approves your move-out notice.";
+  }
+
+  return `Send the final meter reading and a photo to close room ${roomCode}.`;
 }
 
 function moveoutDescription({

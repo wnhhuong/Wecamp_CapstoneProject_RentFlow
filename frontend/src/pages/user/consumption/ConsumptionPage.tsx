@@ -197,6 +197,7 @@ export default function ConsumptionPage() {
               capturedAt={flow.capturedAt}
               reading={flow.reading}
               validReading={flow.validReading}
+            lastReading={flow.lastReading}
               submitting={flow.submitting}
               error={flow.submitError}
               onReadingChange={flow.setReading}

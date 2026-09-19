@@ -26,6 +26,9 @@ function ProfilePage() {
   const [moveoutRequest, setMoveoutRequest] = useState<TenantRequest | null>(
     null,
   );
+  const [checkoutRequest, setCheckoutRequest] = useState<TenantRequest | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -43,6 +46,7 @@ function ProfilePage() {
       setContract(loadedContract);
       setPendingExtension(findPending(loadedRequests, "extend"));
       setMoveoutRequest(findOpenMoveout(loadedRequests));
+      setCheckoutRequest(findOpenCheckout(loadedRequests));
     } catch {
       setLoadError("Your profile could not be loaded.");
     } finally {
@@ -63,6 +67,7 @@ function ProfilePage() {
         setContract(loadedContract);
         setPendingExtension(findPending(loadedRequests, "extend"));
         setMoveoutRequest(findOpenMoveout(loadedRequests));
+        setCheckoutRequest(findOpenCheckout(loadedRequests));
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -119,11 +124,15 @@ function ProfilePage() {
                 contract={contract}
                 pendingExtension={pendingExtension}
                 moveoutRequest={moveoutRequest}
+                checkoutRequest={checkoutRequest}
                 onExtensionRequested={(request) =>
                   setPendingExtension(toPendingRequest("extend", request))
                 }
                 onMoveoutRequested={(request) =>
                   setMoveoutRequest(toPendingRequest("moveout", request))
+                }
+                onCheckoutRequested={(request) =>
+                  setCheckoutRequest(toPendingRequest("checkout", request))
                 }
               />
             </div>
@@ -151,6 +160,17 @@ function findOpenMoveout(requests: TenantRequest[]): TenantRequest | null {
     requests.find(
       (request) =>
         request.type === "moveout" &&
+        (request.status === "pending" || request.status === "approved"),
+    ) ?? null
+  );
+}
+
+/** A checkout, pending or approved, closes the row: the tenancy only ends once. */
+function findOpenCheckout(requests: TenantRequest[]): TenantRequest | null {
+  return (
+    requests.find(
+      (request) =>
+        request.type === "checkout" &&
         (request.status === "pending" || request.status === "approved"),
     ) ?? null
   );

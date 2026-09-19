@@ -37,6 +37,7 @@ export const ENDPOINTS = {
     requests: '/user/requests',
     extendRequests: '/user/extend-requests',
     moveoutRequests: '/user/moveout-requests',
+    checkoutRequests: '/user/checkout-requests',
     request: (requestID: string) =>
       `/user/requests/${encodeURIComponent(requestID)}`,
   },

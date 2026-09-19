@@ -5,12 +5,14 @@ import {
   getConsumptionRequest,
   submitConsumption,
 } from "@/shared/api/user/consumption.api";
+import { getLatestMeterReading } from "@/shared/api/user/invoices.api";
 import type {
   ConsumptionContext,
   ConsumptionRequest,
 } from "@/shared/types/consumption";
 
 export type ConsumptionStep = "capture" | "review" | "sent";
+
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -62,6 +64,7 @@ export function useConsumptionSubmission() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ConsumptionRequest | null>(null);
+  const [lastReading, setLastReading] = useState<number | null>(null);
 
   const submissionLock = useRef(false);
   const previewUrlRef = useRef<string | null>(null);
@@ -101,6 +104,16 @@ export function useConsumptionSubmission() {
   }, [reloadKey]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    getLatestMeterReading(controller.signal)
+      .then((reading) => setLastReading(reading))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current);
@@ -112,7 +125,7 @@ export function useConsumptionSubmission() {
   const validReading =
     /^\d+$/.test(reading) &&
     Number.isSafeInteger(numericReading) &&
-    numericReading >= 0;
+    numericReading >= (lastReading ?? 0);
 
   function selectImage(file: File | null) {
     if (!file) return;
@@ -215,6 +228,7 @@ export function useConsumptionSubmission() {
     reading,
     setReading,
     validReading,
+    lastReading,
     imageError,
     submitError,
     submitting,

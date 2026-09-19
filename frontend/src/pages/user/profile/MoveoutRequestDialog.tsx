@@ -22,7 +22,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ROUTES } from "@/router/routes";
 import { submitMoveoutRequest } from "@/shared/api/user/requests.api";
 import type { TenantContract } from "@/shared/types/contract";
-import type { TenantMoveoutRequest } from "@/shared/types/request";
+import type { TenantMoveoutReceipt } from "@/shared/types/request";
 import { formatDate } from "@/shared/utils/dateFormatter";
 
 import {
@@ -34,7 +34,7 @@ interface MoveoutRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contract: TenantContract;
-  onSubmitted: (request: TenantMoveoutRequest) => void;
+  onSubmitted: (request: TenantMoveoutReceipt) => void;
 }
 
 function MoveoutRequestDialog({
@@ -47,16 +47,20 @@ function MoveoutRequestDialog({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [sentRequest, setSentRequest] = useState<TenantMoveoutRequest | null>(
+  const [sentRequest, setSentRequest] = useState<TenantMoveoutReceipt | null>(
     null,
   );
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
 
   const earliestDate = getEarliestMoveoutDate();
   const latestDate = contract.expireDate;
   const moveoutDate = selectedDay ? toDateKey(selectedDay) : "";
 
   async function sendRequest() {
-    if (!moveoutDate || isSending) return;
+    if (isSending) return;
+
+    setHasTriedSubmit(true);
+    if (!moveoutDate) return;
 
     setIsSending(true);
     setSendError("");
@@ -83,6 +87,7 @@ function MoveoutRequestDialog({
     if (!next) {
       setSelectedDay(undefined);
       setIsCalendarOpen(false);
+      setHasTriedSubmit(false);
       setSendError("");
       setSentRequest(null);
     }
@@ -161,7 +166,14 @@ function MoveoutRequestDialog({
                 </PopoverContent>
               </Popover>
 
-              <p id="moveout-date-help" className="text-sm text-muted-foreground">
+              <p
+                id="moveout-date-help"
+                className={
+                  hasTriedSubmit && !moveoutDate
+                    ? "text-sm text-destructive"
+                    : "text-sm text-muted-foreground"
+                }
+              >
                 Between {formatDate(earliestDate)} and {formatDate(latestDate)}.
                 The owner needs {MOVEOUT_NOTICE_DAYS} days&rsquo; notice.
               </p>
@@ -182,7 +194,7 @@ function MoveoutRequestDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={!moveoutDate || isSending}>
+              <Button type="submit" disabled={isSending}>
                 {isSending ? <Spinner /> : null}
                 {isSending ? "Sending…" : "Send notice"}
               </Button>
@@ -198,7 +210,7 @@ function SentState({
   request,
   onClose,
 }: {
-  request: TenantMoveoutRequest;
+  request: TenantMoveoutReceipt;
   onClose: () => void;
 }) {
   const navigate = useNavigate();
