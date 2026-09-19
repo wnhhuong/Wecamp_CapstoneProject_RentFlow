@@ -5,14 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { updateTenantProfile } from "@/shared/api/user/profile.api";
-import type { TenantProfile, TenantSex } from "@/shared/types/profile";
+import type { TenantProfile } from "@/shared/types/profile";
 import { formatDate } from "@/shared/utils/dateFormatter";
-
-const SEX_LABELS: Record<TenantSex, string> = {
-  male: "Male",
-  female: "Female",
-  other: "Other",
-};
+import { SEX_LABELS } from "@/shared/utils/sexLabels";
 
 /** Mirrors the backend rule so a bad number never leaves the page. */
 const PHONE_PATTERN = /^[0-9+]{9,15}$/;

@@ -10,3 +10,9 @@ export interface ApiPagination {
   totalItems: number
   totalPages: number
 }
+export interface BackendPagination {
+  page?: number
+  limit?: number
+  total?: number
+  totalPages?: number
+}

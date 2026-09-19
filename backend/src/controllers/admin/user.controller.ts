@@ -11,12 +11,17 @@ import { buildPaginationMeta, parsePagination } from "../../utils/pagination.js"
 // GET /api/admin/users
 export const getUsers = async (req: AdminAuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { search, sex, nationality, page, limit } = req.query;
+        const { search, sex, nationality, lease, page, limit } = req.query;
 
         // validate input
         const allowedSex = [Sex.MALE, Sex.FEMALE, Sex.OTHER];
         if (sex && !allowedSex.includes(sex as Sex)) {
             sendError(res, 400, "Invalid sex filter");
+            return;
+        }
+        const allowedLease = ["active", "expired"];
+        if (lease && !allowedLease.includes(String(lease))) {
+            sendError(res, 400, "Invalid lease filter");
             return;
         }
         // validate + clamp pagination
@@ -79,6 +84,19 @@ export const getUsers = async (req: AdminAuthRequest, res: Response, next: NextF
                     (item.roomCode ? item.roomCode.toLowerCase().includes(searchStr) : false)
             );
         }
+
+        if (lease) {
+            const wantsActive = lease === "active";
+            mapped = mapped.filter(
+                (item) => (item.contractStatus === ContractStatus.ACTIVE) === wantsActive
+            );
+        }
+
+        mapped.sort(
+            (a, b) =>
+                Number(b.contractStatus === ContractStatus.ACTIVE) -
+                Number(a.contractStatus === ContractStatus.ACTIVE)
+        );
 
         // Bước 5: phân trang sau khi đã search xong
         const total = mapped.length;
