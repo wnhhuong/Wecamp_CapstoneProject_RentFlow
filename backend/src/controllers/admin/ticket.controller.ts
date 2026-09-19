@@ -105,6 +105,7 @@ export const getAllTicketsAdmin = async (req: AdminAuthRequest, res: Response, n
 
             let description = "";
             let location = "";
+            let image = "";
             let ticketAreaID: string | null = null;
             let ticketFacilityID: string | null = null;
 
@@ -125,6 +126,7 @@ export const getAllTicketsAdmin = async (req: AdminAuthRequest, res: Response, n
                     description = repair.description;
                     ticketFacilityID = repair.facilityID.toString();
                     location = typeNameByFacilityID.get(repair.facilityID.toString()) ?? "";
+                    image = repair.facilityImage;
                 }
             }
 
@@ -134,6 +136,7 @@ export const getAllTicketsAdmin = async (req: AdminAuthRequest, res: Response, n
                 ticketType: tick.ticketType,
                 description,
                 location,
+                image,
                 roomID: tick.roomID,
                 roomCode,
                 accountID: accountIDByRoomID.get(tick.roomID.toString()) ?? null,

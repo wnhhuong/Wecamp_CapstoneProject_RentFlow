@@ -61,6 +61,10 @@ export const ENDPOINTS = {
 
     users: '/admin/users',
 
+    tickets: '/admin/tickets',
+    ticketStatus: (ticketID: string) =>
+      `/admin/tickets/${encodeURIComponent(ticketID)}/status`,
+
     requests: '/admin/requests',
 
     request: (requestID: string) =>
