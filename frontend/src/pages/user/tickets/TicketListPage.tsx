@@ -2,7 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 import { StatusBadge } from "@/components/status";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchFilter } from "@/components/ui/search-filter";
 import {
@@ -17,8 +26,11 @@ import {
   TICKETS_PAGE_SIZE,
   getTenantTickets,
 } from "@/shared/api/user/tickets.api";
+
+import { NewTicketDialog } from "./NewTicketDialog";
 import type { ApiPagination } from "@/shared/types/api";
 import type { TenantTicket, TenantTicketQuery } from "@/shared/types/ticket";
+import { cn } from "@/shared/utils/cn";
 import { formatDateShort } from "@/shared/utils/dateFormatter";
 import { TICKET_TYPE_OPTIONS } from "@/shared/utils/ticketTypes";
 
@@ -46,6 +58,9 @@ function TicketListPage() {
   const [reloadToken, setReloadToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+  const [expandedID, setExpandedID] = useState<string | null>(null);
+  const [photoTicket, setPhotoTicket] = useState<TenantTicket | null>(null);
 
   const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
   const selectedTypes = filters[TYPE_FILTER_ID] ?? [];
@@ -117,11 +132,21 @@ function TicketListPage() {
 
   return (
     <PageContainer>
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground">Tickets</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Repairs and complaints from your current lease, newest first
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-foreground">Tickets</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Repairs and complaints from your current lease, newest first
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="dark"
+          onClick={() => setIsNewTicketOpen(true)}
+        >
+          <PlusIcon />
+          New ticket
+        </Button>
       </div>
 
       <SearchFilter
@@ -186,7 +211,7 @@ function TicketListPage() {
       {!isLoading && !loadError && tickets.length > 0 ? (
         <>
           <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-            <Table className="min-w-[1040px]">
+            <Table className="min-w-[1160px]">
               <TableHeader className="bg-muted">
                 <TableRow className="hover:bg-muted">
                   <TableHead
@@ -199,16 +224,22 @@ function TicketListPage() {
                   </TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead>Where</TableHead>
+                  <TableHead>Photo</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Raised</TableHead>
                   <TableHead>Resolved</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tickets.map((ticket) => (
                   <TableRow
                     key={ticket.ticketID}
-                    className="group hover:bg-muted"
+                    className="group cursor-pointer hover:bg-muted"
+                    onClick={() =>
+                      setExpandedID((current) =>
+                        current === ticket.ticketID ? null : ticket.ticketID,
+                      )
+                    }
                   >
                     <TableCell
                       className="sticky left-0 z-10 w-[210px] min-w-[210px] max-w-[210px] bg-surface px-4 font-medium text-foreground transition-colors group-hover:bg-muted"
@@ -219,20 +250,41 @@ function TicketListPage() {
                       <StatusBadge domain="ticketType" status={ticket.type} />
                     </TableCell>
                     <TableCell
-                      className="max-w-[340px] truncate"
-                      title={ticket.description}
+                      className={cn(
+                        "max-w-[340px]",
+                        expandedID === ticket.ticketID
+                          ? "whitespace-normal"
+                          : "truncate",
+                      )}
                     >
                       {ticket.description || "—"}
                     </TableCell>
                     <TableCell>{ticket.location || "—"}</TableCell>
+                    <TableCell>
+                      {ticket.image ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setPhotoTicket(ticket);
+                          }}
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge domain="ticket" status={ticket.status} />
+                    </TableCell>
                     <TableCell>{formatDateShort(ticket.createDate)}</TableCell>
                     <TableCell>
                       {ticket.resolveDate
                         ? formatDateShort(ticket.resolveDate)
                         : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge domain="ticket" status={ticket.status} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -250,7 +302,65 @@ function TicketListPage() {
           />
         </>
       ) : null}
+
+      <TicketPhotoDialog
+        ticket={photoTicket}
+        onClose={() => setPhotoTicket(null)}
+      />
+
+      <NewTicketDialog
+        open={isNewTicketOpen}
+        onOpenChange={setIsNewTicketOpen}
+        onCreated={() => {
+          setIsLoading(true);
+          setPage(1);
+          setReloadToken((token) => token + 1);
+        }}
+      />
     </PageContainer>
+  );
+}
+
+function TicketPhotoDialog({
+  ticket,
+  onClose,
+}: {
+  ticket: TenantTicket | null;
+  onClose: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <Dialog
+      open={ticket !== null}
+      onOpenChange={(next) => {
+        if (!next) {
+          setHasError(false);
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="w-[min(42rem,calc(100%-2rem))] max-w-none rounded-lg bg-field p-5 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Photo you attached</DialogTitle>
+          <DialogDescription>{ticket?.displayID}</DialogDescription>
+        </DialogHeader>
+
+        {/* The stored path can point at a file that is no longer on disk. */}
+        {ticket && !hasError ? (
+          <img
+            src={ticket.image}
+            alt={`Photo attached to ticket ${ticket.displayID}`}
+            className="mt-2 max-h-[60vh] w-full rounded-md border border-hairline object-contain"
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <p className="mt-2 flex h-32 items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
+            This photo is no longer available.
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

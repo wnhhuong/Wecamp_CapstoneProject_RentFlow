@@ -1,5 +1,4 @@
 import { apiRequest } from '@/shared/api/client'
-import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   AdminCheckoutDetails,
@@ -16,6 +15,7 @@ import type {
   BackendRequestListResponse,
 } from '@/shared/types/admin/request'
 import { formatMonthYear } from '@/shared/utils/dateFormatter'
+import { toAbsoluteAssetUrl } from '@/shared/utils/assetUrl'
 import { mapRequestType } from '@/shared/utils/requestTypes'
 import { mapInvoiceStatus, mapRequestStatus } from '@/shared/utils/statusMapper'
 
@@ -171,12 +171,4 @@ function mapInvoiceDetails(
     dueDate: details.invoiceDueDate ?? '',
     invoiceStatus: mapInvoiceStatus(details.invoiceStatus),
   }
-}
-
-function toAbsoluteAssetUrl(path: string) {
-  if (!path) return ''
-  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path
-
-  const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin
-  return new URL(path, `${apiOrigin}/`).toString()
 }
