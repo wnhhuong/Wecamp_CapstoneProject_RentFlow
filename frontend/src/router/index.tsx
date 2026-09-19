@@ -20,6 +20,8 @@ import { ROUTES } from "@/router/routes";
 import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
 import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
 import { RequireOnboarding } from "@/router/require-onboarding";
+import { RoomsPage as GuestRoomsPage } from "@/pages/guest/RoomsPage";
+import { RoomDetailsPage } from "@/pages/guest/RoomDetailsPage";
 
 const router = createBrowserRouter([
   {
@@ -34,11 +36,11 @@ const router = createBrowserRouter([
 
       {
         path: ROUTES.guest.rooms,
-        element: <RoutePlaceholder title="Browse rooms" />,
+        element: <GuestRoomsPage />,
       },
       {
         path: ROUTES.guest.roomDetails,
-        element: <RoutePlaceholder title="Room details" />,
+        element: <RoomDetailsPage />,
       },
 
       {

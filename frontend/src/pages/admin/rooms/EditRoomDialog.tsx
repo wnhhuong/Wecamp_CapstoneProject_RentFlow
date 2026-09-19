@@ -98,7 +98,8 @@ function EditRoomForm({
 
   function handleImagesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
-    const imageError = validateImages(files)
+    const combinedFiles = [...values.replacementImages, ...files]
+    const imageError = validateImages(combinedFiles)
 
     if (imageError) {
       setErrors((current) => ({ ...current, replacementImages: imageError }))
@@ -106,7 +107,8 @@ function EditRoomForm({
       return
     }
 
-    updateValue('replacementImages', files)
+    updateValue('replacementImages', combinedFiles)
+    event.target.value = ''
   }
 
   function removeImage(index: number) {
