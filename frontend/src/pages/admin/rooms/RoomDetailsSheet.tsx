@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate, useOutletContext, useParams } from 'react-router'
 
 import { EmptyState, ErrorState, PageLoading } from '@/components/feedback'
 import { StatusBadge } from '@/components/status'
@@ -12,26 +13,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import type { RoomsOutletContext } from '@/pages/admin/outlet-context'
+import { ROUTES } from '@/router/routes'
 import { getAdminRoomDetail } from '@/shared/api/admin/rooms.api'
 import type { AdminRoom, AdminRoomDetail } from '@/shared/types/admin/room'
 import { formatCurrency } from '@/shared/utils/currencyFormatter'
 import { formatDate } from '@/shared/utils/dateFormatter'
 
-interface RoomDetailsSheetProps {
-  room: AdminRoom | null
-  onOpenChange: (open: boolean) => void
-  onPrepareAccount: (roomID: string) => void
-  onEditRoom: (roomID: string) => void
-}
+function RoomDetailsSheet() {
+  const { roomId = '' } = useParams()
+  const navigate = useNavigate()
+  const { rooms, onPrepareAccount, onEditRoom } =
+    useOutletContext<RoomsOutletContext>()
+  const room = rooms.find(item => item.roomID === roomId) ?? null
 
-function RoomDetailsSheet({
-  room,
-  onOpenChange,
-  onPrepareAccount,
-  onEditRoom,
-}: RoomDetailsSheetProps) {
   return (
-    <Sheet open={room !== null} onOpenChange={onOpenChange}>
+    <Sheet
+      open={room !== null}
+      onOpenChange={open => {
+        if (!open) void navigate(ROUTES.admin.rooms)
+      }}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
         {room ? (
           <RoomDetailsLoader

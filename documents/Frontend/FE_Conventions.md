@@ -40,6 +40,8 @@
 - Mọi page sau khi đăng nhập bắt đầu bằng `<PageContainer>` từ `@/components/layout`. Nó lo max-width, lề và khoảng cách để các trang thẳng hàng với sidebar.
 - Đang tải dùng `<PageLoading />`, lỗi dùng `<ErrorState onRetry={...} />`, không có dữ liệu dùng `<EmptyState />`.
 - Trạng thái (phòng, hoá đơn, request, ticket, account) dùng `<StatusBadge>`.
+- Drawer chi tiết luôn là route con của trang list: khai `xDetails` + `xDetailsLink` trong `routes.ts`, đăng ký `children: [{ path: ":xId", ... }]` trong `router/index.tsx`, page render `<Outlet>` và bấm dòng thì `navigate(ROUTES...xDetailsLink(id))`. Sheet đọc id bằng `useParams`, đóng thì `navigate` về đường dẫn list. Không dùng state nội bộ hay query param cho việc mở drawer.
+- Sheet nào cần dữ liệu hoặc callback của page thì nhận qua `<Outlet context={...}>` và `useOutletContext`, kiểu khai trong `pages/admin/outlet-context.ts`. Sheet tự gọi được endpoint chi tiết thì fetch thẳng theo id.
 - Trang có list/table cần tìm kiếm hoặc lọc thì dùng `<SearchFilter>`: mỗi filter là một nhóm nhiều lựa chọn, `selected` rỗng nghĩa là không lọc, nhiều lựa chọn trong một nhóm là "hoặc", giữa các nhóm là "và". State giữ ở page dạng `Record<string, string[]>`, lọc bằng `useMemo`.
 
 ## Format dữ liệu

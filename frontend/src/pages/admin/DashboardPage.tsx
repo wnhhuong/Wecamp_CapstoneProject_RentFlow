@@ -54,7 +54,7 @@ function DashboardPage() {
     {refreshState === 'success' ? <div role="status" className="rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg">Dashboard refreshed successfully.</div> : null}
     {refreshState === 'error' ? <div role="alert" className="rounded-md border border-[#E5B9AD] bg-[#FBEEEA] px-4 py-3 text-sm text-clay">Dashboard refresh failed. Please try again.</div> : null}
     <div className="grid gap-4 xl:grid-cols-2"><RoomSummaryCard summary={data.roomSummary} onOpen={(status) => navigate(`${ROUTES.admin.rooms}?status=${encodeURIComponent(status)}`)} /><PaymentSummaryCard summary={data.paymentSummary} onOpen={() => navigate(`${ROUTES.admin.invoices}?overdue=true`)} /></div>
-    <div className="grid items-start gap-4 xl:grid-cols-2"><RequestsCard requests={data.requestsNeedingApproval} onOpen={() => navigate(`${ROUTES.admin.requests}?status=pending`)} onRequestOpen={(requestID) => navigate(`${ROUTES.admin.requests}?status=pending&request=${encodeURIComponent(requestID)}`)} /><TicketsCard tickets={data.ticketsNeedingAction} onOpen={() => navigate(ROUTES.admin.tickets)} /></div>
+    <div className="grid items-start gap-4 xl:grid-cols-2"><RequestsCard requests={data.requestsNeedingApproval} onOpen={() => navigate(`${ROUTES.admin.requests}?status=pending`)} onRequestOpen={(requestID) => navigate(`${ROUTES.admin.requestDetailsLink(requestID)}?status=pending`)} /><TicketsCard tickets={data.ticketsNeedingAction} onOpen={() => navigate(ROUTES.admin.tickets)} /></div>
   </PageContainer>
 }
 

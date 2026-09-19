@@ -33,8 +33,9 @@ const ROUTES = {
       root: '/admin',
       dashboard: '/admin/dashboard',
       rooms: '/admin/rooms',
+      roomDetails: '/admin/rooms/:roomId',
       roomDetailsLink: (roomId: string) =>
-        `/admin/rooms?room=${encodeURIComponent(roomId)}`,
+        `/admin/rooms/${encodeURIComponent(roomId)}`,
       users: '/admin/users',
       invoices: '/admin/invoices',
       invoiceDetails: '/admin/invoices/:invoiceId',
@@ -42,7 +43,13 @@ const ROUTES = {
         `/admin/invoices/${invoiceId}`,
       parameters: '/admin/parameters',
       tickets: '/admin/tickets',
+      ticketDetails: '/admin/tickets/:ticketId',
+      ticketDetailsLink: (ticketId: string) =>
+        `/admin/tickets/${encodeURIComponent(ticketId)}`,
       requests: '/admin/requests',
+      requestDetails: '/admin/requests/:requestId',
+      requestDetailsLink: (requestId: string) =>
+        `/admin/requests/${encodeURIComponent(requestId)}`,
     },
   } as const
   

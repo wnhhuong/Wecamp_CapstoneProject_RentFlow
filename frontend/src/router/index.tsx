@@ -4,6 +4,9 @@ import App from "@/App";
 import { InvoicesPage } from "@/pages/admin/InvoicesPage";
 import { DashboardPage } from "@/pages/admin/DashboardPage";
 import { InvoiceDetailsSheet } from "@/pages/admin/invoices/InvoiceDetailsSheet";
+import { RequestDetailsSheet } from "@/pages/admin/requests/RequestDetailsSheet";
+import { RoomDetailsSheet } from "@/pages/admin/rooms/RoomDetailsSheet";
+import { TicketDetailsSheet } from "@/pages/admin/tickets/TicketDetailsSheet";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { TicketsPage as AdminTicketsPage } from "@/pages/admin/TicketsPage";
@@ -155,6 +158,7 @@ const router = createBrowserRouter([
             <RoomsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":roomId", element: <RoomDetailsSheet /> }],
       },
       {
         path: ROUTES.admin.users,
@@ -171,7 +175,6 @@ const router = createBrowserRouter([
             <InvoicesPage />
           </RequireAuth>
         ),
-        // Nested so opening an invoice keeps the list, its filters and its page.
         children: [{ path: ":invoiceId", element: <InvoiceDetailsSheet /> }],
       },
       {
@@ -189,6 +192,7 @@ const router = createBrowserRouter([
             <AdminTicketsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":ticketId", element: <TicketDetailsSheet /> }],
       },
       {
         path: ROUTES.admin.requests,
@@ -197,6 +201,7 @@ const router = createBrowserRouter([
             <RequestsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":requestId", element: <RequestDetailsSheet /> }],
       },
 
       {
