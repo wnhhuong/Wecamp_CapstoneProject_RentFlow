@@ -56,7 +56,8 @@ const computeDueDate = async (createdDate: Date, session?: ClientSession): Promi
  * (không có endpoint update/edit breakdown ở đâu khác trong toàn bộ codebase -> tự nhiên read-only).
  *
  * - roomBill: truyền vào từ ngoài (CONTRACT.rentPrice snapshot), KHÔNG đọc ROOM.price ở đây.
- * - electricalBill = consumpAmount x electricityUnitPrice (Parameter tại thời điểm approve).
+ * - electricalBill = consumpAmount x electricityUnitPrice (Parameter tại thời điểm approve),
+ *   và đơn giá đó được lưu thẳng lên Invoice thay vì để suy ngược sau này.
  * - waterBill/wifiBill/otherBill: phí CỐ ĐỊNH lấy thẳng từ Parameter, áp dụng như nhau mọi phòng.
  * - parkingBill: chưa có Parameter nguồn -> mặc định 0 (đã xác nhận, chưa launch phí gửi xe).
  * - status khởi tạo LUÔN là NOT_PAID (task 2 AC "Không sử dụng Invoice PENDING" cho khởi tạo).
@@ -90,6 +91,7 @@ export const buildInvoiceForConsumption = async (
         wifiBill,
         parkingBill,
         otherBill,
+        electricityUnitPrice,
         totalBill,
         createdDate,
         dueDate,
@@ -113,17 +115,17 @@ export const computeBillingPeriod = (trackingTime: Date): string => {
 }
 
 /**
- * Suy ngược usageKwh và electricityUnitPrice TẠI THỜI ĐIỂM TẠO INVOICE (không phải giá hiện tại),
- * dùng cho Admin Invoice detail (task 4) mà không cần thêm field mới vào Invoice model.
+ * usageKwh và electricityUnitPrice TẠI THỜI ĐIỂM TẠO INVOICE, không phải giá hiện tại.
  *
  * usageKwh = meterReading hiện tại - meterReading của Consumption liền trước (nếu có, else 0).
- * electricityUnitPrice = electricalBill / usageKwh (chính xác vì lúc tạo không làm tròn số này).
+ * Đơn giá lấy thẳng từ `INVOICE.electricityUnitPrice`.
  *
- * Case usageKwh = 0 (phòng không dùng điện kỳ đó): không chia được -> fallback lấy giá Parameter
- * HIỆN TẠI kèm cờ `electricityUnitPriceIsApprox: true` để FE có thể ghi chú "giá tham khảo".
+ * Hai nhánh còn lại chỉ phục vụ hoá đơn tạo trước khi có field đó: suy ngược
+ * `electricalBill / usageKwh`, và khi usage = 0 thì không chia được nên phải lấy Parameter
+ * HIỆN TẠI kèm cờ `electricityUnitPriceIsApprox: true` để FE ghi chú "giá tham khảo".
  */
 export const computeUsageAndUnitPrice = async (
-  invoice: Pick<IInvoice, 'electricalBill'>,
+  invoice: Pick<IInvoice, 'electricalBill' | 'electricityUnitPrice'>,
   consumption: Pick<IConsumption, 'roomID' | 'trackingTime' | 'meterReading'>,
 ): Promise<{ usageKwh: number; electricityUnitPrice: number; electricityUnitPriceIsApprox: boolean }> => {
   const previous = await Consumption.findOne({
@@ -133,6 +135,15 @@ export const computeUsageAndUnitPrice = async (
 
   const previousReading = previous ? previous.meterReading : 0;
   const usageKwh = consumption.meterReading - previousReading;
+
+  // Hoá đơn tạo từ 2026-09-20 trở đi mang sẵn đơn giá, kể cả khi usage = 0.
+  if (invoice.electricityUnitPrice !== undefined) {
+    return {
+      usageKwh,
+      electricityUnitPrice: invoice.electricityUnitPrice,
+      electricityUnitPriceIsApprox: false,
+    };
+  }
 
   if (usageKwh > 0) {
     return {

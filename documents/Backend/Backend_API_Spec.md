@@ -256,7 +256,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 # 5. Tenant / Invoices
 
-> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`.
+> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`, và đơn giá đó được lưu lên `INVOICE.electricityUnitPrice` lúc tạo.
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
@@ -314,7 +314,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`meterReading`|integer|Có|Join `CONSUMPTION.meterReading` — chỉ số công tơ tích luỹ|
 |`lastReading`|integer|Có|Chỉ số của lần đọc liền trước cùng phòng, kỳ đầu tiên = 0|
 |`usage`|integer|Có|`meterReading - lastReading` — số kWh đã dùng trong kỳ|
-|`unitPrice`|integer|Có|Đơn giá điện suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
+|`unitPrice`|integer|Có|`INVOICE.electricityUnitPrice`. Hoá đơn tạo trước 2026-09-20 chưa có field này nên suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
 |`breakdown`|object|Có|room/electrical/water/wifi/parking/other bill|
 |`totalBill`|integer|Có|ERD|
 
@@ -1079,8 +1079,8 @@ Ngoài `items` và `pagination`, response trả thêm hai khối:
 |`isRequestLate`|boolean|Có|ERD|
 |`meterReading`|integer|Có|Chỉ số duy nhất từ CONSUMPTION|
 |`usageKwh`|integer|Có|Derived: chỉ số kỳ này trừ kỳ trước|
-|`electricityUnitPrice`|integer|Có|Derived: `electricalBill / usageKwh`|
-|`electricityUnitPriceIsApprox`|boolean|Có|true khi usage = 0 và phải fallback giá hiện tại|
+|`electricityUnitPrice`|integer|Có|`INVOICE.electricityUnitPrice`, đơn giá tại thời điểm tạo hoá đơn|
+|`electricityUnitPriceIsApprox`|boolean|Có|Chỉ còn true với hoá đơn tạo trước 2026-09-20 mà usage = 0, phải fallback giá hiện tại|
 |`breakdown`|object|Có|Các bill component|
 |`totalBill`|integer|Có|ERD|
 |`received`|integer|Có|Derived|

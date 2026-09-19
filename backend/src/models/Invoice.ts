@@ -11,6 +11,8 @@ export interface IInvoice extends Document {
   wifiBill: number;
   parkingBill: number;
   otherBill: number;
+  /** Đơn giá điện tại thời điểm tạo. Thiếu ở hoá đơn tạo trước 2026-09-20. */
+  electricityUnitPrice?: number;
   createdDate: Date;
   paymentDate?: Date;
   dueDate: Date;
@@ -35,6 +37,9 @@ const InvoiceSchema = new Schema<IInvoice>(
     wifiBill: { type: Number, required: true, min: 0, default: 0 },
     parkingBill: { type: Number, required: true, min: 0, default: 0 },
     otherBill: { type: Number, required: true, min: 0, default: 0 },
+    // Cố ý không required và không default: undefined = hoá đơn cũ chưa có field này,
+    // khác hẳn với đơn giá thật bằng 0.
+    electricityUnitPrice: { type: Number, min: 0 },
     createdDate: { type: Date, required: true, default: Date.now },
     paymentDate: { type: Date },
     dueDate: { type: Date, required: true },
