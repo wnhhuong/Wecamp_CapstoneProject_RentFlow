@@ -1092,9 +1092,12 @@ Ngoài `items` và `pagination`, response trả thêm hai khối:
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm ticket ID, description, facility, area, room|
+|`search`|string|Không|Tìm display ID, description, location, roomCode|
 |`status`|enum|Không|`need_action`, `in_progress`, `done`|
-|`type`|enum|Không|`REPAIR`, `COMPLAIN`|
+|`type`|enum|Không|`repair`, `complain`|
+|`areaID`|string|Không|Lọc complain theo area|
+|`roomID`|string|Không|Lọc theo phòng tạo ticket|
+|`facilityID`|string|Không|Lọc repair theo thiết bị|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -1103,15 +1106,16 @@ Ngoài `items` và `pagination`, response trả thêm hai khối:
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|ERD|
-|`type`|enum|Có|Derived child table|
-|`ticketName`|string|Có|ERD|
+|`displayID`|string|Có|`<prefix>-<roomCode>-ddmmyy-<3 ký tự cuối của ticketID>`|
+|`ticketType`|enum|Có|`repair`, `complain` — derived từ bảng con|
 |`description`|string|Có|Child description|
-|`location`|string|Có|Facility hoặc area/room label|
+|`location`|string|Có|Facility type (repair) hoặc area/room label (complain)|
+|`image`|string|Có|Ảnh của repair; complain trả chuỗi rỗng|
 |`roomID`|integer|Có|Room account tạo ticket|
 |`roomCode`|string|Có|Join ROOM|
 |`accountID`|integer|Có|Join ACCOUNT qua room|
-|`createDate`|date-only|Có|ERD|
-|`resolveDate`|date-only, nullable|Không|ERD|
+|`createDate`|timestamp|Có|ERD, ISO|
+|`resolveDate`|timestamp, nullable|Không|ERD, ISO|
 |`status`|enum|Có|ERD|
 
 ## #37 — PATCH `/api/admin/tickets/:ticketID/status`
