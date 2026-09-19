@@ -719,7 +719,7 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`roomSummary.occupancyRate`|number|Có|`rented / total × 100`|
 |`paymentSummary`|object|Có|Count `paid`, `notPaid`, `overdue`|
 |`requestsNeedingApproval`|array|Có|Request pending mới nhất|
-|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất|
+|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất. Mỗi phần tử: `ticketID` (ObjectId, chỉ dùng cho route/API), `ticketName` (DisplayID để hiển thị), `type` (`repair`/`complain`, chữ thường như mọi endpoint ticket khác), `location`, `createDate`|
 
 ```json
 {"success":true,"data":{"roomSummary":{"availableNow":8,"rented":31,"availableSoon":3,"notAvailable":2,"total":44,"occupancyRate":70.5},"paymentSummary":{"paid":28,"notPaid":9,"overdue":3},"requestsNeedingApproval":[],"ticketsNeedingAction":[]},"message":null}
