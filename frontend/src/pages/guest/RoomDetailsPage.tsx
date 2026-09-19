@@ -18,7 +18,30 @@ function RoomDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const load = useCallback(async () => { if (!roomId) { setError(true); setLoading(false); return }; setLoading(true); setError(false); try { setRoom(await getGuestRoomDetail(roomId)) } catch { setError(true) } finally { setLoading(false) } }, [roomId])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    let isActive = true
+
+    if (!roomId) {
+      setError(true)
+      setLoading(false)
+      return () => { isActive = false }
+    }
+
+    setLoading(true)
+    setError(false)
+    getGuestRoomDetail(roomId)
+      .then((loadedRoom) => {
+        if (isActive) setRoom(loadedRoom)
+      })
+      .catch(() => {
+        if (isActive) setError(true)
+      })
+      .finally(() => {
+        if (isActive) setLoading(false)
+      })
+
+    return () => { isActive = false }
+  }, [roomId])
   if (loading) return <PageContainer><PageLoading title="Loading room details" /></PageContainer>
   if (error) return <PageContainer><ErrorState title="Room is unavailable" description="This room may no longer be public or the link may be invalid." onRetry={() => void load()} /></PageContainer>
   if (!room) return <PageContainer><EmptyState title="Room not found" /></PageContainer>
