@@ -2,6 +2,7 @@ import { apiRequest } from '@/shared/api/client'
 import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
+  AdminCheckoutDetails,
   AdminConsumptionDetails,
   AdminExtensionDetails,
   AdminInvoiceDetails,
@@ -46,6 +47,7 @@ export async function getAdminRequest(
     consumption: mapConsumptionDetails(detail),
     extension: mapExtensionDetails(detail),
     moveout: mapMoveoutDetails(detail),
+    checkout: mapCheckoutDetails(detail),
     invoice: mapInvoiceDetails(detail),
   }
 }
@@ -130,6 +132,27 @@ function mapMoveoutDetails(
   return {
     contractDisplayID: details.contractDisplayID ?? String(details.contractID),
     requestMoveoutDate: details.requestMoveoutDate ?? '',
+  }
+}
+
+function mapCheckoutDetails(
+  detail: BackendRequestDetail,
+): AdminCheckoutDetails | null {
+  if (detail.type !== 'checkout' || detail.details?.contractID === undefined) {
+    return null
+  }
+
+  const details = detail.details
+  const finalReading = details.finalReading ?? 0
+  const previousReading = details.previousReading ?? 0
+
+  return {
+    contractDisplayID: details.contractDisplayID ?? String(details.contractID),
+    expireDate: details.contractExpireDate ?? '',
+    meterImage: toAbsoluteAssetUrl(details.finalImage ?? ''),
+    previousReading,
+    finalReading,
+    usage: details.usage ?? finalReading - previousReading,
   }
 }
 
