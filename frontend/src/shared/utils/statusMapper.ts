@@ -1,3 +1,4 @@
+import type { ContractStatus } from '@/shared/types/contract'
 import type {
   AccountStatus,
   InvoiceStatus,
@@ -39,6 +40,10 @@ export function mapAccountStatus(status?: string): AccountStatus {
     default:
       return 'inactive'
   }
+}
+
+export function mapContractStatus(status?: string): ContractStatus {
+  return status === 'active' ? 'active' : 'expired'
 }
 
 export function mapInvoiceStatus(status?: string): InvoiceStatus {

@@ -52,6 +52,8 @@ export const ENDPOINTS = {
     invoice: (invoiceID: string) =>
       `/admin/invoices/${encodeURIComponent(invoiceID)}`,
 
+    users: '/admin/users',
+
     requests: '/admin/requests',
 
     request: (requestID: string) =>

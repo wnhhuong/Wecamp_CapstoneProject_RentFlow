@@ -4,8 +4,8 @@ import type {
   BackendTenantProfile,
   TenantProfile,
   TenantProfileUpdate,
-  TenantSex,
 } from '@/shared/types/profile'
+import { mapSex } from '@/shared/utils/sexLabels'
 
 export async function getTenantProfile(
   signal?: AbortSignal,
@@ -52,6 +52,3 @@ function mapProfile(profile: BackendTenantProfile): TenantProfile {
   }
 }
 
-function mapSex(sex?: string): TenantSex {
-  return sex === 'male' || sex === 'female' ? sex : 'other'
-}

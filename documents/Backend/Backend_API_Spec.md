@@ -972,6 +972,7 @@ Không có body.
 |`search`|string|Không|Tìm fullName, phoneNumber, identityNo, roomCode|
 |`sex`|enum|Không|`male`, `female`, `other`|
 |`nationality`|string|Không|Lọc nationality|
+|`lease`|enum|Không|`active` (đang có contract `active`), `expired` (hết hạn hoặc chưa từng có)|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -987,7 +988,7 @@ Không có body.
 |`sex`|enum|Có|ERD|
 |`nationality`|string|Có|ERD|
 |`por`|string|Có|`USER.PoR`|
-|`roomCode`|string, nullable|Không|Join active contract → ROOM|
+|`roomCode`|string, nullable|Không|Phòng của contract được trả về (active, không có thì latest); `null` khi user chưa từng có contract|
 |`contractID`|integer, nullable|Không|Active/latest contract|
 |`contractStatus`|enum, nullable|Không|`active`, `expired`|
 

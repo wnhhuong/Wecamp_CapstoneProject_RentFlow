@@ -6,6 +6,7 @@ import { InvoiceDetailsSheet } from "@/pages/admin/invoices/InvoiceDetailsSheet"
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
+import { UsersPage } from "@/pages/admin/UsersPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
@@ -156,7 +157,7 @@ const router = createBrowserRouter([
         path: ROUTES.admin.users,
         element: (
           <RequireAuth role="admin">
-            <RoutePlaceholder title="Users" />
+            <UsersPage />
           </RequireAuth>
         ),
       },
