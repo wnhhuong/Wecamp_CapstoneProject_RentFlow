@@ -11,9 +11,9 @@ export const ENDPOINTS = {
   },
 
   guest: {
-    rooms: '/guess/rooms',
-    room: (roomID: string) => `/guess/rooms/${encodeURIComponent(roomID)}`,
-    parameters: '/guess/parameters',
+    rooms: '/guest/rooms',
+    room: (roomID: string) => `/guest/rooms/${encodeURIComponent(roomID)}`,
+    parameters: '/guest/parameters',
   },
 
   user: {

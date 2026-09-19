@@ -12,7 +12,7 @@ import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
 import userRequestRouter from "./routes/user/request.routes.js";
 import approvalRoutes from "./routes/admin/approval.routes.js";
 import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
-import guessRouter from "./routes/guest.routes.js";
+import guestRouter from "./routes/guest.routes.js";
 import userTicketRouter from "./routes/user/ticket.routes.js";
 import userProfileRouter from "./routes/user/profile.routes.js";
 import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
@@ -44,7 +44,7 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 // GUEST ROUTES
-app.use(`/api/guess`, guessRouter)
+app.use(`/api/guest`, guestRouter)
 app.use(`/api/auth`, authRouter)
 
 // USER ROUTES
