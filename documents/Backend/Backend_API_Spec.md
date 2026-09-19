@@ -137,22 +137,33 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`currentInvoice`|object, nullable|Không|Invoice tháng hiện tại; null nếu chưa tạo|
+|`currentInvoice`|object, nullable|Không|Hoá đơn chưa trả mới nhất của kỳ thuê; không có thì hoá đơn mới nhất; null nếu chưa có hoá đơn nào|
 |`currentInvoice.invoiceID`|integer|Không|`INVOICE.invoiceID`|
+|`currentInvoice.billingPeriod`|string, nullable|Không|Kỳ tính tiền `YYYY-MM`, lấy từ `CONSUMPTION.trackingTime`|
 |`currentInvoice.totalBill`|integer|Không|`INVOICE.totalBill`|
 |`currentInvoice.status`|enum|Không|`not_paid`, `pending`, `paid`|
 |`currentInvoice.isOverdue`|boolean|Không|`dueDate < today` và chưa `paid`|
 |`currentInvoice.dueDate`|date-only|Không|`INVOICE.dueDate`|
-|`currentInvoice.breakdown`|object|Không|Các field bill trong `INVOICE`|
+|`currentInvoice.breakdown`|object|Không|`room`, `electrical`, `water`, `wifi`, `parking`, `other`|
 |`electricityReminder`|object|Có|Trạng thái kỳ ghi điện hiện tại|
 |`electricityReminder.state`|enum|Có|`not_due`, `due_not_uploaded`, `submitted`|
-|`electricityReminder.startDate`|date-only|Có|Parameter meter reading start|
-|`electricityReminder.endDate`|date-only|Có|Parameter meter reading end|
+|`electricityReminder.startDate`|timestamp|Có|Đầu cửa sổ ghi điện, theo giờ VN|
+|`electricityReminder.endDate`|timestamp|Có|Cuối cửa sổ ghi điện, theo giờ VN|
 |`activeTickets`|array|Có|Ticket có status khác `done`|
+|`activeTickets[].ticketID`|integer|Có|`TICKET.ticketID`|
+|`activeTickets[].ticketType`|enum|Có|`repair`, `complain`|
+|`activeTickets[].description`|string, nullable|Không|Child description|
+|`activeTickets[].status`|enum|Có|`need_action`, `in_progress`|
+|`activeTickets[].createDate`|timestamp|Có|ERD|
 |`pendingRequests`|array|Có|Request có status `pending`|
+|`pendingRequests[].requestID`|integer|Có|`REQUEST.requestID`|
+|`pendingRequests[].displayID`|string|Có|Backend sinh|
+|`pendingRequests[].type`|enum|Có|Loại request|
+|`pendingRequests[].createDate`|timestamp|Có|ERD|
+|`pendingRequests[].status`|enum|Có|`pending`|
 
 ```json
-{"success":true,"data":{"currentInvoice":{"invoiceID":9001,"totalBill":4093000,"status":"not_paid","isOverdue":false,"dueDate":"2026-10-10","breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0}},"electricityReminder":{"state":"due_not_uploaded","startDate":"2026-09-25","endDate":"2026-09-28"},"activeTickets":[],"pendingRequests":[]},"message":null}
+{"success":true,"data":{"currentInvoice":{"invoiceID":9001,"totalBill":4093000,"status":"not_paid","isOverdue":false,"dueDate":"2026-10-10","breakdown":{"room":3200000,"electrical":518000,"water":125000,"wifi":100000,"parking":150000,"other":0}},"electricityReminder":{"state":"due_not_uploaded","startDate":"2026-09-25","endDate":"2026-09-28"},"activeTickets":[],"pendingRequests":[]},"message":null}
 ```
 
 ---

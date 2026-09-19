@@ -13,6 +13,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
 import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
 import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
+import { DashboardPage as TenantDashboardPage } from "@/pages/user/DashboardPage";
 import { ProfilePage } from "@/pages/user/ProfilePage";
 import { TicketListPage } from "@/pages/user/tickets/TicketListPage";
 import { RequestDetailsSheet as TenantRequestDetailsSheet } from "@/pages/user/requests/RequestDetailsSheet";
@@ -81,7 +82,7 @@ const router = createBrowserRouter([
         path: ROUTES.user.dashboard,
         element: (
           <RequireAuth role="user">
-            <RoutePlaceholder title="Tenant dashboard" />
+            <TenantDashboardPage />
           </RequireAuth>
         ),
       },
