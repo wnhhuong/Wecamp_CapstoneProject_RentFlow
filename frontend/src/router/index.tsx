@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 
 import App from "@/App";
 import { InvoicesPage } from "@/pages/admin/InvoicesPage";
+import { DashboardPage } from "@/pages/admin/DashboardPage";
 import { InvoiceDetailsSheet } from "@/pages/admin/invoices/InvoiceDetailsSheet";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
@@ -142,7 +143,7 @@ const router = createBrowserRouter([
         path: ROUTES.admin.dashboard,
         element: (
           <RequireAuth role="admin">
-            <RoutePlaceholder title="Admin dashboard" />
+            <DashboardPage />
           </RequireAuth>
         ),
       },
