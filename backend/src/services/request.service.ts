@@ -558,9 +558,11 @@ const approveConsumpRequest = async (
 
   // Reading kỳ trước gần nhất của phòng (nếu có) để tính usage.
   // GIẢ ĐỊNH: nếu đây là kỳ điện đầu tiên (chưa từng có Consumption), previousReading = 0.
+  // $lte chứ không phải $lt: Consumption của kỳ này chưa được tạo ở đây, nên bản ghi
+  // trùng khít capturedAt chỉ có thể là kỳ cũ, và guard duplicate bên dưới phải thấy nó.
   const previousConsumption = await Consumption.findOne({ 
     roomID: request.roomID,
-    trackingTime: { $lt: consumpRequest.capturedAt },
+    trackingTime: { $lte: consumpRequest.capturedAt },
   })
     .sort({ trackingTime: -1 })
     .session(session);
