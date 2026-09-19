@@ -2,13 +2,17 @@ import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type { BackendPagination } from '@/shared/types/api'
 import type {
+  BackendComplaintArea,
+  BackendComplaintOptions,
   BackendCreatedTicket,
   BackendRepairFacility,
   BackendRepairOptions,
   BackendTenantTicket,
   BackendTenantTicketListResponse,
+  ComplaintOptions,
   RepairFacilityOption,
   RepairOptions,
+  SubmitComplaintInput,
   SubmitRepairInput,
   TenantTicket,
   TenantTicketList,
@@ -87,6 +91,60 @@ export async function submitRepairTicket({
     description: ticket.description ?? description,
     createDate: ticket.createDate,
     status: mapTicketStatus(ticket.status),
+  }
+}
+
+export async function getComplaintOptions(
+  signal?: AbortSignal,
+): Promise<ComplaintOptions> {
+  const options = await apiRequest<BackendComplaintOptions>(
+    ENDPOINTS.user.complaintOptions,
+    { auth: 'user', signal },
+  )
+
+  return { areas: (options.areas ?? []).map(mapComplaintArea) }
+}
+
+export async function submitComplaintTicket({
+  areaID,
+  roomID,
+  description,
+}: SubmitComplaintInput): Promise<TenantTicketReceipt> {
+  const ticket = await apiRequest<BackendCreatedTicket>(
+    ENDPOINTS.user.complaintTickets,
+    {
+      auth: 'user',
+      method: 'POST',
+      body: JSON.stringify({
+        areaID,
+        description,
+        ...(roomID ? { roomID } : {}),
+      }),
+    },
+  )
+
+  const ticketID = String(ticket.ticketID)
+
+  return {
+    ticketID,
+    displayID: ticket.ticketName ?? ticketID,
+    type: mapTicketType(ticket.type),
+    description: ticket.description ?? description,
+    createDate: ticket.createDate,
+    status: mapTicketStatus(ticket.status),
+  }
+}
+
+function mapComplaintArea(area: BackendComplaintArea) {
+  const areaID = String(area.areaID)
+
+  return {
+    areaID,
+    areaName: area.areaName ?? areaID,
+    rooms: (area.rooms ?? []).map((room) => ({
+      roomID: String(room.roomID),
+      roomCode: room.roomCode ?? String(room.roomID),
+    })),
   }
 }
 

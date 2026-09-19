@@ -211,7 +211,7 @@ function TicketListPage() {
       {!isLoading && !loadError && tickets.length > 0 ? (
         <>
           <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-            <Table className="min-w-[1160px]">
+            <Table className="min-w-[1060px]">
               <TableHeader className="bg-muted">
                 <TableRow className="hover:bg-muted">
                   <TableHead
@@ -224,7 +224,6 @@ function TicketListPage() {
                   </TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead>Where</TableHead>
-                  <TableHead>Photo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Raised</TableHead>
                   <TableHead>Resolved</TableHead>
@@ -258,25 +257,21 @@ function TicketListPage() {
                       )}
                     >
                       {ticket.description || "—"}
-                    </TableCell>
-                    <TableCell>{ticket.location || "—"}</TableCell>
-                    <TableCell>
-                      {ticket.image ? (
+                      {expandedID === ticket.ticketID && ticket.image ? (
                         <Button
                           type="button"
-                          variant="outline"
-                          size="sm"
+                          variant="link"
+                          className="mt-1 block h-auto p-0 text-sm text-clay"
                           onClick={(event) => {
                             event.stopPropagation();
                             setPhotoTicket(ticket);
                           }}
                         >
-                          View
+                          View photo
                         </Button>
-                      ) : (
-                        "—"
-                      )}
+                      ) : null}
                     </TableCell>
+                    <TableCell>{ticket.location || "—"}</TableCell>
                     <TableCell>
                       <StatusBadge domain="ticket" status={ticket.status} />
                     </TableCell>
