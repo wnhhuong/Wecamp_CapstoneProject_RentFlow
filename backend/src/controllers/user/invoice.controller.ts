@@ -66,13 +66,16 @@ export const getInvoiceList = async (req: UserAuthRequest, res: Response, next: 
         // Lấy toàn bộ thỏa filter
         const allInvoices = await Invoice.find(filter).sort({ createdDate: -1 });
         const now = new Date();
+        const consumptionById = new Map((await Consumption.find({ _id: { $in: allInvoices.map((inv) => inv.consumptionID) } }).select('_id trackingTime')).map((c) => [c._id.toString(), c]));
         let mapped = allInvoices.map((inv) => {
+            const consumption = consumptionById.get(inv.consumptionID.toString());
             const displayID = `${room.roomCode}-${formatVNShortDate(new Date(inv.createdDate))}`;
             return {
                 invoiceID: inv._id,
                 displayID,
                 roomCode: room.roomCode,
                 createDate: inv.createdDate,
+                billingMonth: consumption ? `${new Date(consumption.trackingTime).getUTCFullYear()}-${String(new Date(consumption.trackingTime).getUTCMonth() + 1).padStart(2, '0')}` : null,
                 dueDate: inv.dueDate.toISOString(),
                 totalBill: inv.totalBill,
                 status: inv.status,
@@ -148,6 +151,7 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
             invoiceID: displayID,
             roomCode: room.roomCode,
             createDate: invoice.createdDate,
+            billingMonth: `${new Date(consumption.trackingTime).getUTCFullYear()}-${String(new Date(consumption.trackingTime).getUTCMonth() + 1).padStart(2, '0')}`,
             paymentDate: invoice.paymentDate ?? null,
             dueDate: invoice.dueDate.toISOString(),
             status: invoice.status,
