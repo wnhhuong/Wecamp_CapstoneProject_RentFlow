@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROUTES } from "@/router/routes";
 import { getTenantRequests } from "@/shared/api/user/requests.api";
 import type { TenantRequest } from "@/shared/types/request";
 import { formatDate } from "@/shared/utils/dateFormatter";
@@ -21,14 +22,11 @@ import {
   REQUEST_TYPE_OPTIONS,
 } from "@/shared/utils/requestTypes";
 
-import { RequestDetailsSheet } from "./RequestDetailsSheet";
-
 const STATUS_FILTER_ID = "status";
 const TYPE_FILTER_ID = "type";
-const REQUEST_PARAM = "request";
 
 function RequestListPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<TenantRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -67,24 +65,6 @@ function RequestListPage() {
 
     return () => controller.abort();
   }, []);
-
-  const openedRequestID = searchParams.get(REQUEST_PARAM);
-  const openedRequest =
-    requests.find((request) => request.requestID === openedRequestID) ?? null;
-
-  function openRequest(requestID: string | null) {
-    setSearchParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-
-        if (requestID) next.set(REQUEST_PARAM, requestID);
-        else next.delete(REQUEST_PARAM);
-
-        return next;
-      },
-      { replace: true },
-    );
-  }
 
   const filteredRequests = useMemo(() => {
     const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
@@ -190,7 +170,11 @@ function RequestListPage() {
                     <TableRow
                       key={request.requestID}
                       className="cursor-pointer"
-                      onClick={() => openRequest(request.requestID)}
+                      onClick={() =>
+                        void navigate(
+                          ROUTES.user.requestDetailsLink(request.requestID),
+                        )
+                      }
                     >
                       <TableCell className="px-4 font-medium text-foreground">
                         {request.displayID}
@@ -219,12 +203,7 @@ function RequestListPage() {
         </>
       ) : null}
 
-      <RequestDetailsSheet
-        request={openedRequest}
-        onOpenChange={(open) => {
-          if (!open) openRequest(null);
-        }}
-      />
+      <Outlet />
     </PageContainer>
   );
 }
