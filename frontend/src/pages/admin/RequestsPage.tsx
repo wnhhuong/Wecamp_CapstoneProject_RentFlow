@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminRequests } from "@/shared/api/admin/requests.api";
 import type { AdminRequest } from "@/shared/types/admin/request";
-import { formatDate } from "@/shared/utils/dateFormatter";
+import { formatDateShort } from "@/shared/utils/dateFormatter";
 import {
   REQUEST_TYPE_LABELS,
   REQUEST_TYPE_OPTIONS,
@@ -204,10 +204,10 @@ function RequestsPage() {
                       <TableCell>{REQUEST_TYPE_LABELS[request.type]}</TableCell>
                       <TableCell>{request.roomCode}</TableCell>
                       <TableCell>{request.tenantName}</TableCell>
-                      <TableCell>{formatDate(request.createDate)}</TableCell>
+                      <TableCell>{formatDateShort(request.createDate)}</TableCell>
                       <TableCell>
                         {request.resolveDate
-                          ? formatDate(request.resolveDate)
+                          ? formatDateShort(request.resolveDate)
                           : "—"}
                       </TableCell>
                       <TableCell>

@@ -4,6 +4,7 @@ import type {
   InvoiceStatus,
   RequestStatus,
   RoomStatus,
+  TicketStatus,
 } from '@/shared/types/status'
 
 export function mapRoomStatus(status?: string): RoomStatus {
@@ -52,4 +53,18 @@ export function mapInvoiceStatus(status?: string): InvoiceStatus {
 
 export function mapRequestStatus(status?: string): RequestStatus {
   return status === 'approved' ? 'approved' : 'pending'
+}
+
+export function mapTicketStatus(status?: string): TicketStatus {
+  switch (status) {
+    case 'done':
+      return 'done'
+
+    case 'in_progress':
+      return 'in_progress'
+
+    case 'need_action':
+    default:
+      return 'need_action'
+  }
 }

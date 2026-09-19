@@ -18,6 +18,19 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   hourCycle: 'h23',
 })
 
+const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+const shortMonthYearFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  month: 'short',
+  year: 'numeric',
+})
+
 const monthYearFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: TIME_ZONE,
   month: 'long',
@@ -56,6 +69,40 @@ export function formatDate(
     withTime && !isDateOnly(value) ? dateTimeFormatter : dateFormatter
 
   return formatter.format(date)
+}
+
+/**
+ * Table columns only, where the long month costs more width than it earns;
+ * detail sheets keep the full name. en-GB abbreviates September to "Sept", so
+ * the month part is cut to three letters.
+ */
+function fromShortParts(parts: Intl.DateTimeFormatPart[]): string {
+  return parts
+    .map((part) => (part.type === 'month' ? part.value.slice(0, 3) : part.value))
+    .join('')
+}
+
+// "18 Sep 2024".
+export function formatDateShort(value: string | Date): string {
+  const date = parseDate(value)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  return fromShortParts(shortDateFormatter.formatToParts(date))
+}
+
+// "Sep 2026".
+export function formatMonthYearShort(value: string | Date): string {
+  const date = parseDate(value)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  return fromShortParts(shortMonthYearFormatter.formatToParts(date))
+}
+
+/** Billing periods arrive as "2026-08"; render them as "Aug 2026". */
+export function formatBillingPeriodShort(period: string): string {
+  return /^\d{4}-\d{2}$/.test(period)
+    ? formatMonthYearShort(`${period}-01`)
+    : '—'
 }
 
 // Billing periods: "September 2026".

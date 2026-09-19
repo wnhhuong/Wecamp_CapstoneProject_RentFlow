@@ -16,7 +16,7 @@ import {
 import { ROUTES } from "@/router/routes";
 import { getTenantRequests } from "@/shared/api/user/requests.api";
 import type { TenantRequest } from "@/shared/types/request";
-import { formatDate } from "@/shared/utils/dateFormatter";
+import { formatDateShort } from "@/shared/utils/dateFormatter";
 import {
   REQUEST_TYPE_LABELS,
   REQUEST_TYPE_OPTIONS,
@@ -180,10 +180,10 @@ function RequestListPage() {
                         {request.displayID}
                       </TableCell>
                       <TableCell>{REQUEST_TYPE_LABELS[request.type]}</TableCell>
-                      <TableCell>{formatDate(request.createDate)}</TableCell>
+                      <TableCell>{formatDateShort(request.createDate)}</TableCell>
                       <TableCell>
                         {request.resolveDate
-                          ? formatDate(request.resolveDate)
+                          ? formatDateShort(request.resolveDate)
                           : "—"}
                       </TableCell>
                       <TableCell>

@@ -379,23 +379,26 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo ticket ID, name hoặc description|
+|`search`|string|Không|Tìm theo display ID, description hoặc location|
 |`status`|enum|Không|`need_action`, `in_progress`, `done`|
-|`type`|enum|Không|`REPAIR`, `COMPLAIN`|
+|`type`|enum|Không|`repair`, `complain`|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
+
+> Chỉ trả ticket có `createDate` từ `CONTRACT.startDate` của kỳ thuê hiện tại trở đi.
 
 **Output item**
 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|`TICKET.ticketID`|
-|`type`|enum|Có|Derived từ bảng con|
-|`ticketName`|string|Có|`TICKET.ticketName`|
+|`displayID`|string|Có|`<prefix>-<roomCode>-ddmmyy-<3 ký tự cuối của ticketID>`|
 |`description`|string|Có|Child description|
-|`location`|string|Có|Facility hoặc area/room label|
-|`createDate`|date-only|Có|ERD|
-|`resolveDate`|date-only, nullable|Không|ERD|
+|`location`|string|Có|Facility type (repair) hoặc area/room label (complain)|
+|`roomCode`|string|Có|Phòng của tenant|
+|`ticketType`|enum|Có|`repair`, `complain` — derived từ bảng con|
+|`createDate`|timestamp|Có|ERD, ISO|
+|`resolveDate`|timestamp, nullable|Không|ERD, ISO|
 |`status`|enum|Có|ERD|
 
 ## #13 — GET `/api/user/tickets/repairs/options`
