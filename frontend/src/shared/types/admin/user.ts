@@ -1,9 +1,10 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { ApiPagination, BackendPagination } from '@/shared/types/api'
 import type { ContractStatus } from '@/shared/types/contract'
 import type { TenantSex } from '@/shared/types/profile'
 
 export interface BackendAdminUserListResponse {
   items?: BackendAdminUser[]
+  pagination?: BackendPagination
 }
 
 export interface BackendAdminUser {

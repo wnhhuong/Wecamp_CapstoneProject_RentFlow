@@ -15,6 +15,10 @@ export enum ParameterName {
   PROPERTY_NAME = 'propertyName',
   ADMIN_EMAIL = 'adminEmail',
   CONTRACT_PLACEHOLDER = 'contractPlaceholder',
+  BANK_ACCOUNT_HOLDER = 'bankAccountHolder',
+  BANK_NAME = 'bankName',
+  BANK_ACCOUNT_NUMBER = 'bankAccountNumber',
+  BANK_QR_IMAGE = 'bankQrImage',
 }
 
 export enum Sex {

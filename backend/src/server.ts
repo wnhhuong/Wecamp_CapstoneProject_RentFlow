@@ -12,12 +12,13 @@ import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
 import userRequestRouter from "./routes/user/request.routes.js";
 import approvalRoutes from "./routes/admin/approval.routes.js";
 import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
-import guessRouter from "./routes/guest.routes.js";
+import guestRouter from "./routes/guest.routes.js";
 import userTicketRouter from "./routes/user/ticket.routes.js";
 import userProfileRouter from "./routes/user/profile.routes.js";
 import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
 import userContractRouter from "./routes/user/contract.routes.js";
 import userDashboard from "./routes/user/dashboard.routes.js";
+import userParameterRouter from "./routes/user/paymentInfo.routes.js";
 import userMoveoutRouter from "./routes/user/moveout.routes.js";
 import userCheckoutRouter from "./routes/user/checkout.routes.js";
 import userExtendRouter from "./routes/user/extend.routes.js";
@@ -44,7 +45,7 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 // GUEST ROUTES
-app.use(`/api/guess`, guessRouter)
+app.use(`/api/guest`, guestRouter)
 app.use(`/api/auth`, authRouter)
 
 // USER ROUTES
@@ -54,6 +55,7 @@ app.use(`/api/user/consumption-requests`, consumpRequestRouter)
 app.use(`/api/user/invoices`, userInvoiceRouter)
 app.use(`/api/user/requests`, userRequestRouter)
 app.use(`/api/user/dashboard`, userDashboard)
+app.use(`/api/user/parameters`, userParameterRouter)
 
 // ticket route
 app.use(`/api/user/tickets`, userTicketRouter)

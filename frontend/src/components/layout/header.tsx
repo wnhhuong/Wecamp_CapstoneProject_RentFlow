@@ -8,6 +8,7 @@ type HeaderVariant = 'guest' | 'auth' | 'signed-in'
 
 interface HeaderProps extends ComponentProps<'header'> {
   variant?: HeaderVariant
+  /** From the property parameters; the block is hidden until they load. */
   propertyName?: string
   propertyMeta?: string
   userName?: string
@@ -19,8 +20,8 @@ interface HeaderProps extends ComponentProps<'header'> {
 
 function Header({
   variant = 'guest',
-  propertyName = 'Nhà trọ Bình An',
-  propertyMeta = '128 Đường số 7, Thủ Đức · 12 rooms',
+  propertyName,
+  propertyMeta,
   userName,
   userInitial,
   onLogin,
@@ -60,14 +61,22 @@ function Header({
           </span>
         </div>
 
-        <span className="hidden h-6 w-px bg-page/20 sm:block" />
+        {propertyName ? (
+          <>
+            <span className="hidden h-6 w-px bg-page/20 sm:block" />
 
-        <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
-          <span className="truncate text-sm font-medium">{propertyName}</span>
-          <span className="truncate text-[13px] text-page/55">
-            {propertyMeta}
-          </span>
-        </div>
+            <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
+              <span className="truncate text-sm font-medium">
+                {propertyName}
+              </span>
+              {propertyMeta ? (
+                <span className="truncate text-xs text-page/55">
+                  {propertyMeta}
+                </span>
+              ) : null}
+            </div>
+          </>
+        ) : null}
       </div>
 
       {variant === 'guest' ? (

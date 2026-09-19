@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROUTES } from "@/router/routes";
 import { getAdminRequests } from "@/shared/api/admin/requests.api";
 import type { AdminRequest } from "@/shared/types/admin/request";
 import { formatDateShort } from "@/shared/utils/dateFormatter";
@@ -23,7 +24,6 @@ import {
   REQUEST_TYPE_OPTIONS,
 } from "@/shared/utils/requestTypes";
 
-import { RequestDetailsSheet } from "./requests/RequestDetailsSheet";
 
 
 const STATUS_FILTER_ID = "status";
@@ -31,9 +31,11 @@ const TYPE_FILTER_ID = "type";
 
 function RequestsPage() {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
-  const [openedRequest, setOpenedRequest] = useState<AdminRequest | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedRequestID = searchParams.get("request");
+  const [approvedRequest, setApprovedRequest] = useState<AdminRequest | null>(
+    null,
+  );
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<Record<string, string[]>>({
     [STATUS_FILTER_ID]: searchParams.get(STATUS_FILTER_ID) === "approved" ? ["approved"] : ["pending"],
     [TYPE_FILTER_ID]: [],
@@ -60,13 +62,7 @@ function RequestsPage() {
 
     getAdminRequests()
       .then((loadedRequests) => {
-        if (isActive) {
-          setRequests(loadedRequests);
-          const requested = loadedRequests.find(
-            (item) => item.requestID === requestedRequestID || item.displayID === requestedRequestID,
-          );
-          if (requested) setOpenedRequest(requested);
-        }
+        if (isActive) setRequests(loadedRequests);
       })
       .catch(() => {
         if (isActive) setLoadError("The request queue could not be loaded.");
@@ -78,16 +74,27 @@ function RequestsPage() {
     return () => {
       isActive = false;
     };
-  }, [requestedRequestID]);
+  }, []);
 
-  function closeRequestDetails() {
-    setOpenedRequest(null);
-    if (searchParams.has("request")) {
-      const next = new URLSearchParams(searchParams);
-      next.delete("request");
-      setSearchParams(next, { replace: true });
-    }
+  function handleApproved(requestID: string) {
+    setApprovedRequest(
+      requests.find((request) => request.requestID === requestID) ?? null,
+    );
+    void loadRequests();
   }
+
+  /**
+   * The drawer reads its request from this list, and reloading refetches under
+   * the current filter, which an approved request stops matching. Keep serving
+   * it so the drawer stays open on the outcome.
+   */
+  const drawerRequests = useMemo(() => {
+    if (!approvedRequest) return requests;
+    const isListed = requests.some(
+      (request) => request.requestID === approvedRequest.requestID,
+    );
+    return isListed ? requests : [...requests, approvedRequest];
+  }, [approvedRequest, requests]);
 
   const filteredRequests = useMemo(() => {
     const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
@@ -214,12 +221,11 @@ function RequestsPage() {
                     <TableRow
                       key={request.requestID}
                       className="cursor-pointer"
-                      onClick={() => {
-                        setOpenedRequest(request);
-                        const next = new URLSearchParams(searchParams);
-                        next.set("request", request.requestID);
-                        setSearchParams(next);
-                      }}
+                      onClick={() =>
+                        void navigate(
+                          ROUTES.admin.requestDetailsLink(request.requestID),
+                        )
+                      }
                     >
                       <TableCell className="px-4 font-medium text-foreground">
                         {request.displayID}
@@ -250,10 +256,8 @@ function RequestsPage() {
         </>
       ) : null}
 
-      <RequestDetailsSheet
-        request={openedRequest}
-        onOpenChange={(open) => { if (!open) closeRequestDetails(); }}
-        onApproved={() => void loadRequests()}
+      <Outlet
+        context={{ requests: drawerRequests, onApproved: handleApproved }}
       />
     </PageContainer>
   );

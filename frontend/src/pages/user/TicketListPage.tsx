@@ -27,7 +27,7 @@ import {
   getTenantTickets,
 } from "@/shared/api/user/tickets.api";
 
-import { NewTicketDialog } from "./NewTicketDialog";
+import { NewTicketDialog } from "./tickets/NewTicketDialog";
 import type { ApiPagination } from "@/shared/types/api";
 import type { TenantTicket, TenantTicketQuery } from "@/shared/types/ticket";
 import { cn } from "@/shared/utils/cn";

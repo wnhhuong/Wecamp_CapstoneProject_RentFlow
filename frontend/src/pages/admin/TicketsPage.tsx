@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Outlet, useNavigate } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { ROUTES } from "@/router/routes";
 import { PageContainer } from "@/components/layout";
 import { StatusBadge } from "@/components/status";
 import { Pagination } from "@/components/ui/pagination";
@@ -25,7 +27,6 @@ import type { ApiPagination } from "@/shared/types/api";
 import { formatDateShort } from "@/shared/utils/dateFormatter";
 import { TICKET_TYPE_OPTIONS } from "@/shared/utils/ticketTypes";
 
-import { TicketDetailsSheet } from "./tickets/TicketDetailsSheet";
 
 const STATUS_FILTER_ID = "status";
 const TYPE_FILTER_ID = "type";
@@ -39,9 +40,10 @@ const EMPTY_PAGINATION: ApiPagination = {
 };
 
 function TicketsPage() {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<AdminTicket[]>([]);
+  const [updatedTicket, setUpdatedTicket] = useState<AdminTicket | null>(null);
   const [pagination, setPagination] = useState<ApiPagination>(EMPTY_PAGINATION);
-  const [openedTicket, setOpenedTicket] = useState<AdminTicket | null>(null);
   const [filters, setFilters] = useState<Record<string, string[]>>({
     [STATUS_FILTER_ID]: ["need_action"],
     [TYPE_FILTER_ID]: [],
@@ -111,9 +113,8 @@ function TicketsPage() {
     setReloadToken((token) => token + 1);
   }
 
-  /** The drawer keeps the new state; the list may no longer match the filter. */
   function applyUpdate(updated: AdminTicket) {
-    setOpenedTicket(updated);
+    setUpdatedTicket(updated);
     setTickets((current) =>
       current.map((ticket) =>
         ticket.ticketID === updated.ticketID ? updated : ticket,
@@ -121,6 +122,19 @@ function TicketsPage() {
     );
     reload();
   }
+
+  /**
+   * The drawer reads its ticket from this list, and `reload` refetches under the
+   * current filter, which the ticket just stopped matching. Keep serving it so
+   * the drawer stays open on the status the admin just set.
+   */
+  const drawerTickets = useMemo(() => {
+    if (!updatedTicket) return tickets;
+    const isListed = tickets.some(
+      (ticket) => ticket.ticketID === updatedTicket.ticketID,
+    );
+    return isListed ? tickets : [...tickets, updatedTicket];
+  }, [tickets, updatedTicket]);
 
   const isEmpty = !isLoading && !loadError && tickets.length === 0;
 
@@ -206,7 +220,11 @@ function TicketsPage() {
                   <TableRow
                     key={ticket.ticketID}
                     className="cursor-pointer"
-                    onClick={() => setOpenedTicket(ticket)}
+                    onClick={() =>
+                      void navigate(
+                        ROUTES.admin.ticketDetailsLink(ticket.ticketID),
+                      )
+                    }
                   >
                     <TableCell className="px-4 font-medium text-foreground">
                       {ticket.displayID}
@@ -245,13 +263,7 @@ function TicketsPage() {
         </>
       ) : null}
 
-      <TicketDetailsSheet
-        ticket={openedTicket}
-        onOpenChange={(open) => {
-          if (!open) setOpenedTicket(null);
-        }}
-        onUpdated={applyUpdate}
-      />
+      <Outlet context={{ tickets: drawerTickets, onUpdated: applyUpdate }} />
     </PageContainer>
   );
 }

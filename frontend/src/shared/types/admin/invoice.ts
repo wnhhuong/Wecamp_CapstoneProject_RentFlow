@@ -1,4 +1,4 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { ApiPagination, BackendPagination } from '@/shared/types/api'
 import type { InvoiceBreakdown } from '@/shared/types/invoice'
 import type { InvoiceStatus } from '@/shared/types/status'
 
@@ -69,4 +69,38 @@ export interface AdminInvoiceDetail {
   totalBill: number
   received: number
   stillOwed: number
+}
+
+export interface BackendAdminInvoice {
+  invoiceID: string | number
+  displayID?: string | null
+  tenantName?: string | null
+  roomCode?: string | null
+  billingPeriod?: string | null
+  createDate: string
+  dueDate: string
+  totalBill: number
+  received?: number
+  stillOwed?: number
+  status?: string
+  isOverdue?: boolean
+  isRequestLate?: boolean
+}
+
+export interface BackendAdminInvoiceList {
+  items?: BackendAdminInvoice[]
+  billingPeriods?: string[]
+  summary?: AdminInvoiceSummary
+  pagination?: BackendPagination
+}
+
+export interface BackendAdminInvoiceDetail extends BackendAdminInvoice {
+  room?: { roomID: string | number; roomCode: string } | null
+  tenant?: { userID: string | number; fullName: string } | null
+  paymentDate?: string | null
+  meterReading?: number
+  usageKwh?: number
+  electricityUnitPrice?: number
+  electricityUnitPriceIsApprox?: boolean
+  breakdown: Partial<InvoiceBreakdown>
 }

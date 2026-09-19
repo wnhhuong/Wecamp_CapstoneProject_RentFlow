@@ -4,6 +4,7 @@ import Request from '../models/Request.js';
 import Ticket from '../models/Ticket.js';
 import Area from '../models/Area.js';
 import { InvoiceStatus, RequestStatus, TicketStatus } from '../models/enums.js';
+import { buildTicketDisplayID } from '../utils/displayId.js';
 
 export interface IRoomSummary {
   availableNow: number;
@@ -194,10 +195,13 @@ export class DashboardService {
         }
       }
 
+      const ticketType = t.ticketType || (t.facilityID ? 'repair' : 'complain');
+
       return {
         ticketID: String(t._id || t.ticketID),
-        ticketName: t.ticketType === 'repair' ? 'Repair' : t.ticketType === 'complain' ? 'Complaint' : 'Ticket',
-        type: t.ticketType ? t.ticketType.toUpperCase() : (t.facilityID ? 'REPAIR' : 'COMPLAIN'),
+        // Spec: ticketName là DisplayID do backend sinh, không phải nhãn loại.
+        ticketName: buildTicketDisplayID(ticketType, room?.roomCode ?? '', new Date(rawDate), t._id),
+        type: ticketType,
         location,
         createDate: formattedDate,
       };

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROUTES } from "@/router/routes";
 import { getAdminRooms } from "@/shared/api/admin/rooms.api";
 import type { AdminRoom } from "@/shared/types/admin/room";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
@@ -23,20 +24,17 @@ import { formatCurrency } from "@/shared/utils/currencyFormatter";
 import { AddRoomDialog } from "./rooms/AddRoomDialog";
 import { EditRoomDialog } from "./rooms/EditRoomDialog";
 import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
-import { RoomDetailsSheet } from "./rooms/RoomDetailsSheet";
 import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
 
 /** Keeps the open room drawer in the URL, so other pages can link straight to one. */
-const ROOM_PARAM = "room";
-
 function RoomsPage() {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null);
-  const detailRoomID = searchParams.get(ROOM_PARAM);
   const [editRoomID, setEditRoomID] = useState<string | null>(null);
   const [createdRoomCode, setCreatedRoomCode] = useState("");
   const [updatedRoomCode, setUpdatedRoomCode] = useState("");
@@ -114,23 +112,7 @@ function RoomsPage() {
 
   const selectedRoom =
     rooms.find((room) => room.roomID === selectedRoomID) ?? null;
-  const detailRoom =
-    rooms.find((room) => room.roomID === detailRoomID) ?? null;
   const editRoom = rooms.find((room) => room.roomID === editRoomID) ?? null;
-
-  function setDetailRoomID(roomID: string | null) {
-    setSearchParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-
-        if (roomID) next.set(ROOM_PARAM, roomID);
-        else next.delete(ROOM_PARAM);
-
-        return next;
-      },
-      { replace: true },
-    );
-  }
 
   function handleRoomCreated(room: AdminRoom) {
     setRooms((current) => [room, ...current]);
@@ -385,7 +367,11 @@ function RoomsPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setDetailRoomID(room.roomID)}
+                        onClick={() =>
+                          void navigate(
+                            ROUTES.admin.roomDetailsLink(room.roomID),
+                          )
+                        }
                       >
                         <EyeIcon />
                         Details
@@ -424,18 +410,17 @@ function RoomsPage() {
         }}
         onAccountPrepared={handleAccountPrepared}
       />
-      <RoomDetailsSheet
-        room={detailRoom}
-        onOpenChange={(open) => {
-          if (!open) setDetailRoomID(null);
-        }}
-        onPrepareAccount={(roomID) => {
-          setDetailRoomID(null);
-          setSelectedRoomID(roomID);
-        }}
-        onEditRoom={(roomID) => {
-          setDetailRoomID(null);
-          setEditRoomID(roomID);
+      <Outlet
+        context={{
+          rooms,
+          onPrepareAccount: (roomID: string) => {
+            void navigate(ROUTES.admin.rooms);
+            setSelectedRoomID(roomID);
+          },
+          onEditRoom: (roomID: string) => {
+            void navigate(ROUTES.admin.rooms);
+            setEditRoomID(roomID);
+          },
         }}
       />
       <EditRoomDialog

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,18 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { submitPaidRequest } from "@/shared/api/user/invoices.api";
+import {
+  getTenantPaymentInfo,
+  submitPaidRequest,
+} from "@/shared/api/user/invoices.api";
+import type { TenantPaymentInfo } from "@/shared/types/invoice";
 import { formatCurrency } from "@/shared/utils/currencyFormatter";
-
-/**
- * Placeholder payment details. Move these to the billing parameters once the
- * owner can configure them from the admin side.
- */
-const PAYMENT_ACCOUNT = {
-  holder: "NHA TRO BINH AN",
-  bank: "Vietcombank (VCB)",
-  number: "0071 0009 9999 9",
-};
 
 interface PaymentDialogProps {
   open: boolean;
@@ -39,6 +33,23 @@ function PaymentDialog({
 }: PaymentDialogProps) {
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [account, setAccount] = useState<TenantPaymentInfo | null>(null);
+  const [isQrBroken, setIsQrBroken] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const controller = new AbortController();
+
+    getTenantPaymentInfo(controller.signal)
+      .then((info) => {
+        setAccount(info);
+        setIsQrBroken(false);
+      })
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, [open]);
 
   async function notifyOwner() {
     if (isSending) return;
@@ -82,19 +93,35 @@ function PaymentDialog({
         <div className="mt-5 flex flex-col gap-5 sm:flex-row">
           <div className="flex flex-col items-center gap-2">
             <div className="rounded-lg border border-hairline bg-white p-3">
-              <QrPlaceholder value={displayID} />
+              {account?.bankQrImage && !isQrBroken ? (
+                <img
+                  src={account.bankQrImage}
+                  alt="Bank transfer QR code"
+                  className="size-36 object-contain"
+                  onError={() => setIsQrBroken(true)}
+                />
+              ) : (
+                <QrPlaceholder value={displayID} />
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">Scan to pay</p>
+            <p className="text-sm text-muted-foreground">
+              {account?.bankQrImage && !isQrBroken
+                ? "Scan to pay"
+                : "Transfer manually"}
+            </p>
           </div>
 
           <dl className="flex-1 space-y-3 text-sm">
             <PaymentRow label="Amount" value={formatCurrency(amount)} strong />
             <PaymentRow label="Transfer note" value={displayID} strong />
-            <PaymentRow label="Account holder" value={PAYMENT_ACCOUNT.holder} />
-            <PaymentRow label="Bank" value={PAYMENT_ACCOUNT.bank} />
+            <PaymentRow
+              label="Account holder"
+              value={account?.bankAccountHolder ?? "—"}
+            />
+            <PaymentRow label="Bank" value={account?.bankName ?? "—"} />
             <PaymentRow
               label="Account number"
-              value={PAYMENT_ACCOUNT.number}
+              value={account?.bankAccountNumber ?? "—"}
             />
           </dl>
         </div>
@@ -156,9 +183,10 @@ function PaymentRow({
 }
 
 /**
- * A stand-in for the real payment code: the modules are derived from the
- * invoice id so the block looks stable per invoice. Swap this for a generated
- * VietQR once the owner's bank details live in the billing parameters.
+ * Decorative only — deliberately not a scannable code. The demo never settles a
+ * real transfer, so the tenant reads the account rows beside it and types the
+ * note. Swapping this for a real VietQR needs the bank's 6-digit Napas BIN,
+ * which `bankName` does not carry.
  */
 function QrPlaceholder({ value }: { value: string }) {
   const size = 21;
@@ -188,8 +216,7 @@ function QrPlaceholder({ value }: { value: string }) {
     <svg
       viewBox={`0 0 ${size} ${size}`}
       className="size-36"
-      role="img"
-      aria-label={`Payment code for invoice ${value}`}
+      aria-hidden="true"
     >
       <rect width={size} height={size} fill="white" />
       {cells.map((filled, index) => {

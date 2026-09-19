@@ -11,9 +11,9 @@ export const ENDPOINTS = {
   },
 
   guest: {
-    rooms: '/guess/rooms',
-    room: (roomID: string) => `/guess/rooms/${encodeURIComponent(roomID)}`,
-    parameters: '/guess/parameters',
+    rooms: '/guest/rooms',
+    room: (roomID: string) => `/guest/rooms/${encodeURIComponent(roomID)}`,
+    parameters: '/guest/parameters',
   },
 
   user: {
@@ -42,6 +42,7 @@ export const ENDPOINTS = {
 
     contract: '/user/contract',
 
+    parameters: '/user/parameters',
     requests: '/user/requests',
     extendRequests: '/user/extend-requests',
     moveoutRequests: '/user/moveout-requests',
@@ -56,6 +57,7 @@ export const ENDPOINTS = {
     room: (roomID: string) =>
       `/admin/rooms/${encodeURIComponent(roomID)}`,
     parameters: '/admin/parameters',
+    bankQrImage: '/admin/parameters/bank-qr',
     invoices: '/admin/invoices',
 
     invoice: (invoiceID: string) =>

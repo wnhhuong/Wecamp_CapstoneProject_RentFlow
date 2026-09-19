@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router";
 import { Link } from "react-router";
 
 import { ErrorState, PageLoading } from "@/components/feedback";
@@ -28,6 +29,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
+import type { RequestsOutletContext } from "@/pages/admin/outlet-context";
 import { ROUTES } from "@/router/routes";
 import {
   approveAdminRequest,
@@ -73,25 +75,25 @@ const APPROVE_NOTES: Partial<Record<RequestType, string>> = {
     "Approving closes the lease for good: the room goes back on the market as available now, and the tenant loses access to their account. This cannot be undone.",
 };
 
-interface RequestDetailsSheetProps {
-  request: AdminRequest | null;
-  onOpenChange: (open: boolean) => void;
-  onApproved: () => void;
-}
+function RequestDetailsSheet() {
+  const { requestId = "" } = useParams();
+  const navigate = useNavigate();
+  const { requests, onApproved } = useOutletContext<RequestsOutletContext>();
+  const request = requests.find(item => item.requestID === requestId) ?? null;
 
-function RequestDetailsSheet({
-  request,
-  onOpenChange,
-  onApproved,
-}: RequestDetailsSheetProps) {
   return (
-    <Sheet open={request !== null} onOpenChange={onOpenChange}>
+    <Sheet
+      open={request !== null}
+      onOpenChange={open => {
+        if (!open) void navigate(ROUTES.admin.requests);
+      }}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         {request ? (
           <RequestDetailsLoader
             key={request.requestID}
             request={request}
-            onApproved={onApproved}
+            onApproved={() => onApproved(request.requestID)}
           />
         ) : null}
       </SheetContent>

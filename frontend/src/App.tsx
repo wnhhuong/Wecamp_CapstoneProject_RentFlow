@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 
 import {
@@ -15,7 +15,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ROUTES } from "@/router/routes";
+import { getGuestProperty } from "@/shared/api/guest/parameters.api";
 import { useAuth } from "@/shared/auth/useAuth";
+import type { GuestProperty } from "@/shared/types/guest/room";
 
 const userNavigation: SidebarNavItem[] = [
   {
@@ -88,11 +90,33 @@ const adminNavigation: SidebarNavItem[] = [
     label: "Parameters",
     to: ROUTES.admin.parameters,
   },
+  {
+    id: "property",
+    label: "Property",
+    to: ROUTES.admin.property,
+  },
 ];
 
 function App() {
   const { account, session, signOut } = useAuth();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [property, setProperty] = useState<GuestProperty | null>(null);
+
+  // The property endpoint is public, so the same call serves every header
+  // variant. A failure just leaves the block out rather than blocking the app.
+  useEffect(() => {
+    let isActive = true;
+
+    getGuestProperty()
+      .then((loaded) => {
+        if (isActive) setProperty(loaded);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -126,6 +150,8 @@ function App() {
     <div className="flex h-svh flex-col overflow-hidden bg-page">
       <Header
         variant={headerVariant}
+        propertyName={property?.propertyName}
+        propertyMeta={property?.address}
         userName={isSignedInRoute ? userName : undefined}
         onLogin={() => navigate(ROUTES.auth.login)}
         onLogout={() => {

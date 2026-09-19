@@ -141,8 +141,11 @@ export const getInvoiceDetail = async (req: UserAuthRequest, res: Response, next
         }).sort({ trackingTime: -1 });
         const lastReading = previousConsumption ? previousConsumption.meterReading : 0;
         const usage = consumption.meterReading - lastReading;
-        // đơn giá suy ngược từ hoá đơn, đúng giá TẠI THỜI ĐIỂM tạo invoice thay vì giá hiện tại
-        const unitPrice = usage > 0 ? Math.round(invoice.electricalBill / usage) : 0;
+        // Đơn giá tại thời điểm tạo invoice, không phải giá hiện tại. Hoá đơn cũ chưa lưu
+        // field này nên vẫn phải suy ngược, và usage = 0 thì chịu, trả 0.
+        const unitPrice =
+            invoice.electricityUnitPrice ??
+            (usage > 0 ? Math.round(invoice.electricalBill / usage) : 0);
 
         const now = new Date();
         const displayID = `${room.roomCode}-${formatVNShortDate(new Date(invoice.createdDate))}`;

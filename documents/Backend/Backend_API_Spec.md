@@ -256,7 +256,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 # 5. Tenant / Invoices
 
-> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`.
+> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`, và đơn giá đó được lưu lên `INVOICE.electricityUnitPrice` lúc tạo.
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
@@ -314,7 +314,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`meterReading`|integer|Có|Join `CONSUMPTION.meterReading` — chỉ số công tơ tích luỹ|
 |`lastReading`|integer|Có|Chỉ số của lần đọc liền trước cùng phòng, kỳ đầu tiên = 0|
 |`usage`|integer|Có|`meterReading - lastReading` — số kWh đã dùng trong kỳ|
-|`unitPrice`|integer|Có|Đơn giá điện suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
+|`unitPrice`|integer|Có|`INVOICE.electricityUnitPrice`. Hoá đơn tạo trước 2026-09-20 chưa có field này nên suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
 |`breakdown`|object|Có|room/electrical/water/wifi/parking/other bill|
 |`totalBill`|integer|Có|ERD|
 
@@ -719,7 +719,7 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`roomSummary.occupancyRate`|number|Có|`rented / total × 100`|
 |`paymentSummary`|object|Có|Count `paid`, `notPaid`, `overdue`|
 |`requestsNeedingApproval`|array|Có|Request pending mới nhất|
-|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất|
+|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất. Mỗi phần tử: `ticketID` (ObjectId, chỉ dùng cho route/API), `ticketName` (DisplayID để hiển thị), `type` (`repair`/`complain`, chữ thường như mọi endpoint ticket khác), `location`, `createDate`|
 
 ```json
 {"success":true,"data":{"roomSummary":{"availableNow":8,"rented":31,"availableSoon":3,"notAvailable":2,"total":44,"occupancyRate":70.5},"paymentSummary":{"paid":28,"notPaid":9,"overdue":3},"requestsNeedingApproval":[],"ticketsNeedingAction":[]},"message":null}
@@ -1079,8 +1079,8 @@ Ngoài `items` và `pagination`, response trả thêm hai khối:
 |`isRequestLate`|boolean|Có|ERD|
 |`meterReading`|integer|Có|Chỉ số duy nhất từ CONSUMPTION|
 |`usageKwh`|integer|Có|Derived: chỉ số kỳ này trừ kỳ trước|
-|`electricityUnitPrice`|integer|Có|Derived: `electricalBill / usageKwh`|
-|`electricityUnitPriceIsApprox`|boolean|Có|true khi usage = 0 và phải fallback giá hiện tại|
+|`electricityUnitPrice`|integer|Có|`INVOICE.electricityUnitPrice`, đơn giá tại thời điểm tạo hoá đơn|
+|`electricityUnitPriceIsApprox`|boolean|Có|Chỉ còn true với hoá đơn tạo trước 2026-09-20 mà usage = 0, phải fallback giá hiện tại|
 |`breakdown`|object|Có|Các bill component|
 |`totalBill`|integer|Có|ERD|
 |`received`|integer|Có|Derived|
@@ -1318,6 +1318,10 @@ Không cho sửa `id`/`name` — chỉ `value`. Field lạ khác trong body → 
  
 | `name` | Rule |
 |---|---|
+| `bankAccountHolder` | chuỗi, không rỗng |
+| `bankName` | chuỗi, không rỗng |
+| `bankAccountNumber` | 6–20 chữ số |
+| `bankQrImage` | path ảnh đã upload, bắt đầu bằng `/uploads/`. Chỉ ghi qua `POST /api/admin/parameters/bank-qr` (multipart, field `image`), không gõ tay. Chưa có ảnh thì KHÔNG tồn tại bản ghi — `PARAMETER.value` là required nên không lưu được chuỗi rỗng |
 | `electricityUnitPrice` | số, `> 0` |
 | `waterPrice` | số, `> 0` |
 | `wifiFee` | số, `>= 0` |

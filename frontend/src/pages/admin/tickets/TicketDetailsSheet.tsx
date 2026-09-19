@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router";
 
 import { StatusBadge } from "@/components/status";
+import type { TicketsOutletContext } from "@/pages/admin/outlet-context";
+import { ROUTES } from "@/router/routes";
 import { Button } from "@/components/ui/button";
 import {
   DetailSection,
@@ -30,19 +33,19 @@ const ADVANCE_LABELS: Record<string, string> = {
   in_progress: "Mark as done",
 };
 
-interface TicketDetailsSheetProps {
-  ticket: AdminTicket | null;
-  onOpenChange: (open: boolean) => void;
-  onUpdated: (ticket: AdminTicket) => void;
-}
+function TicketDetailsSheet() {
+  const { ticketId = "" } = useParams();
+  const navigate = useNavigate();
+  const { tickets, onUpdated } = useOutletContext<TicketsOutletContext>();
+  const ticket = tickets.find(item => item.ticketID === ticketId) ?? null;
 
-function TicketDetailsSheet({
-  ticket,
-  onOpenChange,
-  onUpdated,
-}: TicketDetailsSheetProps) {
   return (
-    <Sheet open={ticket !== null} onOpenChange={onOpenChange}>
+    <Sheet
+      open={ticket !== null}
+      onOpenChange={open => {
+        if (!open) void navigate(ROUTES.admin.tickets);
+      }}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         {ticket ? (
           <TicketDetails

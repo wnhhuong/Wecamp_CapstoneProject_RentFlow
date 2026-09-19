@@ -4,30 +4,33 @@ import App from "@/App";
 import { InvoicesPage } from "@/pages/admin/InvoicesPage";
 import { DashboardPage } from "@/pages/admin/DashboardPage";
 import { InvoiceDetailsSheet } from "@/pages/admin/invoices/InvoiceDetailsSheet";
+import { RequestDetailsSheet } from "@/pages/admin/requests/RequestDetailsSheet";
+import { RoomDetailsSheet } from "@/pages/admin/rooms/RoomDetailsSheet";
+import { TicketDetailsSheet } from "@/pages/admin/tickets/TicketDetailsSheet";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
 import { ParametersPage } from "@/pages/admin/ParametersPage";
+import { PropertyPage } from "@/pages/admin/PropertyPage";
 import { TicketsPage as AdminTicketsPage } from "@/pages/admin/TicketsPage";
 import { RoomsPage } from "@/pages/admin/RoomsPage";
 import { UsersPage } from "@/pages/admin/UsersPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
-import ConsumptionPage from "@/pages/user/consumption/ConsumptionPage";
-import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
-import { InvoiceListPage } from "@/pages/user/invoices/InvoiceListPage";
+import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
+import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
+import { RoomsPage as GuestRoomsPage } from "@/pages/guest/RoomsPage";
+import { RoomDetailsPage } from "@/pages/guest/RoomDetailsPage";
+import { ConsumptionPage } from "@/pages/user/ConsumptionPage";
 import { DashboardPage as TenantDashboardPage } from "@/pages/user/DashboardPage";
+import { InvoiceListPage } from "@/pages/user/InvoiceListPage";
 import { ProfilePage } from "@/pages/user/ProfilePage";
-import { TicketListPage } from "@/pages/user/tickets/TicketListPage";
+import { RequestListPage } from "@/pages/user/RequestListPage";
+import { TicketListPage } from "@/pages/user/TicketListPage";
+import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
 import { RequestDetailsSheet as TenantRequestDetailsSheet } from "@/pages/user/requests/RequestDetailsSheet";
-import { RequestListPage } from "@/pages/user/requests/RequestListPage";
 import { RequireAuth } from "@/router/require-auth";
+import { RequireOnboarding } from "@/router/require-onboarding";
 import { RoutePlaceholder } from "@/router/route-placeholder";
 import { RouterErrorPage } from "@/router/router-error-page";
 import { ROUTES } from "@/router/routes";
-
-import { FirstLoginProfilePage } from "@/pages/auth/first-login/FirstLoginProfilePage";
-import { FirstLoginContractPage } from "@/pages/auth/first-login/FirstLoginContractPage";
-import { RequireOnboarding } from "@/router/require-onboarding";
-import { RoomsPage as GuestRoomsPage } from "@/pages/guest/RoomsPage";
-import { RoomDetailsPage } from "@/pages/guest/RoomDetailsPage";
 
 const router = createBrowserRouter([
   {
@@ -156,6 +159,7 @@ const router = createBrowserRouter([
             <RoomsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":roomId", element: <RoomDetailsSheet /> }],
       },
       {
         path: ROUTES.admin.users,
@@ -172,7 +176,6 @@ const router = createBrowserRouter([
             <InvoicesPage />
           </RequireAuth>
         ),
-        // Nested so opening an invoice keeps the list, its filters and its page.
         children: [{ path: ":invoiceId", element: <InvoiceDetailsSheet /> }],
       },
       {
@@ -184,12 +187,21 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: ROUTES.admin.property,
+        element: (
+          <RequireAuth role="admin">
+            <PropertyPage />
+          </RequireAuth>
+        ),
+      },
+      {
         path: ROUTES.admin.tickets,
         element: (
           <RequireAuth role="admin">
             <AdminTicketsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":ticketId", element: <TicketDetailsSheet /> }],
       },
       {
         path: ROUTES.admin.requests,
@@ -198,6 +210,7 @@ const router = createBrowserRouter([
             <RequestsPage />
           </RequireAuth>
         ),
+        children: [{ path: ":requestId", element: <RequestDetailsSheet /> }],
       },
 
       {

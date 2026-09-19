@@ -227,6 +227,7 @@ function SentState({
 
       <dl className="mt-4">
         <Row label="Request ID" value={request.displayID} />
+        <Row label="Sent" value={formatDate(request.createDate)} />
         <Row
           label="Move-out date"
           value={formatDate(request.requestMoveoutDate)}

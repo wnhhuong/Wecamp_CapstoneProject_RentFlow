@@ -1,4 +1,4 @@
-import type { ApiPagination } from '@/shared/types/api'
+import type { BackendPagination } from '@/shared/types/api'
 import type { InvoiceStatus, RequestStatus } from '@/shared/types/status'
 
 export interface InvoiceBreakdown {
@@ -25,7 +25,7 @@ export interface BackendTenantInvoice {
 
 export interface BackendTenantInvoiceList {
   items: BackendTenantInvoice[]
-  pagination?: ApiPagination
+  pagination?: BackendPagination
 }
 
 export interface TenantInvoice {
@@ -99,4 +99,13 @@ export interface TenantInvoiceRequest {
   invoiceID: string
   createDate: string
   status: RequestStatus
+}
+
+/** Where a tenant sends the transfer, configured by the owner in Parameters. */
+export interface TenantPaymentInfo {
+  bankAccountHolder: string
+  bankName: string
+  bankAccountNumber: string
+  /** Absolute URL of the owner's QR image, null when none was uploaded. */
+  bankQrImage: string | null
 }
