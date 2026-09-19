@@ -829,6 +829,9 @@ const approveCheckoutRequest = async (
   await contract.save({ session });
  
   room.status = RoomStatus.AVAILABLE_NOW; // KHÔNG qua NOT_AVAILABLE (đúng AC)
+  // Move-out đã đẩy availableFrom tới ngày trả phòng; giờ phòng trống thật nên mốc đó
+  // đã lỗi thời. Schema bắt buộc field này, nên đặt "bây giờ" như lúc tạo phòng mới.
+  room.availableFrom = new Date();
   await room.save({ session });
  
   if (account) {
@@ -842,6 +845,7 @@ const approveCheckoutRequest = async (
     roomID: String(room._id),
     roomCode: room.roomCode,
     roomStatus: room.status,
+    roomAvailableFrom: room.availableFrom,
     accountID: account ? String(account._id) : null,
     accountStatus: account?.status ?? null,
     finalReading: checkoutRequest.finalReading, // dùng cho Billing (task khác), không tự tạo Invoice ở đây
