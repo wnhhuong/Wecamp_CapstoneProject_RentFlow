@@ -33,6 +33,8 @@ export const ENDPOINTS = {
     tickets: '/user/tickets',
     repairOptions: '/user/tickets/repairs/options',
     repairTickets: '/user/tickets/repairs',
+    complaintOptions: '/user/tickets/complains/options',
+    complaintTickets: '/user/tickets/complains',
 
     profile: '/user/profile',
 

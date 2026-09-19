@@ -478,7 +478,7 @@ Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
-|`type`|enum|Có|`COMPLAIN`|
+|`type`|enum|Có|`complain`|
 |`ticketName`|string|Có|displayID do Backend sinh|
 |`areaID`|integer|Có|Area được chọn|
 |`roomID`|integer, nullable|Không|Room optional|

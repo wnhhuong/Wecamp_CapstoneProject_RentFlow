@@ -92,3 +92,29 @@ export interface TenantTicketReceipt {
   createDate: string
   status: TicketStatus
 }
+
+export interface BackendComplaintOptions {
+  areas?: BackendComplaintArea[]
+}
+
+export interface BackendComplaintArea {
+  areaID: string | number
+  areaName?: string | null
+  rooms?: { roomID: string | number; roomCode?: string | null }[]
+}
+
+export interface ComplaintArea {
+  areaID: string
+  areaName: string
+  rooms: { roomID: string; roomCode: string }[]
+}
+
+export interface ComplaintOptions {
+  areas: ComplaintArea[]
+}
+
+export interface SubmitComplaintInput {
+  areaID: string
+  roomID: string
+  description: string
+}
