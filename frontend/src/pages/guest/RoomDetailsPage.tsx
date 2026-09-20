@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router'
 import { ErrorState, PageLoading } from '@/components/feedback'
 import { StatusBadge } from '@/components/status'
 import { Button } from '@/components/ui/button'
+import { Fact, FactGrid } from '@/components/ui/detail-sheet'
 import {
   Dialog,
   DialogClose,
@@ -17,7 +18,7 @@ import { getGuestRoomDetail } from '@/shared/api/guest/rooms.api'
 import { ROUTES } from '@/router/routes'
 import type { GuestRoomDetail } from '@/shared/types/guest/room'
 import { formatCurrency } from '@/shared/utils/currencyFormatter'
-import { formatDate } from '@/shared/utils/dateFormatter'
+import { formatDateShort } from '@/shared/utils/dateFormatter'
 
 function RoomDetailsPage() {
   const { roomId = '' } = useParams()
@@ -64,7 +65,7 @@ function RoomDetailsContent({ roomId }: { roomId: string }) {
 
   const occupancy = `${room.maxPeople} ${room.maxPeople === 1 ? 'person' : 'people'}`
   const availableNote = room.availableFrom && room.status === 'available soon'
-    ? `Expected available from ${formatDate(room.availableFrom)}.`
+    ? `Expected available from ${formatDateShort(room.availableFrom)}.`
     : null
 
   return (
@@ -73,11 +74,11 @@ function RoomDetailsContent({ roomId }: { roomId: string }) {
 
       <div className="flex min-w-0 flex-col gap-5">
         <DialogHeader className="flex-row items-start justify-between gap-4 space-y-0 text-left">
-          <div className="min-w-0">
+          <div className="min-w-0 w-60">
             <DialogTitle className="text-3xl font-semibold tracking-tight text-foreground">Room {room.roomCode}</DialogTitle>
             <DialogDescription className="mt-1.5 text-sm">Floor {room.floor} · up to {occupancy} · {room.areaName}</DialogDescription>
           </div>
-          {availableNote ? <p className="shrink-0 rounded-lg border border-status-warning-fg/25 bg-status-warning-bg px-3.5 py-2.5 text-sm font-medium leading-relaxed text-status-warning-fg">{availableNote}</p> : null}
+          {availableNote ? <p className="w-40 shrink-0 rounded-lg border border-status-warning-fg/25 bg-status-warning-bg px-3.5 py-2.5 text-sm font-medium leading-relaxed text-status-warning-fg">{availableNote}</p> : null}
         </DialogHeader>
 
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
@@ -85,12 +86,12 @@ function RoomDetailsContent({ roomId }: { roomId: string }) {
           <p className="text-sm text-muted-foreground">/ month · fixed public rent</p>
         </div>
 
-        <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline sm:grid-cols-2">
+        <FactGrid>
           <Fact label="Room code" value={room.roomCode} />
           <Fact label="Floor" value={`Floor ${room.floor}`} />
           <Fact label="Fits" value={occupancy} />
           <Fact label="Deposit" value={formatCurrency(room.deposit)} />
-        </dl>
+        </FactGrid>
 
         <p className="whitespace-pre-line text-sm leading-6 text-body">{room.roomDetail || 'No description has been added yet.'}</p>
       </div>
@@ -130,15 +131,6 @@ function RoomGallery({ room }: { room: GuestRoomDetail }) {
         {images.map((image, index) => <button key={`${image}-${index}`} type="button" aria-label={`Show photo ${index + 1}`} aria-pressed={index === selectedIndex} onClick={() => setSelectedIndex(index)} className={`aspect-[4/3] overflow-hidden rounded-lg border-2 transition-colors ${index === selectedIndex ? 'border-clay' : 'border-hairline hover:border-clay/40'}`}><img src={image} alt="" className="size-full object-cover" /></button>)}
       </div> : null}
     </section>
-  )
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5 bg-surface px-4 py-3">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="break-words text-sm font-medium text-foreground">{value}</dd>
-    </div>
   )
 }
 

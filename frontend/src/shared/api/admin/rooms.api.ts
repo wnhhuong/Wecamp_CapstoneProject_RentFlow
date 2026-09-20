@@ -1,5 +1,4 @@
 import { apiRequest } from '@/shared/api/client'
-import { API_BASE_URL } from '@/shared/api/config'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type {
   AdminRoomDetail,
@@ -14,6 +13,7 @@ import type {
   RoomAccount,
   UpdateRoomInput,
 } from '@/shared/types/admin/room'
+import { toAbsoluteAssetUrl } from '@/shared/utils/assetUrl'
 import { mapAccountStatus, mapRoomStatus } from '@/shared/utils/statusMapper'
 
 const ROOMS_PAGE_SIZE = 100
@@ -78,7 +78,14 @@ export async function getAdminRoomDetail(
       availableFrom: room.availableFrom,
       images: room.images,
     },
-    activeContract: detail.activeContract,
+    activeContract: detail.activeContract
+      ? {
+          ...detail.activeContract,
+          signature: detail.activeContract.signature
+            ? toAbsoluteAssetUrl(detail.activeContract.signature)
+            : null,
+        }
+      : null,
     tenant: detail.tenant,
     account: detail.account ? mapRoomAccount(detail.account) : null,
     stillOwed: detail.stillOwed ?? 0,
@@ -231,12 +238,4 @@ function mapRoomAccount(
     role: account.role,
     startDate: account.startDate ?? null,
   }
-}
-
-function toAbsoluteAssetUrl(path: string) {
-  if (!path) return ''
-  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path
-
-  const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin
-  return new URL(path, `${apiOrigin}/`).toString()
 }

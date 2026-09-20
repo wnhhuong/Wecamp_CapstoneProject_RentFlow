@@ -51,6 +51,8 @@ function IdentityHeader({
 interface DetailSectionProps {
   title: string
   badge?: ReactNode
+  /** Sits at the far end of the heading row; for the section's own action. */
+  action?: ReactNode
   bordered?: boolean
   children: ReactNode
 }
@@ -58,6 +60,7 @@ interface DetailSectionProps {
 function DetailSection({
   title,
   badge,
+  action,
   bordered = true,
   children,
 }: DetailSectionProps) {
@@ -71,6 +74,7 @@ function DetailSection({
       <div className="flex flex-wrap items-center gap-2.5">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {badge}
+        {action ? <div className="ml-auto">{action}</div> : null}
       </div>
       {children}
     </section>
@@ -82,6 +86,35 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
     <div className="flex items-center justify-between gap-4 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right font-medium text-foreground">{value}</span>
+    </div>
+  )
+}
+
+/**
+ * Hard facts that are read at a glance rather than compared: the cells sit in
+ * a hairline grid instead of ledger rows, which are kept for money and dates.
+ */
+function FactGrid({ children }: { children: ReactNode }) {
+  return (
+    <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline sm:grid-cols-2">
+      {children}
+    </dl>
+  )
+}
+
+function Fact({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn('flex min-w-0 flex-col gap-1.5 bg-surface px-4 py-3', className)}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="break-words text-sm font-medium text-foreground">{value}</dd>
     </div>
   )
 }
@@ -157,5 +190,5 @@ function buildInitials(fullName: string): string {
   return `${first}${last}`.toUpperCase()
 }
 
-export { DetailRow, DetailSection, IdentityHeader, Timeline }
+export { DetailRow, DetailSection, Fact, FactGrid, IdentityHeader, Timeline }
 export type { TimelineStep }

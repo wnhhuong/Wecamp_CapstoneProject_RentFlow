@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
-import { CloseIcon, EyeIcon, KeyIcon, PlusIcon } from "@/components/ui/icons";
+import { CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { SearchFilter } from "@/components/ui/search-filter";
 
 import {
@@ -44,7 +44,6 @@ function RoomsPage() {
     area: [],
     status: searchParams.get("status") ? [searchParams.get("status") as string] : [],
     capacity: [],
-    balance: [],
   });
 
   async function loadRooms() {
@@ -94,17 +93,7 @@ function RoomsPage() {
       const matchesCapacity =
         filters.capacity.length === 0 ||
         filters.capacity.includes(String(room.maxPeople));
-      const matchesOwed =
-        filters.balance.length === 0 ||
-        filters.balance.includes(room.stillOwed > 0 ? "owed" : "not_owed");
-
-      return (
-        matchesSearch &&
-        matchesArea &&
-        matchesStatus &&
-        matchesCapacity &&
-        matchesOwed
-      );
+      return matchesSearch && matchesArea && matchesStatus && matchesCapacity;
     });
   }, [filters, rooms, search]);
 
@@ -260,21 +249,12 @@ function RoomsPage() {
               label: `${capacity} ${capacity === 1 ? "person" : "people"}`,
             })),
           },
-          {
-            id: "balance",
-            label: "Balance",
-            selected: filters.balance,
-            options: [
-              { value: "owed", label: "Still owed" },
-              { value: "not_owed", label: "No balance" },
-            ],
-          },
         ]}
         onFilterChange={(id, selected) =>
           setFilters((current) => ({ ...current, [id]: selected }))
         }
         onClearFilters={() =>
-          setFilters({ area: [], status: [], capacity: [], balance: [] })
+          setFilters({ area: [], status: [], capacity: [] })
         }
         resultCount={filteredRooms.length}
         totalCount={rooms.length}
@@ -299,95 +279,58 @@ function RoomsPage() {
 
       {!isLoading && !loadError && filteredRooms.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-          <Table className="min-w-[1120px]">
+          <Table className="min-w-[820px]">
             <TableHeader className="bg-muted">
               <TableRow className="hover:bg-muted">
                 <TableHead className="px-4">Room</TableHead>
+                <TableHead>Availability</TableHead>
                 <TableHead>Tenant</TableHead>
-                <TableHead>Room account</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead>Capacity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Electricity</TableHead>
-                <TableHead>Still owed</TableHead>
-                <TableHead>Monthly rent</TableHead>
-                <TableHead className="pr-4 text-right">Action</TableHead>
+                <TableHead className="pr-4 text-right">Monthly rent</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRooms.map((room) => (
-                <TableRow key={room.roomID}>
+                <TableRow
+                  key={room.roomID}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    void navigate(ROUTES.admin.roomDetailsLink(room.roomID))
+                  }
+                >
                   <TableCell className="px-4 font-semibold">
                     {room.roomCode}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge domain="room" status={room.status} />
                   </TableCell>
                   <TableCell
                     className={
                       room.tenantName ? "text-body" : "text-muted-foreground"
                     }
                   >
-                    {room.tenantName ?? "Unassigned"}
+                    {room.tenantName ?? "\u2014"}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col items-start gap-1.5">
-                      <span className="text-xs text-muted-foreground">
-                        {room.account?.username ?? "No account"}
-                      </span>
-                      {room.account ? (
-                        <StatusBadge
-                          domain="account"
-                          status={room.account.status}
-                        />
-                      ) : null}
-                    </div>
+                    {room.account ? (
+                      <StatusBadge
+                        domain="account"
+                        status={room.account.status}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">No account</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {room.maxPeople}{" "}
                     {room.maxPeople === 1 ? "person" : "people"}
                   </TableCell>
-                  <TableCell>
-                    <StatusBadge domain="room" status={room.status} />
-                  </TableCell>
-                  <TableCell className="text-body">
-                    {electricityLabels[room.electricityState]}
-                  </TableCell>
-                  <TableCell
-                    className={
-                      room.stillOwed > 0
-                        ? "font-medium text-destructive"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {formatCurrency(room.stillOwed)}
-                  </TableCell>
-                  <TableCell className="font-medium text-body">
+                  
+                  
+                  
+                  <TableCell className="pr-4 text-right font-medium text-body">
                     {formatCurrency(room.price)}
-                  </TableCell>
-                  <TableCell className="pr-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          void navigate(
-                            ROUTES.admin.roomDetailsLink(room.roomID),
-                          )
-                        }
-                      >
-                        <EyeIcon />
-                        Details
-                      </Button>
-                      {room.account?.status === "banned" ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedRoomID(room.roomID)}
-                        >
-                          <KeyIcon />
-                          Prepare
-                        </Button>
-                      ) : null}
-                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -433,12 +376,5 @@ function RoomsPage() {
     </PageContainer>
   );
 }
-
-const electricityLabels = {
-  checked: "Checked",
-  waiting_admin: "Waiting admin",
-  late: "Late",
-  not_applicable: "Not applicable",
-} as const;
 
 export { RoomsPage };

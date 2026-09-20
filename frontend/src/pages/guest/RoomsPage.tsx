@@ -173,7 +173,7 @@ function Hero({ property }: { property: GuestProperty | null }) {
 
 function RoomCard({ room }: { room: GuestRoom }) {
   return (
-    <Card className="group gap-0 overflow-hidden rounded-2xl border-hairline bg-surface py-0 shadow-sm transition-shadow hover:shadow-lg">
+    <Card className="group relative gap-0 overflow-hidden rounded-2xl border-hairline bg-surface py-0 shadow-sm transition-shadow hover:shadow-lg">
       <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
         {room.coverImage ? <img src={room.coverImage} alt={`Room ${room.roomCode}`} className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" /> : <div className="grid size-full place-items-center text-sm text-muted-foreground">No image available</div>}
         <StatusBadge domain="room" status={room.status} className="absolute left-4 top-4" />
@@ -186,7 +186,11 @@ function RoomCard({ room }: { room: GuestRoom }) {
         <p className="text-sm text-muted-foreground">{room.areaName} · Floor {room.floor} · up to {room.maxPeople} {room.maxPeople === 1 ? 'person' : 'people'}</p>
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-body">{room.roomDetail || 'Room information is available in the details.'}</p>
         {room.availableFrom && room.status === 'available soon' ? <p className="text-xs text-muted-foreground">Available from {formatDate(room.availableFrom)}</p> : null}
-        <Button asChild variant="dark" className="mt-auto w-full"><Link to={ROUTES.guest.roomDetailsLink(room.roomID)}>View room details</Link></Button>
+        <Button asChild variant="dark" className="mt-auto w-full">
+          <Link to={ROUTES.guest.roomDetailsLink(room.roomID)} className="after:absolute after:inset-0 after:content-['']">
+            View room details
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   )
