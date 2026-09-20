@@ -2,8 +2,8 @@ import { apiRequest } from '@/shared/api/client'
 import { ENDPOINTS } from '@/shared/api/endpoints'
 import type { BackendGuestParameters, GuestProperty } from '@/shared/types/guest/room'
 
-export async function getGuestProperty(): Promise<GuestProperty> {
-  const parameters = await apiRequest<BackendGuestParameters>(ENDPOINTS.guest.parameters)
+export async function getGuestProperty(signal?: AbortSignal): Promise<GuestProperty> {
+  const parameters = await apiRequest<BackendGuestParameters>(ENDPOINTS.guest.parameters, { signal })
 
   return {
     propertyName: parameters.propertyName.value,
