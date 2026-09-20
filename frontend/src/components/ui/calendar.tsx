@@ -61,8 +61,8 @@ function Calendar({
           "size-9 font-normal aria-selected:opacity-100"
         ),
         selected:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-clay-hover",
-        today: "[&>button]:border [&>button]:border-clay",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-brand-hover",
+        today: "[&>button]:border [&>button]:border-brand",
         outside: "[&>button]:text-muted-foreground/50",
         disabled: "[&>button]:pointer-events-none [&>button]:opacity-30",
         hidden: "invisible",

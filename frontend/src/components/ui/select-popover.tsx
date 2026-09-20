@@ -79,7 +79,7 @@ function SelectPopover({
                     type="button"
                     className={cn(
                       "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-ink/[0.06]",
-                      item.value === value && "font-medium text-clay",
+                      item.value === value && "font-medium text-brand",
                     )}
                     onClick={() => {
                       onChange(item.value)
@@ -90,7 +90,7 @@ function SelectPopover({
                     {item.value === value ? (
                       <span
                         aria-hidden="true"
-                        className="size-2 shrink-0 rounded-full bg-clay"
+                        className="size-2 shrink-0 rounded-full bg-brand"
                       />
                     ) : null}
                   </button>

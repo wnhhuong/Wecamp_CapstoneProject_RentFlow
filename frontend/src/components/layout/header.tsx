@@ -53,7 +53,7 @@ function Header({
         ) : null}
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-[7px] bg-clay text-[18px] font-semibold text-white">
+          <span className="flex size-7 items-center justify-center rounded-[7px] bg-highlight text-[18px] font-semibold text-ink">
             R
           </span>
           <span className="text-lg font-semibold tracking-[-0.01em]">

@@ -153,7 +153,7 @@ function RoomsPage() {
       {createdRoomCode ? (
         <div
           role="status"
-          className="flex items-center justify-between gap-3 rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
         >
           <span>
             Room <strong>{createdRoomCode}</strong> was created successfully.
@@ -174,7 +174,7 @@ function RoomsPage() {
       {preparedUsername ? (
         <div
           role="status"
-          className="flex items-center justify-between gap-3 rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
         >
           <span>
             Account <strong>{preparedUsername}</strong> was prepared
@@ -196,7 +196,7 @@ function RoomsPage() {
       {updatedRoomCode ? (
         <div
           role="status"
-          className="flex items-center justify-between gap-3 rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
         >
           <span>
             Room <strong>{updatedRoomCode}</strong> was updated successfully.

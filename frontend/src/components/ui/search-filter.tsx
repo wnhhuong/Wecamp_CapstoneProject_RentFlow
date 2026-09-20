@@ -63,7 +63,7 @@ function SearchFilter({
 
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-hairline bg-surface p-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-[14rem] flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -161,14 +161,14 @@ function FilterDropdown({
           aria-label={label}
           className={cn(
             'group gap-2 bg-field font-normal',
-            isActive && 'border-clay bg-clay/5 text-clay',
+            isActive && 'border-brand bg-brand/5 text-brand',
           )}
         >
           {label}
           {isActive ? (
             <span
               aria-hidden="true"
-              className="size-2 rounded-full bg-clay"
+              className="size-2 rounded-full bg-brand"
             />
           ) : null}
           <ChevronDownIcon className="size-4 opacity-60 transition-transform group-data-[state=open]:rotate-180" />
@@ -194,7 +194,7 @@ function FilterDropdown({
                     type="checkbox"
                     checked={selected.includes(option.value)}
                     onChange={() => toggle(option.value)}
-                    className="size-4 shrink-0 accent-clay"
+                    className="size-4 shrink-0 accent-brand"
                   />
                   {option.label}
                 </label>
@@ -207,7 +207,7 @@ function FilterDropdown({
               <Button
                 type="button"
                 variant="link"
-                className="h-auto p-0 text-sm text-clay"
+                className="h-auto p-0 text-sm text-brand"
                 onClick={() => onChange([])}
               >
                 Clear

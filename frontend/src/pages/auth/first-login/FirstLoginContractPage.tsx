@@ -90,7 +90,7 @@ function FirstLoginContractPage() {
   return (
     <PageContainer>
       <div className="mx-auto w-full max-w-5xl">
-        <p className="text-xs font-semibold uppercase tracking-widest text-clay">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand">
           First login · Step 2 of 2
         </p>
         <h1 className="mt-2 text-3xl font-semibold">Review and sign your digital contract</h1>

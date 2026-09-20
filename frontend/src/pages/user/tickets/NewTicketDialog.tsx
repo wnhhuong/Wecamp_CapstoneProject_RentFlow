@@ -121,7 +121,7 @@ function TypeCard({
     <button
       type="button"
       onClick={() => onPick(kind)}
-      className="w-full rounded-lg border border-hairline bg-surface p-4 text-left transition-colors hover:border-clay hover:bg-muted"
+      className="w-full rounded-lg border border-hairline bg-surface p-4 text-left transition-colors hover:border-brand hover:bg-muted"
     >
       <span className="flex items-center gap-2.5">
         <StatusBadge domain="ticketType" status={kind} />

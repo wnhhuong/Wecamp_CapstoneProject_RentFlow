@@ -128,14 +128,14 @@ function RoomGallery({ room }: { room: GuestRoomDetail }) {
         </> : null}
       </div>
       {showControls ? <div className="grid grid-cols-4 gap-2.5" aria-label="Choose a room photo">
-        {images.map((image, index) => <button key={`${image}-${index}`} type="button" aria-label={`Show photo ${index + 1}`} aria-pressed={index === selectedIndex} onClick={() => setSelectedIndex(index)} className={`aspect-[4/3] overflow-hidden rounded-lg border-2 transition-colors ${index === selectedIndex ? 'border-clay' : 'border-hairline hover:border-clay/40'}`}><img src={image} alt="" className="size-full object-cover" /></button>)}
+        {images.map((image, index) => <button key={`${image}-${index}`} type="button" aria-label={`Show photo ${index + 1}`} aria-pressed={index === selectedIndex} onClick={() => setSelectedIndex(index)} className={`aspect-[4/3] overflow-hidden rounded-lg border-2 transition-colors ${index === selectedIndex ? 'border-brand' : 'border-hairline hover:border-brand/40'}`}><img src={image} alt="" className="size-full object-cover" /></button>)}
       </div> : null}
     </section>
   )
 }
 
 function ContactLink({ href, children, primary = false, external = false }: { href: string; children: React.ReactNode; primary?: boolean; external?: boolean }) {
-  return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} className={`inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-medium transition-colors ${primary ? 'bg-clay text-white hover:bg-clay-hover' : 'bg-page/12 text-page hover:bg-page/20'}`}>{children}</a>
+  return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} className={`inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-medium transition-colors ${primary ? 'bg-brand text-white hover:bg-brand-hover' : 'bg-page/12 text-page hover:bg-page/20'}`}>{children}</a>
 }
 
 export { RoomDetailsPage }

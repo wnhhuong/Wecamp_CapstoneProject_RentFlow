@@ -167,17 +167,17 @@ function Hero({ property }: { property: GuestProperty | null }) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/65" />
       <div className="relative grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl xl:text-4xl">Rooms available at <span className="text-flame">{property?.propertyName ?? 'RentFlow'}</span></h1>
+          <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl xl:text-4xl">Rooms available at <span className="text-highlight">{property?.propertyName ?? 'RentFlow'}</span></h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">Fixed public rent, no agency fee. Deposit and room agreement are arranged directly with the owner — RentFlow does not take payments before a lease exists.</p>
         </div>
         {property ? <div className="lg:min-w-64 self-baseline-last"><p className="mb-2 text-sm text-white/65">Contact the owner</p><div className="flex flex-wrap gap-2">
-          {property.contact.adminPhone ? <a className="inline-flex min-h-10 items-center rounded-lg bg-clay px-4 text-sm font-medium text-white transition-colors hover:bg-clay-hover" href={`tel:${property.contact.adminPhone}`}>Phone · {property.contact.adminPhone}</a> : null}
+          {property.contact.adminPhone ? <a className="inline-flex min-h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand-hover" href={`tel:${property.contact.adminPhone}`}>Phone · {property.contact.adminPhone}</a> : null}
           {property.contact.adminZalo ? <a className="inline-flex min-h-10 items-center rounded-lg bg-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/25" href={property.contact.adminZalo} target="_blank" rel="noreferrer">Zalo</a> : null}
           {property.contact.adminEmail ? <a className="inline-flex min-h-10 items-center rounded-lg bg-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/25" href={`mailto:${property.contact.adminEmail}`}>Email</a> : null}
         </div></div> : null}
       </div>
       <div className="relative mt-5 flex items-center gap-2" aria-label="Hero images">
-        {HERO_IMAGES.map((image, index) => <button key={image} type="button" aria-label={`Show background image ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined} onClick={() => setActiveImage(index)} className="group grid min-h-7 place-items-center"><span className={`h-1 rounded-full transition-all ${index === activeImage ? 'w-8 bg-flame' : 'w-4 bg-white/45 group-hover:bg-white/75'}`} /></button>)}
+        {HERO_IMAGES.map((image, index) => <button key={image} type="button" aria-label={`Show background image ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined} onClick={() => setActiveImage(index)} className="group grid min-h-7 place-items-center"><span className={`h-1 rounded-full transition-all ${index === activeImage ? 'w-8 bg-highlight' : 'w-4 bg-white/45 group-hover:bg-white/75'}`} /></button>)}
       </div>
     </section>
   )

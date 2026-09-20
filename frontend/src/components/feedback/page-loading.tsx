@@ -24,7 +24,7 @@ function PageLoading({
       )}
       {...props}
     >
-      <Spinner className="size-9 text-clay" aria-hidden="true" />
+      <Spinner className="size-9 text-brand" aria-hidden="true" />
       <div>
         <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
         <p className="mt-2 text-[13px] text-muted-foreground">

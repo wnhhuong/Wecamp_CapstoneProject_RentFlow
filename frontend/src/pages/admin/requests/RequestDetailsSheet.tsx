@@ -251,7 +251,7 @@ function RequestDetailsLoader({
             ) : null}
 
             {!outcome && !approveLabel ? (
-              <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+              <p className="border-l-2 border-brand pl-3 text-sm leading-6 text-body">
                 Approving {REQUEST_TYPE_LABELS[detail.type].toLowerCase()}{" "}
                 requests is not available yet.
               </p>

@@ -234,7 +234,7 @@ function ContactForm({
           }
         />
 
-        <p className="mt-5 border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+        <p className="mt-5 border-l-2 border-brand pl-3 text-sm leading-6 text-body">
           Only your phone number and place of residence can be changed here. The
           rest comes from your signed lease.
         </p>

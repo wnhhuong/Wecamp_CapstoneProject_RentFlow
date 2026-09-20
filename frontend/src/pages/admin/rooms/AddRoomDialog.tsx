@@ -315,7 +315,7 @@ function AddRoomDialog({
           {submitError ? (
             <div
               role="alert"
-              className="mt-4 rounded-md border border-[#e5b9ad] bg-[#fbeeea] px-3 py-2.5 text-sm text-status-danger-fg"
+              className="mt-4 rounded-md border border-status-danger-border bg-status-danger-bg px-3 py-2.5 text-sm text-status-danger-fg"
             >
               {submitError} Your form data has been kept.
             </div>

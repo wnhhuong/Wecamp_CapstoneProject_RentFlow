@@ -19,7 +19,7 @@ function Checkbox({
       className={cn(
         "peer grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-input bg-field outline-none transition-[color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50",
         "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-        "data-[state=checked]:border-clay data-[state=checked]:bg-clay data-[state=checked]:text-white",
+        "data-[state=checked]:border-brand data-[state=checked]:bg-brand data-[state=checked]:text-white",
         "aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20",
         className,
       )}

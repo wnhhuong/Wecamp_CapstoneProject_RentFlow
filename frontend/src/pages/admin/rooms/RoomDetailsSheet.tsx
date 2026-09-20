@@ -414,8 +414,8 @@ function RoomGallery({ images, roomCode }: { images: string[]; roomCode: string 
             className={cn(
               'overflow-hidden rounded-lg border-2 transition-colors',
               index === selectedIndex
-                ? 'border-clay'
-                : 'border-hairline hover:border-clay/40',
+                ? 'border-brand'
+                : 'border-hairline hover:border-brand/40',
             )}
           >
             <RoomImage src={image} alt="" className="h-full rounded-none border-0" />

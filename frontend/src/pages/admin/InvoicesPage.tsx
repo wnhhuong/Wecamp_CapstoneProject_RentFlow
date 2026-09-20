@@ -177,7 +177,7 @@ function InvoicesPage() {
         </p>
       </div>
 
-      {overdueOnly ? <div className="rounded-md border border-[#E5B9AD] bg-[#FBEEEA] px-4 py-3 text-sm text-clay">Showing overdue invoices only.</div> : null}
+      {overdueOnly ? <div className="rounded-md border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg">Showing overdue invoices only.</div> : null}
 
       {!loadError && summary.billingPeriod ? (
         <section className="grid gap-2.5">
