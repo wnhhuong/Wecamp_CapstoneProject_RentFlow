@@ -247,7 +247,7 @@ export class RoomService {
             {
               $lookup: {
                 from: 'consumptions',
-                localField: 'comsumptionID',
+                localField: 'consumptionID',
                 foreignField: '_id',
                 as: 'consumptionData',
               },
@@ -427,8 +427,11 @@ export class RoomService {
       .select('-password')
       .lean();
 
+    const roomConsumptions = await Consumption.find({ roomID: room._id })
+      .select('_id')
+      .lean();
     const unpaidInvoices = await Invoice.find({
-      roomID: room._id,
+      consumptionID: { $in: roomConsumptions.map((consumption) => consumption._id) },
       status: { $in: [InvoiceStatus.NOT_PAID] },
     }).lean();
 
