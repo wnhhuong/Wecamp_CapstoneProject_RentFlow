@@ -52,6 +52,17 @@ export async function getTenantTickets(
   }
 }
 
+export async function getTenantTicket(
+  ticketID: string,
+  signal?: AbortSignal,
+): Promise<TenantTicket> {
+  const ticket = await apiRequest<BackendTenantTicket>(
+    ENDPOINTS.user.ticket(ticketID),
+    { auth: 'user', signal },
+  )
+  return mapTicket(ticket)
+}
+
 export async function getRepairOptions(
   signal?: AbortSignal,
 ): Promise<RepairOptions> {

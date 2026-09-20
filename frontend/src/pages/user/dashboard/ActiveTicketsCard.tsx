@@ -1,14 +1,22 @@
 import { Link } from "react-router";
 
 import { StatusBadge } from "@/components/status";
+import { Button } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 import { ROUTES } from "@/router/routes";
 import type { DashboardTicket } from "@/shared/types/dashboard";
 
-function ActiveTicketsCard({ tickets }: { tickets: DashboardTicket[] }) {
+function ActiveTicketsCard({
+  tickets,
+  onNewTicket,
+}: {
+  tickets: DashboardTicket[];
+  onNewTicket: () => void;
+}) {
   return (
     <section className="grid min-w-0 gap-3 rounded-xl border border-hairline bg-surface p-5 [&>*]:min-w-0">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 font-semibold text-foreground">
             Active tickets
             {tickets.length > 0 ? (
@@ -21,25 +29,26 @@ function ActiveTicketsCard({ tickets }: { tickets: DashboardTicket[] }) {
             Repairs and complaints not closed yet
           </p>
         </div>
-        <Link
-          to={ROUTES.user.tickets}
-          className="shrink-0 text-sm font-medium whitespace-nowrap text-clay hover:underline"
-        >
-          View all →
-        </Link>
+        <div className="ml-auto flex items-center gap-3">
+          <Button type="button" variant="dark" size="sm" onClick={onNewTicket}>
+            <PlusIcon />
+            New
+          </Button>
+        </div>
       </div>
 
       {tickets.slice(0, 3).map((ticket) => (
-        <div
+        <Link
           key={ticket.ticketID}
-          className="flex items-center gap-3 border-b border-hairline py-2.5 last:border-0"
+          to={ROUTES.user.ticketDetailsLink(ticket.ticketID)}
+          className="flex items-center gap-3 rounded-md border-b border-hairline py-2.5 transition-colors last:border-0 hover:bg-muted focus-visible:outline-2 focus-visible:outline-brand"
         >
           <StatusBadge domain="ticketType" status={ticket.type} />
           <span className="min-w-0 flex-1 truncate text-sm text-body">
             {ticket.description || "No description"}
           </span>
           <StatusBadge domain="ticket" status={ticket.status} />
-        </div>
+        </Link>
       ))}
 
       {tickets.length === 0 ? (

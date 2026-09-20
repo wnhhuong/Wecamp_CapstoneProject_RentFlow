@@ -117,6 +117,7 @@ export const getDashboard = async (req: UserAuthRequest, res: Response, next: Ne
         // ---- 3. activeTickets: status khác DONE ----
         const activeTicketDocs = await Ticket.find({
             roomID,
+            createDate: { $gte: new Date(startDate) },
             status: { $ne: TicketStatus.DONE },
         }).sort({ createDate: -1 });
 
