@@ -46,10 +46,7 @@ const router = createBrowserRouter([
       {
         path: ROUTES.guest.rooms,
         element: <GuestRoomsPage />,
-      },
-      {
-        path: ROUTES.guest.roomDetails,
-        element: <RoomDetailsPage />,
+        children: [{ path: ':roomId', element: <RoomDetailsPage /> }],
       },
 
       {

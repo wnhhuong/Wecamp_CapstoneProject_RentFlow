@@ -15,6 +15,7 @@ import { mapRoomStatus } from '@/shared/utils/statusMapper'
 
 export async function getGuestRooms(
   filters: GuestRoomFilters = {},
+  signal?: AbortSignal,
 ): Promise<{ items: GuestRoom[]; pagination: ApiPagination }> {
   const params = new URLSearchParams()
   Object.entries(filters).forEach(([key, value]) => {
@@ -23,6 +24,7 @@ export async function getGuestRooms(
 
   const response = await apiRequest<GuestRoomsResponse>(
     `${ENDPOINTS.guest.rooms}?${params.toString()}`,
+    { signal },
   )
 
   const items = response.items.map(mapGuestRoom)
@@ -36,8 +38,8 @@ export async function getGuestRooms(
   }
 }
 
-export async function getGuestRoomDetail(roomID: string): Promise<GuestRoomDetail> {
-  const room = await apiRequest<BackendGuestRoomDetail>(ENDPOINTS.guest.room(roomID))
+export async function getGuestRoomDetail(roomID: string, signal?: AbortSignal): Promise<GuestRoomDetail> {
+  const room = await apiRequest<BackendGuestRoomDetail>(ENDPOINTS.guest.room(roomID), { signal })
   return {
     roomID: room.roomID,
     roomCode: room.roomCode,

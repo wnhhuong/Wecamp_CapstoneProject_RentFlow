@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
+import { ContractAgreement } from "@/components/ui/contract-agreement";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +67,10 @@ function LeaseCard({ contract, profile }: LeaseCardProps) {
           </DialogHeader>
 
           <div className="mt-4 space-y-4 text-sm leading-6 text-body">
-            {renderAgreement(contract, profile)}
+            <ContractAgreement
+              template={contract.terms.template}
+              values={buildAgreementValues(contract, profile)}
+            />
           </div>
 
           <div className="mt-6 border-t border-hairline pt-5">
@@ -82,14 +86,13 @@ function LeaseCard({ contract, profile }: LeaseCardProps) {
   );
 }
 
-/**
- * The backend stores the agreement with {token} placeholders, the same way the
- * first-login preview does. Each filled value is emphasised so the tenant can
- * see at a glance what the contract says about them.
- */
-function renderAgreement(contract: TenantContract, profile: TenantProfile) {
+function buildAgreementValues(
+  contract: TenantContract,
+  profile: TenantProfile,
+): Record<string, string> {
   const rent = formatCurrency(contract.rentPrice);
-  const values: Record<string, string> = {
+
+  return {
     fullName: profile.fullName,
     tenantName: profile.fullName,
     identityNo: profile.identityNo,
@@ -101,27 +104,6 @@ function renderAgreement(contract: TenantContract, profile: TenantProfile) {
     startDate: formatDate(contract.startDate),
     expireDate: formatDate(contract.expireDate),
   };
-
-  return contract.terms.template
-    .split(/\r?\n\s*\r?\n|\r?\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
-    .map((paragraph, paragraphIndex) => (
-      <p key={paragraphIndex}>
-        {paragraph.split(/(\{\w+\})/g).map((part, partIndex) => {
-          const token = /^\{(\w+)\}$/.exec(part);
-          const value = token ? values[token[1]] : undefined;
-
-          return value ? (
-            <strong key={partIndex} className="font-semibold text-foreground">
-              {value}
-            </strong>
-          ) : (
-            part
-          );
-        })}
-      </p>
-    ));
 }
 
 function SignatureImage({ src }: { src: string }) {

@@ -65,6 +65,21 @@ async function getParametersIn(
     .map(mapAdminParameter)
 }
 
+/**
+ * The agreement body every contract is rendered from. It is a parameter rather
+ * than a per-contract field, so the owner and the tenant read the same text.
+ */
+export async function getAdminContractTemplate(
+  signal?: AbortSignal,
+): Promise<string> {
+  const parameters = await apiRequest<BackendAdminParameter[]>(
+    ENDPOINTS.admin.parameters,
+    { auth: 'admin', signal },
+  )
+
+  return parameters.find((parameter) => parameter.name === 'contractPlaceholder')?.value ?? ''
+}
+
 export async function updateAdminParameters(
   updates: AdminParameterUpdate[],
 ): Promise<AdminParameter[]> {

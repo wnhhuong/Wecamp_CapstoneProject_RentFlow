@@ -13,7 +13,7 @@
 
 ## Cấu trúc thư mục
 
-- `components/ui` — thành phần cơ bản: button, input, dialog, table, `SearchFilter` (thanh tìm kiếm + lọc cho list/table)…
+- `components/ui` — thành phần cơ bản: button, input, textarea, `Checkbox`, `SelectPopover` (thay `<select>`), dialog, sheet, popover, calendar, table, `SearchFilter` (thanh tìm kiếm + lọc cho list/table)…
 - `components/feedback` — `PageLoading`, `ErrorState`, `EmptyState`
 - `components/layout` — `Header`, `Sidebar`, `PageContainer`
 - `components/status` — `StatusBadge`
@@ -48,4 +48,4 @@
 
 - Tiền: `formatCurrency` khi hiển thị (ra `3.200.000 ₫`), `formatAmountInput` cho ô nhập, `toAmountDigits` trước khi lưu/gửi. Label trong form vẫn ghi VND.
 - Ngày: `formatDate` để hiển thị, `getDateKey` để so sánh.
-- Không gọi `Intl.NumberFormat`, `toLocaleString`, `toLocaleDateString` trong component. Thiếu kiểu format nào thì bổ sung vào file util, không viết tại chỗ.
+- Không gọi `Intl.NumberFormat`, `toLocaleString`, `toLocaleDateString` trong component. Thiếu kiểu format nào thì bổ sung vào file util, không viết tại chỗ
