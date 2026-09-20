@@ -31,6 +31,7 @@ function RoomsPage() {
   const [filters, setFilters] = useState<Record<string, string[]>>({})
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, totalItems: 0, totalPages: 1 })
+  const [totalPublicRooms, setTotalPublicRooms] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
@@ -58,6 +59,7 @@ function RoomsPage() {
         if (controller.signal.aborted) return
         setRooms(result.items)
         setPagination(result.pagination)
+        if (!hasActiveRoomFilters(query)) setTotalPublicRooms(result.pagination.totalItems)
         setError(false)
         setLoading(false)
       })
@@ -69,6 +71,16 @@ function RoomsPage() {
 
     return () => controller.abort()
   }, [query, retryKey])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getGuestRooms({ page: 1, limit: 1 }, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setTotalPublicRooms(result.pagination.totalItems)
+      })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -105,8 +117,8 @@ function RoomsPage() {
           filters={filterGroups}
           onFilterChange={changeFilter}
           onClearFilters={clearFilters}
-          resultCount={rooms.length}
-          totalCount={pagination.totalItems}
+          resultCount={pagination.totalItems}
+          totalCount={totalPublicRooms ?? undefined}
           itemNoun="room"
         />
 
@@ -197,6 +209,9 @@ function RoomCard({ room }: { room: GuestRoom }) {
 }
 
 function numberFilter(values?: string[]) { return values?.[0] ? Number(values[0]) : undefined }
+function hasActiveRoomFilters({ search, floor, status, maxPeople, priceMin, priceMax }: GuestRoomFilters) {
+  return Boolean(search || floor !== undefined || status || maxPeople !== undefined || priceMin !== undefined || priceMax !== undefined)
+}
 function statusFilter(values?: string[]) { return values?.[0] as 'available_now' | 'available_soon' | undefined }
 function priceFilter(values?: string[]) { switch (values?.[0]) { case 'under3500': return { min: 0, max: 3500000 }; case '3500to4500': return { min: 3500000, max: 4500000 }; case 'over4500': return { min: 4500000 }; default: return undefined } }
 
