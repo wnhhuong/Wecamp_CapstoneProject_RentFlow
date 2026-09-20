@@ -26,6 +26,7 @@ import { RequestListPage } from "@/pages/user/RequestListPage";
 import { TicketListPage } from "@/pages/user/TicketListPage";
 import { InvoiceDetailsSheet as TenantInvoiceDetailsSheet } from "@/pages/user/invoices/InvoiceDetailsSheet";
 import { RequestDetailsSheet as TenantRequestDetailsSheet } from "@/pages/user/requests/RequestDetailsSheet";
+import { TicketDetailsSheet as TenantTicketDetailsSheet } from "@/pages/user/tickets/TicketDetailsSheet";
 import { RequireAuth } from "@/router/require-auth";
 import { RequireOnboarding } from "@/router/require-onboarding";
 import { RoutePlaceholder } from "@/router/route-placeholder";
@@ -123,6 +124,9 @@ const router = createBrowserRouter([
             <TicketListPage />
           </RequireAuth>
         ),
+        children: [
+          { path: ":ticketId", element: <TenantTicketDetailsSheet /> },
+        ],
       },
       {
         path: ROUTES.user.profile,

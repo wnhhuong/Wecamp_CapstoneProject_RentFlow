@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router";
 import { ErrorState, PageLoading } from "@/components/feedback";
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
+import { Timeline, type TimelineStep } from "@/components/ui/detail-sheet";
 import {
   Sheet,
   SheetContent,
@@ -112,7 +113,7 @@ function InvoiceDetailsLoader({ invoiceID }: { invoiceID: string }) {
         </SheetDescription>
       </SheetHeader>
 
-      <div className="flex flex-1 flex-col gap-5 px-4 pb-4">
+      <div className="flex flex-1 flex-col gap-5 px-4 pb-4 pt-4">
         {isLoading ? (
           <PageLoading
             title="Loading invoice"
@@ -124,20 +125,6 @@ function InvoiceDetailsLoader({ invoiceID }: { invoiceID: string }) {
 
         {!isLoading && !error && invoice ? (
           <>
-            <dl className="grid gap-3 pt-4">
-              <SummaryRow
-                label="Issued"
-                value={formatDate(invoice.createDate, true)}
-              />
-              <SummaryRow label="Due" value={formatDate(invoice.dueDate)} />
-              {invoice.paymentDate ? (
-                <SummaryRow
-                  label="Paid"
-                  value={formatDate(invoice.paymentDate, true)}
-                />
-              ) : null}
-            </dl>
-
             {invoice.isOverdue ? (
               <p
                 role="status"
@@ -199,6 +186,8 @@ function InvoiceDetailsLoader({ invoiceID }: { invoiceID: string }) {
               </Table>
             </div>
 
+            <Timeline steps={buildTimeline(invoice)} />
+
             <PaymentDialog
               open={isPaymentOpen}
               onOpenChange={setIsPaymentOpen}
@@ -237,13 +226,12 @@ function InvoiceDetailsLoader({ invoiceID }: { invoiceID: string }) {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium text-foreground">{value}</dd>
-    </div>
-  );
+function buildTimeline(invoice: TenantInvoiceDetail): TimelineStep[] {
+  return [
+    { label: "Issued", value: formatDate(invoice.createDate, true), reached: true },
+    { label: "Due", value: formatDate(invoice.dueDate), reached: invoice.isOverdue || Boolean(invoice.paymentDate), isAlert: invoice.isOverdue },
+    { label: "Paid", value: invoice.paymentDate ? formatDate(invoice.paymentDate, true) : "Not yet", reached: Boolean(invoice.paymentDate) },
+  ];
 }
 
 function buildChargeLines(invoice: TenantInvoiceDetail): ChargeLine[] {

@@ -235,7 +235,7 @@ export function LoginPage() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Login guide"
-                  className="mt-1 shrink-0 rounded-full border border-hairline text-muted-foreground hover:text-foreground data-[state=open]:border-clay data-[state=open]:text-clay"
+                  className="mt-1 shrink-0 rounded-full border border-hairline text-muted-foreground hover:text-foreground data-[state=open]:border-brand data-[state=open]:text-brand"
                 >
                   ?
                 </Button>
@@ -351,7 +351,7 @@ export function LoginPage() {
             {error ? (
               <p
                 role="alert"
-                className="rounded-md border border-[#e5b9ad] bg-status-danger-bg px-3 py-2 text-sm leading-5 text-status-danger-fg"
+                className="rounded-md border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm leading-5 text-status-danger-fg"
               >
                 {error}
               </p>
@@ -380,7 +380,7 @@ export function LoginPage() {
                 id="password-help"
                 role="status"
                 className={cn(
-                  "border-l-2 border-clay pl-3 text-sm leading-6 text-body transition-opacity duration-300 ease-out",
+                  "border-l-2 border-brand pl-3 text-sm leading-6 text-body transition-opacity duration-300 ease-out",
                   showPasswordHelp ? "opacity-100" : "opacity-0",
                 )}
               >

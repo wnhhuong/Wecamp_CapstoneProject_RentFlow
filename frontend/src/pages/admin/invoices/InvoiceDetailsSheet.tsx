@@ -202,7 +202,7 @@ function InvoiceDetailsLoader({ invoiceID }: { invoiceID: string }) {
             <Timeline steps={buildTimeline(invoice)} />
 
             {invoice.unitPriceIsApprox ? (
-              <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+              <p className="border-l-2 border-brand pl-3 text-sm leading-6 text-body">
                 The electricity unit price shown is today's parameter, not the
                 one billed: this invoice has no usage to derive it from.
               </p>

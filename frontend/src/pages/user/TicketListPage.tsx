@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Outlet, useNavigate } from "react-router";
 
 import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { StatusBadge } from "@/components/status";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchFilter } from "@/components/ui/search-filter";
 import {
@@ -28,9 +22,9 @@ import {
 } from "@/shared/api/user/tickets.api";
 
 import { NewTicketDialog } from "./tickets/NewTicketDialog";
+import { ROUTES } from "@/router/routes";
 import type { ApiPagination } from "@/shared/types/api";
 import type { TenantTicket, TenantTicketQuery } from "@/shared/types/ticket";
-import { cn } from "@/shared/utils/cn";
 import { formatDateShort } from "@/shared/utils/dateFormatter";
 import { TICKET_TYPE_OPTIONS } from "@/shared/utils/ticketTypes";
 
@@ -46,6 +40,7 @@ const EMPTY_PAGINATION: ApiPagination = {
 };
 
 function TicketListPage() {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<TenantTicket[]>([]);
   const [pagination, setPagination] = useState<ApiPagination>(EMPTY_PAGINATION);
   const [filters, setFilters] = useState<Record<string, string[]>>({
@@ -59,8 +54,6 @@ function TicketListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
-  const [expandedID, setExpandedID] = useState<string | null>(null);
-  const [photoTicket, setPhotoTicket] = useState<TenantTicket | null>(null);
 
   const selectedStatuses = filters[STATUS_FILTER_ID] ?? [];
   const selectedTypes = filters[TYPE_FILTER_ID] ?? [];
@@ -211,7 +204,7 @@ function TicketListPage() {
       {!isLoading && !loadError && tickets.length > 0 ? (
         <>
           <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-            <Table className="min-w-[1060px]">
+            <Table className="min-w-[900px]">
               <TableHeader className="bg-muted">
                 <TableRow className="hover:bg-muted">
                   <TableHead
@@ -223,7 +216,6 @@ function TicketListPage() {
                     Type
                   </TableHead>
                   <TableHead>Details</TableHead>
-                  <TableHead>Where</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Raised</TableHead>
                   <TableHead>Resolved</TableHead>
@@ -233,12 +225,17 @@ function TicketListPage() {
                 {tickets.map((ticket) => (
                   <TableRow
                     key={ticket.ticketID}
-                    className="group cursor-pointer hover:bg-muted"
-                    onClick={() =>
-                      setExpandedID((current) =>
-                        current === ticket.ticketID ? null : ticket.ticketID,
-                      )
-                    }
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open ticket ${ticket.displayID}`}
+                    className="group cursor-pointer hover:bg-muted focus-visible:outline-2 focus-visible:outline-brand"
+                    onClick={() => void navigate(ROUTES.user.ticketDetailsLink(ticket.ticketID))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        void navigate(ROUTES.user.ticketDetailsLink(ticket.ticketID));
+                      }
+                    }}
                   >
                     <TableCell
                       className="sticky left-0 z-10 w-[210px] min-w-[210px] max-w-[210px] bg-surface px-4 font-medium text-foreground transition-colors group-hover:bg-muted"
@@ -248,30 +245,9 @@ function TicketListPage() {
                     <TableCell className="sticky left-[210px] z-10 bg-surface transition-colors group-hover:bg-muted">
                       <StatusBadge domain="ticketType" status={ticket.type} />
                     </TableCell>
-                    <TableCell
-                      className={cn(
-                        "max-w-[340px]",
-                        expandedID === ticket.ticketID
-                          ? "whitespace-normal"
-                          : "truncate",
-                      )}
-                    >
-                      {ticket.description || "—"}
-                      {expandedID === ticket.ticketID && ticket.image ? (
-                        <Button
-                          type="button"
-                          variant="link"
-                          className="mt-1 block h-auto p-0 text-sm text-clay"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setPhotoTicket(ticket);
-                          }}
-                        >
-                          View photo
-                        </Button>
-                      ) : null}
+                    <TableCell className="max-w-[340px]">
+                      <span className="block truncate">{ticket.description || "—"}</span>
                     </TableCell>
-                    <TableCell>{ticket.location || "—"}</TableCell>
                     <TableCell>
                       <StatusBadge domain="ticket" status={ticket.status} />
                     </TableCell>
@@ -298,11 +274,6 @@ function TicketListPage() {
         </>
       ) : null}
 
-      <TicketPhotoDialog
-        ticket={photoTicket}
-        onClose={() => setPhotoTicket(null)}
-      />
-
       <NewTicketDialog
         open={isNewTicketOpen}
         onOpenChange={setIsNewTicketOpen}
@@ -312,50 +283,8 @@ function TicketListPage() {
           setReloadToken((token) => token + 1);
         }}
       />
+      <Outlet />
     </PageContainer>
-  );
-}
-
-function TicketPhotoDialog({
-  ticket,
-  onClose,
-}: {
-  ticket: TenantTicket | null;
-  onClose: () => void;
-}) {
-  const [hasError, setHasError] = useState(false);
-
-  return (
-    <Dialog
-      open={ticket !== null}
-      onOpenChange={(next) => {
-        if (!next) {
-          setHasError(false);
-          onClose();
-        }
-      }}
-    >
-      <DialogContent className="w-[min(42rem,calc(100%-2rem))] max-w-none rounded-lg bg-field p-5 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Photo you attached</DialogTitle>
-          <DialogDescription>{ticket?.displayID}</DialogDescription>
-        </DialogHeader>
-
-        {/* The stored path can point at a file that is no longer on disk. */}
-        {ticket && !hasError ? (
-          <img
-            src={ticket.image}
-            alt={`Photo attached to ticket ${ticket.displayID}`}
-            className="mt-2 max-h-[60vh] w-full rounded-md border border-hairline object-contain"
-            onError={() => setHasError(true)}
-          />
-        ) : (
-          <p className="mt-2 flex h-32 items-center justify-center rounded-md border border-hairline bg-page text-sm text-muted-foreground">
-            This photo is no longer available.
-          </p>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }
 

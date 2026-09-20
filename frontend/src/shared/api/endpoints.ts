@@ -33,6 +33,8 @@ export const ENDPOINTS = {
     dashboard: '/user/dashboard',
 
     tickets: '/user/tickets',
+    ticket: (ticketID: string) =>
+      `/user/tickets/${encodeURIComponent(ticketID)}`,
     repairOptions: '/user/tickets/repairs/options',
     repairTickets: '/user/tickets/repairs',
     complaintOptions: '/user/tickets/complains/options',

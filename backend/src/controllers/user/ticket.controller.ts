@@ -144,6 +144,69 @@ export const getAllTickets = async (req: UserAuthRequest, res: Response, next: N
     }
 }
 
+// GET /api/user/tickets/:ticketID
+export const getTicketDetails = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { roomID, startDate } = req.auth!;
+        const { ticketID } = req.params;
+        if (!mongoose.isValidObjectId(ticketID)) {
+            sendError(res, 400, "Invalid ticketID");
+            return;
+        }
+
+        const [ticket, room] = await Promise.all([
+            Ticket.findOne({
+                _id: ticketID,
+                roomID,
+                createDate: { $gte: new Date(startDate) },
+            }),
+            Room.findById(roomID),
+        ]);
+        if (!ticket) { sendError(res, 404, "Ticket not found"); return; }
+        if (!room) { sendError(res, 404, "Room not found"); return; }
+
+        let description = "";
+        let location = "";
+        let image = "";
+
+        if (ticket.ticketType === TicketType.COMPLAIN) {
+            const complain = await Complain.findOne({ ticketID: ticket._id });
+            if (complain) {
+                description = complain.description;
+                const [area, complainRoom] = await Promise.all([
+                    Area.findById(complain.areaID),
+                    complain.roomID ? Room.findById(complain.roomID) : Promise.resolve(null),
+                ]);
+                location = [area?.areaName, complainRoom?.roomCode].filter(Boolean).join(" ");
+            }
+        } else if (ticket.ticketType === TicketType.REPAIR) {
+            const repair = await Repair.findOne({ ticketID: ticket._id });
+            if (repair) {
+                description = repair.description;
+                image = repair.facilityImage;
+                const facility = await Facility.findById(repair.facilityID);
+                const facilityType = facility ? await FacilityType.findById(facility.typeID) : null;
+                location = facilityType?.typeName ?? "";
+            }
+        }
+
+        sendSuccess(res, {
+            ticketID: ticket._id,
+            displayID: buildTicketDisplayID(ticket.ticketType, room.roomCode, ticket.createDate, ticket._id),
+            description,
+            location,
+            image,
+            roomCode: room.roomCode,
+            ticketType: ticket.ticketType,
+            createDate: ticket.createDate.toISOString(),
+            resolveDate: ticket.resolveDate ? ticket.resolveDate.toISOString() : null,
+            status: ticket.status,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 // Get repair options
 // GET /api/user/tickets/repairs/options
 export const getRepairOptions = async (req: UserAuthRequest, res: Response, next: NextFunction): Promise<void> => {

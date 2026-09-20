@@ -6,6 +6,7 @@ import { getTenantDashboard } from "@/shared/api/user/dashboard.api";
 import { useAuth } from "@/shared/auth/useAuth";
 import type { TenantDashboard } from "@/shared/types/dashboard";
 import { formatDate } from "@/shared/utils/dateFormatter";
+import { NewTicketDialog } from "./tickets/NewTicketDialog";
 
 import { ActiveTicketsCard } from "./dashboard/ActiveTicketsCard";
 import { ElectricityCard } from "./dashboard/ElectricityCard";
@@ -18,6 +19,7 @@ function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
+  const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,10 +78,19 @@ function DashboardPage() {
 
           <div className="grid items-start gap-4 xl:grid-cols-2">
             <PendingRequestsCard requests={dashboard.requests} />
-            <ActiveTicketsCard tickets={dashboard.tickets} />
+            <ActiveTicketsCard
+              tickets={dashboard.tickets}
+              onNewTicket={() => setIsNewTicketOpen(true)}
+            />
           </div>
         </>
       ) : null}
+
+      <NewTicketDialog
+        open={isNewTicketOpen}
+        onOpenChange={setIsNewTicketOpen}
+        onCreated={() => setReloadToken((token) => token + 1)}
+      />
     </PageContainer>
   );
 }

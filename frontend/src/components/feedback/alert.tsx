@@ -18,8 +18,8 @@ function Alert({ tone, children, onDismiss }: AlertProps) {
       className={cn(
         'flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm',
         tone === 'success'
-          ? 'border-[#bfd2bf] bg-status-success-bg text-status-success-fg'
-          : 'border-[#e0c2bc] bg-status-danger-bg text-status-danger-fg',
+          ? 'border-status-success-border bg-status-success-bg text-status-success-fg'
+          : 'border-status-danger-border bg-status-danger-bg text-status-danger-fg',
       )}
     >
       <span>{children}</span>

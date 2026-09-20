@@ -122,7 +122,7 @@ function FirstLoginProfilePage() {
   return (
     <PageContainer>
       <div className="mx-auto w-full max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-widest text-clay">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand">
           First login · Step 1 of 2
         </p>
 

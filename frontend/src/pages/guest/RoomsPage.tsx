@@ -31,6 +31,7 @@ function RoomsPage() {
   const [filters, setFilters] = useState<Record<string, string[]>>({})
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, totalItems: 0, totalPages: 1 })
+  const [totalPublicRooms, setTotalPublicRooms] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
@@ -58,6 +59,7 @@ function RoomsPage() {
         if (controller.signal.aborted) return
         setRooms(result.items)
         setPagination(result.pagination)
+        if (!hasActiveRoomFilters(query)) setTotalPublicRooms(result.pagination.totalItems)
         setError(false)
         setLoading(false)
       })
@@ -69,6 +71,16 @@ function RoomsPage() {
 
     return () => controller.abort()
   }, [query, retryKey])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getGuestRooms({ page: 1, limit: 1 }, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setTotalPublicRooms(result.pagination.totalItems)
+      })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -105,8 +117,8 @@ function RoomsPage() {
           filters={filterGroups}
           onFilterChange={changeFilter}
           onClearFilters={clearFilters}
-          resultCount={rooms.length}
-          totalCount={pagination.totalItems}
+          resultCount={pagination.totalItems}
+          totalCount={totalPublicRooms ?? undefined}
           itemNoun="room"
         />
 
@@ -155,17 +167,17 @@ function Hero({ property }: { property: GuestProperty | null }) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/65" />
       <div className="relative grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl xl:text-4xl">Rooms available at <span className="text-flame">{property?.propertyName ?? 'RentFlow'}</span></h1>
+          <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl xl:text-4xl">Rooms available at <span className="text-highlight">{property?.propertyName ?? 'RentFlow'}</span></h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">Fixed public rent, no agency fee. Deposit and room agreement are arranged directly with the owner — RentFlow does not take payments before a lease exists.</p>
         </div>
         {property ? <div className="lg:min-w-64 self-baseline-last"><p className="mb-2 text-sm text-white/65">Contact the owner</p><div className="flex flex-wrap gap-2">
-          {property.contact.adminPhone ? <a className="inline-flex min-h-10 items-center rounded-lg bg-clay px-4 text-sm font-medium text-white transition-colors hover:bg-clay-hover" href={`tel:${property.contact.adminPhone}`}>Phone · {property.contact.adminPhone}</a> : null}
+          {property.contact.adminPhone ? <a className="inline-flex min-h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand-hover" href={`tel:${property.contact.adminPhone}`}>Phone · {property.contact.adminPhone}</a> : null}
           {property.contact.adminZalo ? <a className="inline-flex min-h-10 items-center rounded-lg bg-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/25" href={property.contact.adminZalo} target="_blank" rel="noreferrer">Zalo</a> : null}
           {property.contact.adminEmail ? <a className="inline-flex min-h-10 items-center rounded-lg bg-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/25" href={`mailto:${property.contact.adminEmail}`}>Email</a> : null}
         </div></div> : null}
       </div>
       <div className="relative mt-5 flex items-center gap-2" aria-label="Hero images">
-        {HERO_IMAGES.map((image, index) => <button key={image} type="button" aria-label={`Show background image ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined} onClick={() => setActiveImage(index)} className="group grid min-h-7 place-items-center"><span className={`h-1 rounded-full transition-all ${index === activeImage ? 'w-8 bg-flame' : 'w-4 bg-white/45 group-hover:bg-white/75'}`} /></button>)}
+        {HERO_IMAGES.map((image, index) => <button key={image} type="button" aria-label={`Show background image ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined} onClick={() => setActiveImage(index)} className="group grid min-h-7 place-items-center"><span className={`h-1 rounded-full transition-all ${index === activeImage ? 'w-8 bg-highlight' : 'w-4 bg-white/45 group-hover:bg-white/75'}`} /></button>)}
       </div>
     </section>
   )
@@ -197,6 +209,9 @@ function RoomCard({ room }: { room: GuestRoom }) {
 }
 
 function numberFilter(values?: string[]) { return values?.[0] ? Number(values[0]) : undefined }
+function hasActiveRoomFilters({ search, floor, status, maxPeople, priceMin, priceMax }: GuestRoomFilters) {
+  return Boolean(search || floor !== undefined || status || maxPeople !== undefined || priceMin !== undefined || priceMax !== undefined)
+}
 function statusFilter(values?: string[]) { return values?.[0] as 'available_now' | 'available_soon' | undefined }
 function priceFilter(values?: string[]) { switch (values?.[0]) { case 'under3500': return { min: 0, max: 3500000 }; case '3500to4500': return { min: 3500000, max: 4500000 }; case 'over4500': return { min: 4500000 }; default: return undefined } }
 

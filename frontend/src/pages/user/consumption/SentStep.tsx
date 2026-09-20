@@ -2,6 +2,7 @@ import { Link } from "react-router";
 
 import { StatusBadge } from "@/components/status";
 import { Button } from "@/components/ui/button";
+import { RefreshIcon } from "@/components/ui/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
@@ -74,7 +75,8 @@ export function SentStep({ result, onRefresh, refreshing }: SentStepProps) {
               <Link to={ROUTES.user.invoices}>View invoices</Link>
             </Button>
           ) : (
-            <Button type="button" disabled={refreshing} onClick={onRefresh}>
+            <Button type="button" variant="dark" disabled={refreshing} onClick={onRefresh}>
+              <RefreshIcon />
               Refresh status
             </Button>
           )}

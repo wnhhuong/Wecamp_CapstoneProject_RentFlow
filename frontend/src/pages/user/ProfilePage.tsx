@@ -113,7 +113,7 @@ function ProfilePage() {
           {contract ? (
             <LeaseCard contract={contract} profile={profile} />
           ) : (
-            <p className="border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+            <p className="border-l-2 border-brand pl-3 text-sm leading-6 text-body">
               No active lease is recorded for your room right now.
             </p>
           )}

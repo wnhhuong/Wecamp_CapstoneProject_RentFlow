@@ -126,7 +126,7 @@ function PaymentDialog({
           </dl>
         </div>
 
-        <p className="mt-5 border-l-2 border-clay pl-3 text-sm leading-6 text-body">
+        <p className="mt-5 border-l-2 border-brand pl-3 text-sm leading-6 text-body">
           Tell the owner once the transfer is done. This invoice stays unpaid
           until they confirm receiving the money.
         </p>
@@ -215,7 +215,7 @@ function QrPlaceholder({ value }: { value: string }) {
   return (
     <svg
       viewBox={`0 0 ${size} ${size}`}
-      className="size-36"
+      className="size-36 text-ink"
       aria-hidden="true"
     >
       <rect width={size} height={size} fill="white" />
@@ -231,7 +231,7 @@ function QrPlaceholder({ value }: { value: string }) {
             y={row}
             width={1}
             height={1}
-            fill="#1B2632"
+            fill="currentColor"
           />
         );
       })}
@@ -240,7 +240,7 @@ function QrPlaceholder({ value }: { value: string }) {
         [0, size - 7],
         [size - 7, 0],
       ].map(([row, column]) => (
-        <g key={`${row}-${column}`} fill="#1B2632">
+        <g key={`${row}-${column}`} fill="currentColor">
           <rect x={column} y={row} width={7} height={7} />
           <rect x={column + 1} y={row + 1} width={5} height={5} fill="white" />
           <rect x={column + 2} y={row + 2} width={3} height={3} />

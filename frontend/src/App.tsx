@@ -24,12 +24,14 @@ const userNavigation: SidebarNavItem[] = [
     id: "dashboard",
     label: "Home",
     to: ROUTES.user.dashboard,
+    group: "Overview",
     end: true,
   },
   {
     id: "electricity",
     label: "Electricity",
     to: ROUTES.user.electricity,
+    group: "Manage",
   },
   {
     id: "invoices",
@@ -50,6 +52,7 @@ const userNavigation: SidebarNavItem[] = [
     id: "profile",
     label: "Profile & lease",
     to: ROUTES.user.profile,
+    group: "Account",
   },
 ];
 
@@ -58,12 +61,14 @@ const adminNavigation: SidebarNavItem[] = [
     id: "dashboard",
     label: "Dashboard",
     to: ROUTES.admin.dashboard,
+    group: "Overview",
     end: true,
   },
   {
     id: "rooms",
     label: "Rooms & leases",
     to: ROUTES.admin.rooms,
+    group: "Management",
   },
   {
     id: "users",
@@ -89,6 +94,7 @@ const adminNavigation: SidebarNavItem[] = [
     id: "parameters",
     label: "Parameters",
     to: ROUTES.admin.parameters,
+    group: "Settings",
   },
   {
     id: "property",

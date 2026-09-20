@@ -1,12 +1,14 @@
 import type { ComponentProps } from 'react'
 import { NavLink } from 'react-router'
 
+import { NavigationIcon } from '@/components/ui/navigation-icon'
 import { cn } from '@/shared/utils/cn'
 
 interface SidebarNavItem {
   id: string
   label: string
   to: string
+  group?: string
   badge?: string | number
   end?: boolean
 }
@@ -36,19 +38,22 @@ function Sidebar({
       )}
       {...props}
     >
-      <nav aria-label={title}>
-        <p className="px-2.5 pb-2 text-xs text-muted-foreground">{title}</p>
-
+      <nav aria-label={`${title} navigation`} className="min-h-0 flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-1">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.id}>
+              {item.group && (index === 0 || item.group !== items[index - 1].group) ? (
+                <p className={cn('px-2.5 pb-1 text-xs font-medium text-muted-foreground', index > 0 && 'pt-4')}>
+                  {item.group}
+                </p>
+              ) : null}
               <NavLink
                 to={item.to}
                 end={item.end}
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium transition-colors',
+                    'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
                     isActive
                       ? 'bg-ink text-page'
                       : 'text-body hover:bg-ink/[0.07] hover:text-ink',
@@ -57,7 +62,10 @@ function Sidebar({
               >
                 {({ isActive }) => (
                   <>
-                    <span>{item.label}</span>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <NavigationIcon name={item.id} className="size-4.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </span>
 
                     {item.badge !== undefined ? (
                       <span
@@ -65,7 +73,7 @@ function Sidebar({
                           'min-w-6 rounded-full px-1.5 py-0.5 text-center text-sm',
                           isActive
                             ? 'bg-page/20 text-page'
-                            : 'bg-[#cfc7b6] text-muted-foreground',
+                            : 'bg-muted text-muted-foreground',
                         )}
                       >
                         {item.badge}
@@ -80,7 +88,7 @@ function Sidebar({
       </nav>
 
       {userName ? (
-        <div className="mt-auto flex items-center gap-2.5 border-t border-[#cfc7b6] px-2.5 pt-4">
+        <div className="mt-4 flex items-center gap-2.5 border-t border-hairline px-2.5 pt-4">
           <span
             aria-hidden="true"
             className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-page"
@@ -94,7 +102,7 @@ function Sidebar({
             </p>
 
             {userDescription ? (
-              <p className="text-sm leading-5 text-muted-foreground">
+              <p className="truncate text-sm leading-5 text-muted-foreground">
                 {userDescription}
               </p>
             ) : null}

@@ -26,6 +26,9 @@ const ROUTES = {
       requestDetailsLink: (requestId: string) =>
         `/user/requests/${requestId}`,
       tickets: '/user/tickets',
+      ticketDetails: '/user/tickets/:ticketId',
+      ticketDetailsLink: (ticketId: string) =>
+        `/user/tickets/${encodeURIComponent(ticketId)}`,
       profile: '/user/profile',
     },
   

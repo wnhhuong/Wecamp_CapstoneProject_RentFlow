@@ -160,7 +160,7 @@ function PrepareRoomAccountDialog({
             {room?.account?.status !== "banned" ? (
               <div
                 role="alert"
-                className="rounded-md border border-[#e0c2bc] bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
+                className="rounded-md border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
               >
                 Only a BANNED room account can be prepared for a new tenant.
               </div>
@@ -169,7 +169,7 @@ function PrepareRoomAccountDialog({
             {error ? (
               <div
                 role="alert"
-                className="rounded-md border border-[#e0c2bc] bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
+                className="rounded-md border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
               >
                 {error}
               </div>
@@ -211,7 +211,7 @@ function PrepareRoomAccountDialog({
               </p>
             </div>
 
-            <div className="rounded-md border border-[#d9cda9] bg-status-warning-bg px-4 py-3 text-sm leading-5 text-status-warning-fg">
+            <div className="rounded-md border border-status-warning-border bg-status-warning-bg px-4 py-3 text-sm leading-5 text-status-warning-fg">
               Preparing this account replaces the old password and changes its
               status from BANNED to INACTIVE.
             </div>
@@ -263,7 +263,7 @@ function CredentialResult({
 
       <div
         role="status"
-        className="rounded-md border border-[#bfd2bf] bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        className="rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
       >
         Temporary credentials generated successfully.
       </div>
@@ -271,7 +271,7 @@ function CredentialResult({
       {error ? (
         <div
           role="alert"
-          className="rounded-md border border-[#e0c2bc] bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
+          className="rounded-md border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-fg"
         >
           {error}
         </div>

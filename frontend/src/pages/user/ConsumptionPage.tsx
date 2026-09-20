@@ -1,6 +1,7 @@
 import { ErrorState } from "@/components/feedback";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { RefreshIcon } from "@/components/ui/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConsumptionSubmission } from "./consumption/hooks/useConsumptionSubmission";
@@ -168,11 +169,11 @@ export function ConsumptionPage() {
             <div className="flex justify-end border-t pt-4">
               <Button
                 type="button"
-                size="sm"
-                className="min-w-32"
+                variant="dark"
                 disabled={flow.loading}
                 onClick={flow.reload}
               >
+                <RefreshIcon />
                 Refresh status
               </Button>
             </div>

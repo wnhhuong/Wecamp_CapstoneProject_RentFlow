@@ -24,7 +24,7 @@ function PendingRequestsCard({ requests }: { requests: DashboardRequest[] }) {
         </div>
         <Link
           to={ROUTES.user.requests}
-          className="shrink-0 text-sm font-medium whitespace-nowrap text-clay hover:underline"
+          className="shrink-0 text-sm font-medium whitespace-nowrap text-brand hover:underline"
         >
           View all →
         </Link>

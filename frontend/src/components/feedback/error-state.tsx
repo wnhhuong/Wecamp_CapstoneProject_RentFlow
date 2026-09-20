@@ -22,7 +22,7 @@ function ErrorState({
     <section
       role="alert"
       className={cn(
-        'flex min-h-48 flex-col items-center justify-center gap-2.5 rounded-xl border border-[#e5b9ad] bg-[#fbeeea] p-5 text-center',
+        'flex min-h-48 flex-col items-center justify-center gap-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg p-5 text-center',
         className,
       )}
       {...props}
