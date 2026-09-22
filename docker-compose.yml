@@ -1,15 +1,4 @@
 services:
-  # Mongo local — giờ chỉ còn optional, dùng khi cần code offline hoặc test riêng
-  # không đụng data chung Atlas. Không cần thiết nếu team đã chuyển hẳn qua Atlas.
-  mongo:
-    image: mongo:7
-    container_name: rentflow-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
   backend:
     build:
       context: ./backend
@@ -22,20 +11,16 @@ services:
       - "5000:5000"
     volumes:
       - ./backend/uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    container_name: rentflow-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
     depends_on:
-      - mongo
-
-  # Optional — bỏ comment nếu muốn chạy luôn frontend qua docker-compose.
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: rentflow-frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - backend
-
-volumes:
-  mongo-data:
+      - backend

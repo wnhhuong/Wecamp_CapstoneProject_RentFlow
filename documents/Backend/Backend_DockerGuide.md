@@ -1,6 +1,6 @@
 # Chạy RentFlow bằng Docker — hướng dẫn chi tiết
 
-Tài liệu này gom lại toàn bộ các bước để chạy full app (backend + MongoDB qua Docker, frontend chạy riêng) từ đầu đến lúc mở được lên trình duyệt.
+Tài liệu này gom lại toàn bộ các bước để chạy full app (backend + frontend qua Docker, dữ liệu dùng MongoDB Atlas) từ đầu đến lúc mở được lên trình duyệt.
 
 ---
 
@@ -39,7 +39,7 @@ Sau đó mở `backend/.env` bằng editor (VS Code...), sửa các giá trị p
 
 ```env
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/rentflow
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/rentflow?retryWrites=true&w=majority
 
 # Trước: JWT_SECRET=change-me
 # Sau — tự nghĩ 1 chuỗi bí mật đủ dài, không share ra ngoài:
@@ -49,7 +49,11 @@ ONBOARDING_TOKEN_SECRET=doi-cai-nay-thanh-chuoi-bi-mat-khac
 ONBOARDING_TOKEN_EXPIRES_IN=30m
 ```
 
-`PORT` và `MONGO_URI` thường giữ nguyên, không cần đổi để chạy local.
+`PORT` giữ nguyên. `MONGO_URI` phải là connection string của MongoDB Atlas, không dùng
+`localhost` và cũng không dùng hostname `mongo` vì Compose không chạy Mongo local.
+
+Trong MongoDB Atlas, vào **Network Access** và whitelist IP máy đang chạy Docker.
+Cho development có thể dùng `0.0.0.0/0`, nhưng không nên dùng cách này trong production.
 
 Kiểm tra đã tạo đúng:
 ```bash
@@ -80,20 +84,23 @@ docker compose up --build
 Lệnh này làm gì:
 1. Đọc `docker-compose.yml`.
 2. Build image cho service `backend` từ `backend/Dockerfile`.
-3. Tải image `mongo:7` về (nếu máy chưa có sẵn).
-4. Khởi động cả 2 container (`rentflow-backend`, `rentflow-mongo`) cùng lúc, nối mạng nội bộ với nhau.
+3. Build image frontend từ `frontend/Dockerfile`.
+4. Khởi động hai container (`rentflow-backend`, `rentflow-frontend`).
+5. Backend kết nối trực tiếp đến MongoDB Atlas bằng `MONGO_URI` trong `backend/.env`.
 
 Cờ `--build`: bắt Docker build lại image từ đầu — **cần dùng mỗi khi vừa đổi code backend hoặc sửa `Dockerfile`**. Lần chạy sau nếu không đổi gì trong `backend/`, chỉ cần `docker compose up` (bỏ `--build`) cho nhanh hơn.
 
-Lần đầu chạy sẽ hơi lâu (tải image `node:20-alpine`, `mongo:7` về máy) — các lần sau có cache rồi thì nhanh hơn nhiều.
+Lần đầu chạy sẽ hơi lâu (tải image `node:20-alpine` và `nginx:alpine` về máy) — các lần sau có cache rồi thì nhanh hơn nhiều.
 
 ---
 
 ## 4. Biết khi nào container đã sẵn sàng
 
-Vì không có cờ `-d` (detach), terminal sẽ in log trực tiếp từ cả backend lẫn mongo, xen kẽ nhau. Thấy dòng kiểu server đang lắng nghe (tuỳ nội dung log trong `server.ts`, thường có chữ `listening on port 5000` hoặc tương tự) là backend đã chạy xong, kết nối MongoDB thành công.
+Vì không có cờ `-d` (detach), terminal sẽ in log trực tiếp từ backend và frontend. Thấy dòng
+`MongoDB Connected` và `Server is running at http://localhost:5000` là backend đã kết nối Atlas.
 
-Nếu thấy log lỗi kết nối Mongo lặp lại liên tục — kiểm tra lại `MONGO_URI` trong `backend/.env` có đúng `mongodb://mongo:27017/rentflow` không (chú ý: bên trong Docker network, host là tên service `mongo`, không phải `localhost`).
+Nếu thấy log lỗi kết nối Mongo lặp lại liên tục, kiểm tra connection string, username/password
+và IP whitelist trên Atlas.
 
 ---
 
@@ -110,28 +117,19 @@ GET http://localhost:5000/api/guest/rooms
 ```
 
 ### Frontend (web)
-Frontend **hiện chưa nằm trong `docker-compose.yml`** (service đó đang để comment, vì chưa có `frontend/Dockerfile`) — chạy riêng bằng lệnh thường:
-
-```bash
-cd frontend
-npm install     # nếu chưa cài lần nào
-npm run dev
+Mở:
+```
+http://localhost:5173
 ```
 
-Terminal sẽ tự in ra URL để mở, ví dụ với Vite:
+Frontend được build với `VITE_API_URL` mặc định là `http://localhost:5000/api`, nên trình duyệt
+gọi API qua port backend được publish ra máy host. Nếu đổi port API, đặt biến trước khi build:
+
+PowerShell:
+```powershell
+$env:VITE_API_URL = "http://localhost:5001/api"
+docker compose up --build
 ```
-➜  Local:   http://localhost:5173/
-```
-
-Port cụ thể tuỳ công cụ build frontend đang dùng (xem `frontend/package.json` → `devDependencies`):
-
-| Công cụ | Port mặc định |
-|---|---|
-| Vite | `http://localhost:5173` |
-| Create React App | `http://localhost:3000` |
-| Next.js | `http://localhost:3000` |
-
-**Lưu ý:** mở web lên được không có nghĩa là gọi API thành công. Frontend cần biến môi trường trỏ đúng địa chỉ backend (thường kiểu `VITE_API_URL=http://localhost:5000` trong file `.env` riêng của `frontend/`). Web trắng trang hoặc lỗi fetch → kiểm tra lại giá trị này trước.
 
 ---
 
@@ -147,10 +145,7 @@ Cách 2 — mở terminal khác, đứng ở thư mục gốc repo:
 docker compose down
 ```
 
-Muốn xoá luôn dữ liệu Mongo đã lưu (volume `mongo-data`) để test lại từ đầu:
-```bash
-docker compose down -v
-```
+Không có volume Mongo local để xoá; dữ liệu nằm trên Atlas.
 
 ---
 
@@ -159,7 +154,7 @@ docker compose down -v
 | Lỗi | Nguyên nhân | Cách xử lý |
 |---|---|---|
 | `Cannot connect to Docker daemon` | Docker Desktop chưa mở (Windows/macOS) | Mở app Docker Desktop, đợi sẵn sàng rồi chạy lại |
-| `port is already allocated` (5000 hoặc 27017) | Có chương trình khác đang chiếm port đó (vd. đã cài Mongo local chạy nền sẵn) | Tắt chương trình đang chiếm port, hoặc đổi port map trong `docker-compose.yml` |
-| Backend log báo lỗi kết nối Mongo liên tục | Sai `MONGO_URI` trong `backend/.env`, đang để `localhost` thay vì `mongo` | Sửa thành `mongodb://mongo:27017/rentflow` |
+| `port is already allocated` (5000 hoặc 5173) | Có chương trình khác đang chiếm port đó | Tắt chương trình đang chiếm port, hoặc đổi port map trong `docker-compose.yml` |
+| Backend log báo lỗi kết nối Mongo liên tục | Sai `MONGO_URI`, IP chưa whitelist trên Atlas, hoặc username/password sai | Kiểm tra connection string Atlas, Network Access và Database Access |
 | `no such file or directory` khi chạy `docker compose up` | Đang đứng sai thư mục, không thấy `docker-compose.yml` | `pwd` + `ls` kiểm tra lại, `cd` về đúng thư mục gốc repo |
-| Web frontend trắng trang / lỗi fetch API | Frontend chưa trỏ đúng URL backend | Kiểm tra biến môi trường API URL trong `frontend/.env` |
+| Web frontend trắng trang / lỗi fetch API | Frontend build với sai URL backend | Kiểm tra `VITE_API_URL`, sau đó chạy lại `docker compose up --build` |
