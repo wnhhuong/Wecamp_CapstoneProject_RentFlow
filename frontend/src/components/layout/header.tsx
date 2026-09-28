@@ -1,31 +1,30 @@
 import type { ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { MenuIcon } from '@/components/ui/icons'
+import { LogoutIcon, MenuIcon } from '@/components/ui/icons'
 import { cn } from '@/shared/utils/cn'
 
 type HeaderVariant = 'guest' | 'auth' | 'signed-in'
 
 interface HeaderProps extends ComponentProps<'header'> {
   variant?: HeaderVariant
+  /** From the property parameters; the block is hidden until they load. */
   propertyName?: string
   propertyMeta?: string
   userName?: string
   userInitial?: string
   onLogin?: () => void
-  onBackToRooms?: () => void
   onLogout?: () => void
   onMenuClick?: () => void
 }
 
 function Header({
   variant = 'guest',
-  propertyName = 'Nhà trọ Bình An',
-  propertyMeta = '128 Đường số 7, Thủ Đức · 12 rooms',
+  propertyName,
+  propertyMeta,
   userName,
   userInitial,
   onLogin,
-  onBackToRooms,
   onLogout,
   onMenuClick,
   className,
@@ -54,7 +53,7 @@ function Header({
         ) : null}
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-[7px] bg-clay text-[13px] font-semibold text-white">
+          <span className="flex size-7 items-center justify-center rounded-[7px] bg-highlight text-[18px] font-semibold text-ink">
             R
           </span>
           <span className="text-lg font-semibold tracking-[-0.01em]">
@@ -62,14 +61,22 @@ function Header({
           </span>
         </div>
 
-        <span className="hidden h-6 w-px bg-page/20 sm:block" />
+        {propertyName ? (
+          <>
+            <span className="hidden h-6 w-px bg-page/20 sm:block" />
 
-        <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
-          <span className="truncate text-sm font-medium">{propertyName}</span>
-          <span className="truncate text-[13px] text-page/55">
-            {propertyMeta}
-          </span>
-        </div>
+            <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
+              <span className="truncate text-sm font-medium">
+                {propertyName}
+              </span>
+              {propertyMeta ? (
+                <span className="truncate text-xs text-page/55">
+                  {propertyMeta}
+                </span>
+              ) : null}
+            </div>
+          </>
+        ) : null}
       </div>
 
       {variant === 'guest' ? (
@@ -78,21 +85,9 @@ function Header({
         </Button>
       ) : null}
 
-      {variant === 'auth' ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
-          onClick={onBackToRooms}
-        >
-          ← Back to rooms
-        </Button>
-      ) : null}
-
       {variant === 'signed-in' ? (
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-page text-[13px] font-semibold text-ink">
+          <span className="flex size-9 items-center justify-center rounded-full bg-page text-[18px] font-semibold text-ink">
             {userInitial ?? userName?.charAt(0).toUpperCase() ?? 'U'}
           </span>
           {userName ? (
@@ -102,12 +97,14 @@ function Header({
           ) : null}
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
+            variant="secondary"
+            size="icon-sm"
+            aria-label="Log out"
+            title="Log out"
+            className="border-2 border-page/25 bg-transparent text-page hover:bg-white/10 hover:text-page"
             onClick={onLogout}
           >
-            Log out
+            <LogoutIcon className="size-4" />
           </Button>
         </div>
       ) : null}

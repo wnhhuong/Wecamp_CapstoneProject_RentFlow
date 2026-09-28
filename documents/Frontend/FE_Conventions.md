@@ -1,0 +1,51 @@
+# RentFlow Frontend — quy ước code
+
+Đọc trước khi viết code. Đây là quy ước đã có sẵn trong `frontend/src`.
+
+## Nguyên tắc bắt buộc
+
+- Mọi request đi qua `apiRequest` trong `shared/api/client.ts`.
+- Token do `shared/api/auth-adapter.ts` tự gắn, đã nối sẵn với `shared/auth/auth-store.ts`.
+- Một file một nhiệm vụ. Page chỉ render và nối dữ liệu; gọi API nằm ở `shared/api`, endpoint ở `shared/api/endpoints.ts`, type ở `shared/types`, format ở `shared/utils`.
+- Tái sử dụng trước khi tạo mới. Xem `components/ui`, `components/feedback`, `components/layout`, `shared/utils` trước. Không tự viết lại button, input, select, spinner, status badge, thanh search/filter, hay hàm format tiền/ngày.
+- Các file rỗng trong repo là khung dựng sẵn (ví dụ `shared/api/user/invoices.api.ts`, `pages/user/invoices/InvoiceListPage.tsx`).
+- Import bằng alias @/.
+
+## Cấu trúc thư mục
+
+- `components/ui` — thành phần cơ bản: button, input, textarea, `Checkbox`, `SelectPopover` (thay `<select>`), dialog, sheet, popover, calendar, table, `SearchFilter` (thanh tìm kiếm + lọc cho list/table)…
+- `components/feedback` — `PageLoading`, `ErrorState`, `EmptyState`
+- `components/layout` — `Header`, `Sidebar`, `PageContainer`
+- `components/status` — `StatusBadge`
+- `pages/<admin|user|guest|auth>` — mỗi màn hình một page, file `*Page.tsx` nằm thẳng ở đây, không lồng vào thư mục feature
+- `pages/<khu vực>/<feature>/` — phần rời của feature đó (drawer, dialog, step, card, hook, util), không đẩy lên `shared`
+- `router/` — `routes.ts` (đường dẫn), `index.tsx` (bảng route), `require-auth.tsx` (guard)
+- `shared/api/<scope>/<resource>.api.ts` — mỗi resource một file
+- `shared/types` — mọi shape trả về từ backend và mọi shape dùng cho UI, kể cả khi chỉ một file dùng, cùng các type chung như `ApiResponse`, `ApiPagination`, `status`. Không khai `Backend*` ngay trong file api.
+- `shared/utils` — `cn`, `currencyFormatter`, `dateFormatter`, `statusMapper`
+
+## Khi làm tính năng gọi API
+
+- Thêm đường dẫn vào `shared/api/endpoints.ts`, đúng nhóm `guest` / `user` / `admin` / `auth`. Đường dẫn có tham số thì viết thành hàm và bọc `encodeURIComponent`.
+- Khai báo type (shape của backend và shape dùng cho UI) trong `shared/types`. Dùng lại `ApiResponse<T>` từ `shared/types/api.ts`.
+- Phân trang có hai shape: backend trả `total` (`BackendPagination`), UI đọc `totalItems` (`ApiPagination`). Type shape backend bằng `BackendPagination` rồi đổi qua UI bằng `toApiPagination` trong `shared/api/pagination.ts`, đừng map tay ở từng file. Ngoại lệ duy nhất là admin rooms, backend đã tự trả `totalItems`.
+- Viết hàm gọi API trong `shared/api/<scope>/<resource>.api.ts`, truyền `auth: 'admin' | 'user' | 'guest'` theo quyền của endpoint (mặc định là `guest`).
+- `apiRequest` đã tự bóc lớp `{success, data, message}`, gắn header, gắn token, xử lý 401 và ném `ApiError` (có `status`, `message`).
+- Chuyển dữ liệu backend sang shape UI trong file api, không làm trong component. Status phải đi qua `statusMapper` để `StatusBadge` nhận đúng giá trị.
+- Đăng ký route trong `routes.ts` và `router/index.tsx`, bọc bằng `<RequireAuth role="user">` hoặc `role="admin"`.
+- Trong page sau khi login, lấy thông tin đăng nhập bằng `useAuth()` (`session`, `account`, `isAuthenticated`, `signIn`, `signOut`). Không tự suy ra người dùng từ localStorage.
+
+## Layout và trạng thái màn hình
+
+- Mọi page sau khi đăng nhập bắt đầu bằng `<PageContainer>` từ `@/components/layout`. Nó lo max-width, lề và khoảng cách để các trang thẳng hàng với sidebar.
+- Đang tải dùng `<PageLoading />`, lỗi dùng `<ErrorState onRetry={...} />`, không có dữ liệu dùng `<EmptyState />`.
+- Trạng thái (phòng, hoá đơn, request, ticket, account) dùng `<StatusBadge>`.
+- Drawer chi tiết luôn là route con của trang list: khai `xDetails` + `xDetailsLink` trong `routes.ts`, đăng ký `children: [{ path: ":xId", ... }]` trong `router/index.tsx`, page render `<Outlet>` và bấm dòng thì `navigate(ROUTES...xDetailsLink(id))`. Sheet đọc id bằng `useParams`, đóng thì `navigate` về đường dẫn list. Không dùng state nội bộ hay query param cho việc mở drawer.
+- Sheet nào cần dữ liệu hoặc callback của page thì nhận qua `<Outlet context={...}>` và `useOutletContext`, kiểu khai trong `pages/admin/outlet-context.ts`. Sheet tự gọi được endpoint chi tiết thì fetch thẳng theo id.
+- Trang có list/table cần tìm kiếm hoặc lọc thì dùng `<SearchFilter>`: mỗi filter là một nhóm nhiều lựa chọn, `selected` rỗng nghĩa là không lọc, nhiều lựa chọn trong một nhóm là "hoặc", giữa các nhóm là "và". State giữ ở page dạng `Record<string, string[]>`, lọc bằng `useMemo`.
+
+## Format dữ liệu
+
+- Tiền: `formatCurrency` khi hiển thị (ra `3.200.000 ₫`), `formatAmountInput` cho ô nhập, `toAmountDigits` trước khi lưu/gửi. Label trong form vẫn ghi VND.
+- Ngày: `formatDate` để hiển thị, `getDateKey` để so sánh.
+- Không gọi `Intl.NumberFormat`, `toLocaleString`, `toLocaleDateString` trong component. Thiếu kiểu format nào thì bổ sung vào file util, không viết tại chỗ

@@ -1,23 +1,26 @@
 import type { ComponentProps } from 'react'
-
+import type { ContractStatus } from '@/shared/types/contract'
+import type { TicketType } from '@/shared/types/ticket'
+import type {
+  AccountStatus,
+  InvoiceStatus,
+  RequestStatus,
+  RoomStatus,
+  TicketStatus,
+} from '@/shared/types/status'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/shared/utils/cn'
-
-type RoomStatus =
-  | 'available now'
-  | 'rented'
-  | 'available soon'
-  | 'not available'
-type InvoiceStatus = 'paid' | 'pending' | 'not_paid'
-type RequestStatus = 'pending' | 'approved'
-type TicketStatus = 'need_action' | 'in_progress' | 'done'
+import { TICKET_TYPE_LABELS } from '@/shared/utils/ticketTypes'
 
 type StatusBadgeProps = ComponentProps<typeof Badge> &
   (
     | { domain: 'room'; status: RoomStatus }
     | { domain: 'invoice'; status: InvoiceStatus }
+    | { domain: 'contract'; status: ContractStatus }
     | { domain: 'request'; status: RequestStatus }
     | { domain: 'ticket'; status: TicketStatus }
+    | { domain: 'ticketType'; status: TicketType }
+    | { domain: 'account'; status: AccountStatus }
   )
 
 type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
@@ -36,8 +39,11 @@ const statusPresentations = {
   },
   invoice: {
     paid: { label: 'PAID', tone: 'success' },
-    pending: { label: 'PENDING', tone: 'warning' },
     not_paid: { label: 'NOT PAID', tone: 'danger' },
+  },
+  contract: {
+    active: { label: 'ACTIVE', tone: 'success' },
+    expired: { label: 'EXPIRED', tone: 'neutral' },
   },
   request: {
     pending: { label: 'PENDING', tone: 'warning' },
@@ -48,8 +54,23 @@ const statusPresentations = {
     in_progress: { label: 'IN PROGRESS', tone: 'warning' },
     done: { label: 'DONE', tone: 'info' },
   },
+  ticketType: {
+    repair: { label: TICKET_TYPE_LABELS.repair, tone: 'danger' },
+    complain: { label: TICKET_TYPE_LABELS.complain, tone: 'info' },
+  },
+  account: {
+    banned: { label: 'BANNED', tone: 'danger' },
+    inactive: { label: 'INACTIVE', tone: 'warning' },
+    active: { label: 'ACTIVE', tone: 'success' },
+  },
 } as const satisfies Record<
-  'room' | 'invoice' | 'request' | 'ticket',
+  | 'room'
+  | 'invoice'
+  | 'contract'
+  | 'request'
+  | 'ticket'
+  | 'ticketType'
+  | 'account',
   Record<string, StatusPresentation>
 >
 
@@ -87,18 +108,18 @@ function getStatusPresentation(props: StatusBadgeProps): StatusPresentation {
       return statusPresentations.room[props.status]
     case 'invoice':
       return statusPresentations.invoice[props.status]
+    case 'contract':
+      return statusPresentations.contract[props.status]
     case 'request':
       return statusPresentations.request[props.status]
     case 'ticket':
       return statusPresentations.ticket[props.status]
+    case 'ticketType':
+      return statusPresentations.ticketType[props.status]
+    case 'account':
+      return statusPresentations.account[props.status]
   }
 }
 
 export { StatusBadge }
-export type {
-  InvoiceStatus,
-  RequestStatus,
-  RoomStatus,
-  StatusBadgeProps,
-  TicketStatus,
-}
+export type { StatusBadgeProps }

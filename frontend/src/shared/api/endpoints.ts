@@ -1,1 +1,85 @@
 // Endpoint paths
+export const ENDPOINTS = {
+  auth: {
+    login: '/auth/login',
+
+    firstLogin: {
+      profile: '/auth/first-login/profile',
+      contractPreview: '/auth/first-login/contract-preview',
+      contract: '/auth/first-login/contract',
+    },
+  },
+
+  guest: {
+    rooms: '/guest/rooms',
+    room: (roomID: string) => `/guest/rooms/${encodeURIComponent(roomID)}`,
+    parameters: '/guest/parameters',
+  },
+
+  user: {
+    consumptionContext: '/user/consumption-requests/context',
+    consumptionRequests: '/user/consumption-requests',
+    consumptionRequest: (requestID: string | number) =>
+      `/user/consumption-requests/${encodeURIComponent(String(requestID))}`,
+
+    invoices: '/user/invoices',
+    invoice: (invoiceID: string) =>
+      `/user/invoices/${encodeURIComponent(invoiceID)}`,
+    invoicePaidRequest: (invoiceID: string) =>
+      `/user/invoices/${encodeURIComponent(invoiceID)}/paid-request`,
+    invoiceLatePaymentRequest: (invoiceID: string) =>
+      `/user/invoices/${encodeURIComponent(invoiceID)}/late-payment-request`,
+
+    dashboard: '/user/dashboard',
+
+    tickets: '/user/tickets',
+    ticket: (ticketID: string) =>
+      `/user/tickets/${encodeURIComponent(ticketID)}`,
+    repairOptions: '/user/tickets/repairs/options',
+    repairTickets: '/user/tickets/repairs',
+    complaintOptions: '/user/tickets/complains/options',
+    complaintTickets: '/user/tickets/complains',
+
+    profile: '/user/profile',
+
+    contract: '/user/contract',
+
+    parameters: '/user/parameters',
+    requests: '/user/requests',
+    extendRequests: '/user/extend-requests',
+    moveoutRequests: '/user/moveout-requests',
+    checkoutRequests: '/user/checkout-requests',
+    request: (requestID: string) =>
+      `/user/requests/${encodeURIComponent(requestID)}`,
+  },
+
+  admin: {
+    dashboard: '/admin/dashboard',
+    rooms: '/admin/rooms',
+    room: (roomID: string) =>
+      `/admin/rooms/${encodeURIComponent(roomID)}`,
+    parameters: '/admin/parameters',
+    bankQrImage: '/admin/parameters/bank-qr',
+    invoices: '/admin/invoices',
+
+    invoice: (invoiceID: string) =>
+      `/admin/invoices/${encodeURIComponent(invoiceID)}`,
+
+    users: '/admin/users',
+
+    tickets: '/admin/tickets',
+    ticketStatus: (ticketID: string) =>
+      `/admin/tickets/${encodeURIComponent(ticketID)}/status`,
+
+    requests: '/admin/requests',
+
+    request: (requestID: string) =>
+      `/admin/requests/${encodeURIComponent(requestID)}`,
+
+    approveRequest: (requestID: string) =>
+      `/admin/requests/${encodeURIComponent(requestID)}/approve`,
+
+    roomAccountPassword: (roomID: string) =>
+      `/admin/rooms/${encodeURIComponent(roomID)}/account/password`,
+  },
+} as const

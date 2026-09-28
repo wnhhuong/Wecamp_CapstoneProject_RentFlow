@@ -21,27 +21,27 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         const {username, password} = req.body;
         // missing a field
         if(!username || !password){
-            res.status(400).json({ message: "Please provide username and password" });
+            sendError(res, 400, "Please provide username and password")
             return;
         }
 
         // check for username
         const account = await Account.findOne({username}).select("+password");;
         if(!account){
-            res.status(401).json({message: "Invalid email or password"});
+            sendError(res, 401, "Invalid email or password")
             return;
         }
 
         // check password
         const isMatch = await bcrypt.compare(password, account.password || "");
         if(!isMatch){
-            res.status(401).json({message: "Invalid email or password"});
+            sendError(res, 401, "Invalid email or password")
             return;
         }
 
         // check status
         if(account.status === AccountStatus.BANNED){
-            res.status(403).json({message: "This account is not available"});
+            sendError(res, 403, "This account is not available")
             return;
         }
         
@@ -130,20 +130,38 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 export const firstLoginProfile = async (req: OnboardingRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { accountID } = req.onboarding!;
-        const account = await Account.findById(accountID);
+        const account = await Account.findById(accountID).select("+password");
         if(!account){ sendError(res, 404, "Account not found"); return; }
         if(account.status !== AccountStatus.INACTIVE){
             sendError(res, 409, "This account has already completed onboarding");
             return;
         }
         
-        const {fullName, dob, phoneNumber, identityNo, sex, nationality, por, password} = req.body;
+        const {fullName, dob, phoneNumber, identityNo, sex, nationality, por, password, confirmPassword, confirmIn4} = req.body;
         if(!fullName || !dob || !phoneNumber || !identityNo || 
-            !sex || !nationality || !por || !password){
-                res.status(400).json({ success: false, data: null, message: "Please enter all required fields" });
+            !sex || !nationality || !por || !password || !confirmPassword || !confirmIn4){
+                sendError(res, 400, "Please enter all required fields");
                 return;
             }
-        
+
+        if(password !== confirmPassword){
+            sendError(res, 400, "Password and confirm password do not match");
+            return;
+        }
+
+        if(confirmIn4 !== "true"){
+            sendError(res, 400, "You must confirm your information before proceeding");
+            return;
+        }
+
+        if(account.password){
+            const isSamePassword = await bcrypt.compare(password, account.password || "");
+            if(isSamePassword){
+                sendError(res, 400, "New password must be different from the current password");
+                return;
+            }
+        }
+
         // find by CCCD
         let user = await User.findOne({ identityNo });
         if (user) {
@@ -331,8 +349,8 @@ export const createContract = async (req: OnboardingRequest, res: Response, next
             user,
             contract: {
                 contractID: contract!._id,
-                startDate: contract!.startDate.toISOString().split("T")[0],
-                expireDate: contract!.expireDate.toISOString().split("T")[0],
+                startDate: contract!.startDate.toISOString(),
+                expireDate: contract!.expireDate.toISOString(),
                 propertyDeposit: contract!.propertyDeposit,
                 rent: contract!.rentPrice,
                 status: contract!.status,

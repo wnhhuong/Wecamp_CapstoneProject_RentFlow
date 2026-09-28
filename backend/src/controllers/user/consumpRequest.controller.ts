@@ -70,8 +70,8 @@ export const consumpContext = async (req: UserAuthRequest, res: Response, next: 
         sendSuccess(res, {
             roomID: room._id,
             roomCode: room.roomCode,
-            windowStart: windowStart.toISOString().split("T")[0],
-            windowEnd: windowEnd.toISOString().split("T")[0],
+            windowStart: windowStart.toISOString(),
+            windowEnd: windowEnd.toISOString(),
             canSubmit: isWithinWindow && !existingRequest && !existingConsumptionInWindow,
             electricityUnitPrice,
             existingRequestID: existingRequest ? existingRequest._id : null,
@@ -293,8 +293,8 @@ export const viewConsumpRequest = async (req: UserAuthRequest, res: Response, ne
             usage: usage,
             capturedAt: consumpRequest.capturedAt,
             correspondingCost,
-            createDate: request.createDate.toISOString().split("T")[0],
-            resolveDate: request.resolveDate ? request.resolveDate.toISOString().split("T")[0] : null,
+            createDate: request.createDate.toISOString(),
+            resolveDate: request.resolveDate ? request.resolveDate.toISOString() : null,
             status: request.status,
         });
     } catch (error) {

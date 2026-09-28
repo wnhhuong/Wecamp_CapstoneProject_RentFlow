@@ -8,6 +8,22 @@ import authRouter from "./routes/auth.routes.js";
 import adminParameterRoutes from "./routes/admin/parameter.routes.js";
 import adminRoomRoutes from './routes/admin/room.routes.js';
 import consumpRequestRouter from "./routes/user/consumpRequest.routes.js";
+import userInvoiceRouter from "./routes/user/userInvoice.routes.js";
+import userRequestRouter from "./routes/user/request.routes.js";
+import approvalRoutes from "./routes/admin/approval.routes.js";
+import AdminDashBoardRoutes from "./routes/admin/dashboard.routes.js";
+import guestRouter from "./routes/guest.routes.js";
+import userTicketRouter from "./routes/user/ticket.routes.js";
+import userProfileRouter from "./routes/user/profile.routes.js";
+import adminInvoiceRouter from "./routes/admin/invoice.routes.js";
+import userContractRouter from "./routes/user/contract.routes.js";
+import userDashboard from "./routes/user/dashboard.routes.js";
+import userParameterRouter from "./routes/user/paymentInfo.routes.js";
+import userMoveoutRouter from "./routes/user/moveout.routes.js";
+import userCheckoutRouter from "./routes/user/checkout.routes.js";
+import userExtendRouter from "./routes/user/extend.routes.js";
+import adminUserRouter from "./routes/admin/user.routes.js";
+import adminTicketRouter from "./routes/admin/ticket.routes.js";
 
 const app = express();
 
@@ -28,18 +44,58 @@ app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-// use route
+// GUEST ROUTES
+app.use(`/api/guest`, guestRouter)
 app.use(`/api/auth`, authRouter)
 
-// user route
-// consumrequest rout
-app.use(`/api/user`, consumpRequestRouter)
+// USER ROUTES
+// consumrequest route
+app.use(`/api/user/consumption-requests`, consumpRequestRouter)
+// invoice route
+app.use(`/api/user/invoices`, userInvoiceRouter)
+app.use(`/api/user/requests`, userRequestRouter)
+app.use(`/api/user/dashboard`, userDashboard)
+app.use(`/api/user/parameters`, userParameterRouter)
+
+// ticket route
+app.use(`/api/user/tickets`, userTicketRouter)
+
+// User profile routes
+app.use(`/api/user/profile`, userProfileRouter)
+
+// User contract routes
+app.use(`/api/user/contract`, userContractRouter)
+
+// User move-out request routes
+app.use(`/api/user/moveout-requests`, userMoveoutRouter)
+
+// User checkout request routes
+app.use(`/api/user/checkout-requests`, userCheckoutRouter)
+
+// User contract extension request routes
+app.use(`/api/user/extend-requests`, userExtendRouter)
+
+// ADMIN ROUTES
+//Admin user routes
+app.use(`/api/admin/users`, adminUserRouter)
 
 //Parameter routes
 app.use(`/api/admin/parameters`, adminParameterRoutes)
 
+//Dashboard routes
+app.use(`/api/admin/dashboard`, AdminDashBoardRoutes)
+
 //Room routes
 app.use(`/api/admin/rooms`, adminRoomRoutes)
+    
+//Approval routes
+app.use(`/api/admin/requests`, approvalRoutes)
+
+//Admin ticket route
+app.use(`/api/admin/tickets`, adminTicketRouter)
+
+//Admin invoice route
+app.use(`/api/admin/invoices`, adminInvoiceRouter)
 
 // Global Error Handler
 app.use(errorHandler)

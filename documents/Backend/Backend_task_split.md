@@ -11,6 +11,7 @@
 ### 2. Homepage, request page list - tenant
 - Toàn bộ dữ liệu trang Home (`/api/user/dashboard`) — tham khảo tenant DASHBOARD trong backlog
 - Danh sách 6 loại request (`/api/user/requests`)
+- Chi tiết của request (`/api/user/requests/:id`)
 
 ### 3. Electricity - tenant
 - Dữ liệu form và kỳ ghi điện (`/api/user/consumption-requests/context`)
@@ -25,10 +26,10 @@
 
 ### 5. Tickets - tenant
 - Danh sách ticket của tenant (`/api/user/tickets`)
-- Facility của phòng để tạo repair (`/api/user/tickets/repair/options`)
-- Area và room để tạo complaint (`/api/user/tickets/complain/options`)
-- Tạo repair ticket (`/api/user/tickets/repair`)
-- Tạo complaint ticket (`/api/user/tickets/complain`)
+- Facility của phòng để tạo repair (`/api/user/tickets/repairs/options`)
+- Area và room để tạo complaint (`/api/user/tickets/complains/options`)
+- Tạo repair ticket (`/api/user/tickets/repairs`)
+- Tạo complaint ticket (`/api/user/tickets/complains`)
 
 ### 13. Authentication
 - Đăng nhập và xác định first-login (`/api/auth/login`)

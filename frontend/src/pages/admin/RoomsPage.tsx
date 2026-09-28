@@ -1,0 +1,380 @@
+import { useEffect, useMemo, useState } from "react";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
+
+import { EmptyState, ErrorState, PageLoading } from "@/components/feedback";
+import { PageContainer } from "@/components/layout";
+import { StatusBadge } from "@/components/status";
+import { Button } from "@/components/ui/button";
+import { CloseIcon, PlusIcon } from "@/components/ui/icons";
+import { SearchFilter } from "@/components/ui/search-filter";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ROUTES } from "@/router/routes";
+import { getAdminRooms } from "@/shared/api/admin/rooms.api";
+import type { AdminRoom } from "@/shared/types/admin/room";
+import { formatCurrency } from "@/shared/utils/currencyFormatter";
+
+import { AddRoomDialog } from "./rooms/AddRoomDialog";
+import { EditRoomDialog } from "./rooms/EditRoomDialog";
+import { PrepareRoomAccountDialog } from "./rooms/PrepareRoomAccountDialog";
+import { getAreasFromRooms } from "./rooms/utils/getAreasFromRooms";
+
+/** Keeps the open room drawer in the URL, so other pages can link straight to one. */
+function RoomsPage() {
+  const [rooms, setRooms] = useState<AdminRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [selectedRoomID, setSelectedRoomID] = useState<string | null>(null);
+  const [editRoomID, setEditRoomID] = useState<string | null>(null);
+  const [createdRoomCode, setCreatedRoomCode] = useState("");
+  const [updatedRoomCode, setUpdatedRoomCode] = useState("");
+  const [preparedUsername, setPreparedUsername] = useState("");
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Record<string, string[]>>({
+    area: [],
+    status: searchParams.get("status") ? [searchParams.get("status") as string] : [],
+    capacity: [],
+  });
+
+  async function loadRooms() {
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      setRooms(await getAdminRooms());
+    } catch {
+      setLoadError("The room list could not be loaded.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let isActive = true;
+
+    getAdminRooms()
+      .then((loadedRooms) => {
+        if (isActive) setRooms(loadedRooms);
+      })
+      .catch(() => {
+        if (isActive) setLoadError("The room list could not be loaded.");
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const filteredRooms = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return rooms.filter((room) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        room.roomCode.toLowerCase().includes(normalizedSearch) ||
+        room.tenantName?.toLowerCase().includes(normalizedSearch);
+      const matchesArea =
+        filters.area.length === 0 || filters.area.includes(room.areaID);
+      const matchesStatus =
+        filters.status.length === 0 || filters.status.includes(room.status);
+      const matchesCapacity =
+        filters.capacity.length === 0 ||
+        filters.capacity.includes(String(room.maxPeople));
+      return matchesSearch && matchesArea && matchesStatus && matchesCapacity;
+    });
+  }, [filters, rooms, search]);
+
+  const areas = useMemo(() => getAreasFromRooms(rooms), [rooms]);
+
+  const selectedRoom =
+    rooms.find((room) => room.roomID === selectedRoomID) ?? null;
+  const editRoom = rooms.find((room) => room.roomID === editRoomID) ?? null;
+
+  function handleRoomCreated(room: AdminRoom) {
+    setRooms((current) => [room, ...current]);
+    setCreatedRoomCode(room.roomCode);
+  }
+
+  function handleAccountPrepared(preparedRoom: AdminRoom) {
+    setRooms((current) =>
+      current.map((room) =>
+        room.roomID === preparedRoom.roomID ? preparedRoom : room,
+      ),
+    );
+    setPreparedUsername(
+      preparedRoom.account?.username ?? preparedRoom.roomCode,
+    );
+  }
+
+  function handleRoomUpdated(updatedRoom: AdminRoom) {
+    setRooms((current) =>
+      current.map((room) =>
+        room.roomID === updatedRoom.roomID ? updatedRoom : room,
+      ),
+    );
+    setUpdatedRoomCode(updatedRoom.roomCode);
+  }
+
+  return (
+    <PageContainer>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-foreground">
+            Rooms & leases
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {rooms.length} rooms · one account per room · one active lease at a
+            time
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="dark"
+          onClick={() => setIsAddRoomOpen(true)}
+        >
+          <PlusIcon />
+          Add room
+        </Button>
+      </div>
+
+      {createdRoomCode ? (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        >
+          <span>
+            Room <strong>{createdRoomCode}</strong> was created successfully.
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss success message"
+            className="text-status-success-fg hover:bg-black/5"
+            onClick={() => setCreatedRoomCode("")}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      ) : null}
+
+      {preparedUsername ? (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        >
+          <span>
+            Account <strong>{preparedUsername}</strong> was prepared
+            successfully.
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss account success message"
+            className="text-status-success-fg hover:bg-black/5"
+            onClick={() => setPreparedUsername("")}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      ) : null}
+
+      {updatedRoomCode ? (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-md border border-status-success-border bg-status-success-bg px-4 py-3 text-sm text-status-success-fg"
+        >
+          <span>
+            Room <strong>{updatedRoomCode}</strong> was updated successfully.
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss update success message"
+            className="text-status-success-fg hover:bg-black/5"
+            onClick={() => setUpdatedRoomCode("")}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      ) : null}
+
+      <SearchFilter
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by room code or tenant..."
+        searchLabel="Search rooms"
+        filters={[
+          {
+            id: "area",
+            label: "Area",
+            selected: filters.area,
+            options: areas.map((area) => ({
+              value: area.areaID,
+              label: area.areaName,
+            })),
+          },
+          {
+            id: "status",
+            label: "Status",
+            selected: filters.status,
+            options: [
+              { value: "available now", label: "Available now" },
+              { value: "rented", label: "Rented" },
+              { value: "available soon", label: "Available soon" },
+              { value: "not available", label: "Not available" },
+            ],
+          },
+          {
+            id: "capacity",
+            label: "Capacity",
+            selected: filters.capacity,
+            options: [1, 2, 3, 4].map((capacity) => ({
+              value: String(capacity),
+              label: `${capacity} ${capacity === 1 ? "person" : "people"}`,
+            })),
+          },
+        ]}
+        onFilterChange={(id, selected) =>
+          setFilters((current) => ({ ...current, [id]: selected }))
+        }
+        onClearFilters={() =>
+          setFilters({ area: [], status: [], capacity: [] })
+        }
+        resultCount={filteredRooms.length}
+        totalCount={rooms.length}
+        itemNoun="room"
+      />
+
+      {isLoading ? (
+        <PageLoading
+          title="Loading rooms"
+          description="Preparing the latest room and lease information..."
+        />
+      ) : null}
+      {loadError ? (
+        <ErrorState description={loadError} onRetry={() => void loadRooms()} />
+      ) : null}
+      {!isLoading && !loadError && filteredRooms.length === 0 ? (
+        <EmptyState
+          title="No rooms match these filters"
+          description="Change or clear a filter to see more rooms."
+        />
+      ) : null}
+
+      {!isLoading && !loadError && filteredRooms.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
+          <Table className="min-w-[820px]">
+            <TableHeader className="bg-muted">
+              <TableRow className="hover:bg-muted">
+                <TableHead className="px-4">Room</TableHead>
+                <TableHead>Availability</TableHead>
+                <TableHead>Tenant</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Capacity</TableHead>
+                <TableHead className="pr-4 text-right">Monthly rent</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRooms.map((room) => (
+                <TableRow
+                  key={room.roomID}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    void navigate(ROUTES.admin.roomDetailsLink(room.roomID))
+                  }
+                >
+                  <TableCell className="px-4 font-semibold">
+                    {room.roomCode}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge domain="room" status={room.status} />
+                  </TableCell>
+                  <TableCell
+                    className={
+                      room.tenantName ? "text-body" : "text-muted-foreground"
+                    }
+                  >
+                    {room.tenantName ?? "\u2014"}
+                  </TableCell>
+                  <TableCell>
+                    {room.account ? (
+                      <StatusBadge
+                        domain="account"
+                        status={room.account.status}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">No account</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {room.maxPeople}{" "}
+                    {room.maxPeople === 1 ? "person" : "people"}
+                  </TableCell>
+                  
+                  
+                  
+                  <TableCell className="pr-4 text-right font-medium text-body">
+                    {formatCurrency(room.price)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : null}
+
+      <AddRoomDialog
+        open={isAddRoomOpen}
+        areas={areas}
+        onOpenChange={setIsAddRoomOpen}
+        onRoomCreated={handleRoomCreated}
+      />
+      <PrepareRoomAccountDialog
+        open={selectedRoom !== null}
+        room={selectedRoom}
+        onOpenChange={(open) => {
+          if (!open) setSelectedRoomID(null);
+        }}
+        onAccountPrepared={handleAccountPrepared}
+      />
+      <Outlet
+        context={{
+          rooms,
+          onPrepareAccount: (roomID: string) => {
+            void navigate(ROUTES.admin.rooms);
+            setSelectedRoomID(roomID);
+          },
+          onEditRoom: (roomID: string) => {
+            void navigate(ROUTES.admin.rooms);
+            setEditRoomID(roomID);
+          },
+        }}
+      />
+      <EditRoomDialog
+        room={editRoom}
+        onOpenChange={(open) => {
+          if (!open) setEditRoomID(null);
+        }}
+        onRoomUpdated={handleRoomUpdated}
+      />
+    </PageContainer>
+  );
+}
+
+export { RoomsPage };

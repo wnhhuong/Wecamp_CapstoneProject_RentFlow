@@ -9,6 +9,7 @@ import Invoice from '../models/Invoice.js';
 import Consumption from '../models/Consumption.js';
 import Parameter from '../models/Parameter.js';
 import { AccountRole, AccountStatus, RoomStatus, ParameterName, ContractStatus, InvoiceStatus,} from '../models/enums.js';
+import {parsePagination, buildPaginationMeta} from '../utils/pagination.js';
 
 export interface ICreateRoomDTO {
   areaID: string;
@@ -36,11 +37,105 @@ export interface IGetRoomsQuery {
   limit?: number;
 }
 
+export interface IUpdateRoomDTO {
+  roomCode?: string;
+  floor?: number;
+  maxPeople?: number;
+  roomDetail?: string;
+  price?: number;
+  deposit?: number;
+  images?: string[];
+}
+
 export class RoomService {
+
+  public static async updateRoom(roomID: string, dto: IUpdateRoomDTO) {
+    if (!mongoose.Types.ObjectId.isValid(roomID)) {
+      const error: any = new Error('Invalid roomID format.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const room = await Room.findById(roomID);
+    if (!room) {
+      const error: any = new Error('Room not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // 1. Kiểm tra unique roomCode nếu có yêu cầu đổi mã phòng (AC2)
+    if (dto.roomCode && dto.roomCode.trim() !== room.roomCode) {
+      const trimmedCode = dto.roomCode.trim();
+      const duplicate = await Room.findOne({
+        roomCode: trimmedCode,
+        _id: { $ne: room._id },
+      });
+
+      if (duplicate) {
+        const error: any = new Error(`Room with code "${trimmedCode}" already exists.`);
+        error.statusCode = 409;
+        throw error;
+      }
+
+      // Cập nhật cả roomCode và đồng bộ username của Account phòng
+      room.roomCode = trimmedCode;
+      const normalizedUsername = trimmedCode.replace(/\s+/g, '');
+      await Account.updateOne({ roomID: room._id }, { username: normalizedUsername });
+    }
+
+    // 2. Cập nhật các trường thông tin cho phép (AC1)
+    if (dto.floor !== undefined && !isNaN(dto.floor)) {
+      room.floor = dto.floor;
+    }
+    if (dto.maxPeople !== undefined && !isNaN(dto.maxPeople)) {
+      room.maxPeople = dto.maxPeople;
+    }
+    if (dto.roomDetail !== undefined && dto.roomDetail.trim().length > 0) {
+      room.roomDetail = dto.roomDetail.trim();
+    }
+    // AC4: Cập nhật room.price nhưng tuyệt đối KHÔNG đụng vào Contract
+    if (dto.price !== undefined && !isNaN(dto.price)) {
+      room.price = dto.price;
+    }
+    if (dto.deposit !== undefined && !isNaN(dto.deposit)) {
+      room.deposit = dto.deposit;
+    }
+    if (dto.images && Array.isArray(dto.images) && dto.images.length > 0) {
+      room.images = dto.images;
+    }
+
+    // Lưu lại Room (status giữ nguyên tuyệt đối theo AC3)
+    await room.save();
+
+    return {
+      room: {
+        roomID: String(room._id),
+        areaID: String(room.areaID),
+        roomCode: room.roomCode,
+        floor: room.floor,
+        maxPeople: room.maxPeople,
+        roomDetail: room.roomDetail,
+        price: room.price,
+        deposit: room.deposit,
+        status: room.status,
+        availableFrom: room.availableFrom
+          ? new Date(room.availableFrom).toISOString()
+          : null,
+        images: room.images,
+      },
+      message: 'Room updated successfully',
+    };
+  }
+  
   public static async getAdminRooms(query: IGetRoomsQuery) {
-    const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(query.limit) || 12));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(
+      query.page,
+      query.limit,
+      {
+        defaultLimit: 12,
+        maxLimit: 100,
+      },
+    );
 
     const filter: Record<string, any> = {};
 
@@ -62,8 +157,15 @@ export class RoomService {
     ]);
 
     const now = new Date();
-    const startDate = paramStart ? new Date(paramStart.value) : null;
-    const endDate = paramEnd ? new Date(paramEnd.value) : null;
+    const toCurrentMonthDate = (value?: string): Date | null => {
+      const day = Number(value);
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+      if (!Number.isInteger(day) || day < 1 || day > lastDayOfMonth) return null;
+      return new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0);
+    };
+    const startDate = toCurrentMonthDate(paramStart?.value);
+    const endDate = toCurrentMonthDate(paramEnd?.value);
 
     const pipeline: any[] = [];
 
@@ -143,10 +245,18 @@ export class RoomService {
           let: { rId: '$_id' },
           pipeline: [
             {
+              $lookup: {
+                from: 'consumptions',
+                localField: 'consumptionID',
+                foreignField: '_id',
+                as: 'consumptionData',
+              },
+            },
+            {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$roomID', '$$rId'] },
+                    { $eq: [{ $arrayElemAt: ['$consumptionData.roomID', 0] }, '$$rId'] },
                     { $in: ['$status', ['not_paid', 'pending']] },
                   ],
                 },
@@ -187,7 +297,7 @@ export class RoomService {
     const countPipeline = [...pipeline, { $count: 'total' }];
     const countResult = await Room.aggregate(countPipeline);
     const totalItems = countResult.length > 0 ? countResult[0].total : 0;
-    const totalPages = Math.ceil(totalItems / limit) || 1;
+    const pagination = buildPaginationMeta(totalItems, page, limit);
 
     pipeline.push(
       { $sort: { roomCode: 1 } },
@@ -245,16 +355,30 @@ export class RoomService {
 
       return {
         roomID: String(r._id),
-        roomCode: r.roomCode,
+        areaID: String(r.areaID),
         areaName: r.areaName,
+        roomCode: r.roomCode,
         floor: r.floor,
+        roomDetail: r.roomDetail,
         price: r.price,
+        deposit: r.deposit,
         maxPeople: r.maxPeople,
         status: r.status,
+        availableFrom: r.availableFrom
+          ? new Date(r.availableFrom).toISOString()
+          : null,
+        images: r.images || [],
+        account: r.roomAccount
+          ? {
+              accountID: String(r.roomAccount._id),
+              username: r.roomAccount.username,
+              status: r.roomAccount.status,
+            }
+          : null,
         electricityState,
         tenantName: r.mainTenant ? r.mainTenant.fullName : null,
         contractExpireDate: r.activeContract?.expireDate
-          ? new Date(r.activeContract.expireDate).toISOString().split('T')[0]
+          ? new Date(r.activeContract.expireDate).toISOString()
           : null,
         stillOwed: r.stillOwed || 0,
       };
@@ -263,10 +387,10 @@ export class RoomService {
     return {
       items,
       pagination: {
-        page,
-        limit,
-        totalItems,
-        totalPages,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalItems: pagination.total,
+        totalPages: pagination.totalPages,
       },
     };
   }
@@ -303,9 +427,12 @@ export class RoomService {
       .select('-password')
       .lean();
 
+    const roomConsumptions = await Consumption.find({ roomID: room._id })
+      .select('_id')
+      .lean();
     const unpaidInvoices = await Invoice.find({
-      roomID: room._id,
-      status: { $in: [InvoiceStatus.NOT_PAID, InvoiceStatus.PENDING] },
+      consumptionID: { $in: roomConsumptions.map((consumption) => consumption._id) },
+      status: { $in: [InvoiceStatus.NOT_PAID] },
     }).lean();
 
     const stillOwed = unpaidInvoices.reduce((sum, inv) => sum + (inv.totalBill || 0), 0);
@@ -321,7 +448,7 @@ export class RoomService {
         deposit: room.deposit,
         status: room.status,
         availableFrom: room.availableFrom
-          ? new Date(room.availableFrom).toISOString().split('T')[0]
+          ? new Date(room.availableFrom).toISOString()
           : null,
         images: room.images || [],
       },
@@ -337,10 +464,10 @@ export class RoomService {
             userID: String(activeContract.userID),
             roomID: String(activeContract.roomID),
             startDate: activeContract.startDate
-              ? new Date(activeContract.startDate).toISOString().split('T')[0]
+              ? new Date(activeContract.startDate).toISOString()
               : null,
             expireDate: activeContract.expireDate
-              ? new Date(activeContract.expireDate).toISOString().split('T')[0]
+              ? new Date(activeContract.expireDate).toISOString()
               : null,
             deposit: (activeContract as any).propertyDeposit ?? (activeContract as any).deposit ?? room.deposit,
             rent: (activeContract as any).rent ?? (activeContract as any).rentPrice ?? room.price,
@@ -355,7 +482,7 @@ export class RoomService {
             fullName: tenant.fullName,
             phoneNumber: tenant.phoneNumber,
             identityNo: tenant.identityNo,
-            dob: tenant.DoB ? new Date(tenant.DoB).toISOString().split('T')[0] : null,
+            dob: tenant.DoB ? new Date(tenant.DoB).toISOString() : null,
             sex: tenant.sex,
             nationality: tenant.nationality,
             por: tenant.PoR,
@@ -368,7 +495,7 @@ export class RoomService {
             role: account.role,
             status: account.status,
             startDate: account.startDate
-              ? new Date(account.startDate).toISOString().split('T')[0]
+              ? new Date(account.startDate).toISOString()
               : null,
           }
         : null,
@@ -452,6 +579,11 @@ export class RoomService {
         status: newRoom.status,
         availableFrom: newRoom.availableFrom,
         images: newRoom.images,
+        account: {
+          accountID: String(accountDoc._id),
+          username: accountDoc.username,
+          status: accountDoc.status,
+        },
       };
     } catch (err) {
       // Rollback toàn bộ nếu Account creation hoặc bất kỳ bước nào fail

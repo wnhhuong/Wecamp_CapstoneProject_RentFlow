@@ -1,13 +1,16 @@
 import type { ComponentProps } from 'react'
+import { NavLink } from 'react-router'
 
+import { NavigationIcon } from '@/components/ui/navigation-icon'
 import { cn } from '@/shared/utils/cn'
 
 interface SidebarNavItem {
   id: string
   label: string
+  to: string
+  group?: string
   badge?: string | number
-  active?: boolean
-  onSelect?: () => void
+  end?: boolean
 }
 
 interface SidebarProps extends ComponentProps<'aside'> {
@@ -35,53 +38,75 @@ function Sidebar({
       )}
       {...props}
     >
-      <nav aria-label={title}>
-        <p className="px-2.5 pb-2 text-xs text-muted-foreground">{title}</p>
+      <nav aria-label={`${title} navigation`} className="min-h-0 flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-1">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.id}>
-              <button
-                type="button"
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-[13.5px] font-medium transition-colors',
-                  item.active
-                    ? 'bg-ink text-page'
-                    : 'text-body hover:bg-ink/[0.07] hover:text-ink',
-                )}
-                aria-current={item.active ? 'page' : undefined}
-                onClick={() => {
-                  item.onSelect?.()
-                  onNavigate?.()
-                }}
+              {item.group && (index === 0 || item.group !== items[index - 1].group) ? (
+                <p className={cn('px-2.5 pb-1 text-xs font-medium text-muted-foreground', index > 0 && 'pt-4')}>
+                  {item.group}
+                </p>
+              ) : null}
+              <NavLink
+                to={item.to}
+                end={item.end}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+                    isActive
+                      ? 'bg-ink text-page'
+                      : 'text-body hover:bg-ink/[0.07] hover:text-ink',
+                  )
+                }
               >
-                <span>{item.label}</span>
-                {item.badge !== undefined ? (
-                  <span
-                    className={cn(
-                      'min-w-6 rounded-full px-1.5 py-0.5 text-center text-sm',
-                      item.active
-                        ? 'bg-page/20 text-page'
-                        : 'bg-[#cfc7b6] text-muted-foreground',
-                    )}
-                  >
-                    {item.badge}
-                  </span>
-                ) : null}
-              </button>
+                {({ isActive }) => (
+                  <>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <NavigationIcon name={item.id} className="size-4.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </span>
+
+                    {item.badge !== undefined ? (
+                      <span
+                        className={cn(
+                          'min-w-6 rounded-full px-1.5 py-0.5 text-center text-sm',
+                          isActive
+                            ? 'bg-page/20 text-page'
+                            : 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </NavLink>
             </li>
           ))}
         </ul>
       </nav>
 
       {userName ? (
-        <div className="mt-auto border-t border-[#cfc7b6] px-2.5 pt-4">
-          <p className="text-xs text-muted-foreground">Signed in</p>
-          <p className="mt-1.5 text-sm font-medium text-foreground">{userName}</p>
-          {userDescription ? (
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              {userDescription}
+        <div className="mt-4 flex items-center gap-2.5 border-t border-hairline px-2.5 pt-4">
+          <span
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-page"
+          >
+            {userName.charAt(0).toUpperCase()}
+          </span>
+
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">
+              {userName}
             </p>
-          ) : null}
+
+            {userDescription ? (
+              <p className="truncate text-sm leading-5 text-muted-foreground">
+                {userDescription}
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </aside>

@@ -137,22 +137,33 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`currentInvoice`|object, nullable|Không|Invoice tháng hiện tại; null nếu chưa tạo|
+|`currentInvoice`|object, nullable|Không|Hoá đơn chưa trả mới nhất của kỳ thuê; không có thì hoá đơn mới nhất; null nếu chưa có hoá đơn nào|
 |`currentInvoice.invoiceID`|integer|Không|`INVOICE.invoiceID`|
+|`currentInvoice.billingPeriod`|string, nullable|Không|Kỳ tính tiền `YYYY-MM`, lấy từ `CONSUMPTION.trackingTime`|
 |`currentInvoice.totalBill`|integer|Không|`INVOICE.totalBill`|
 |`currentInvoice.status`|enum|Không|`not_paid`, `pending`, `paid`|
 |`currentInvoice.isOverdue`|boolean|Không|`dueDate < today` và chưa `paid`|
 |`currentInvoice.dueDate`|date-only|Không|`INVOICE.dueDate`|
-|`currentInvoice.breakdown`|object|Không|Các field bill trong `INVOICE`|
+|`currentInvoice.breakdown`|object|Không|`room`, `electrical`, `water`, `wifi`, `parking`, `other`|
 |`electricityReminder`|object|Có|Trạng thái kỳ ghi điện hiện tại|
 |`electricityReminder.state`|enum|Có|`not_due`, `due_not_uploaded`, `submitted`|
-|`electricityReminder.startDate`|date-only|Có|Parameter meter reading start|
-|`electricityReminder.endDate`|date-only|Có|Parameter meter reading end|
+|`electricityReminder.startDate`|timestamp|Có|Đầu cửa sổ ghi điện, theo giờ VN|
+|`electricityReminder.endDate`|timestamp|Có|Cuối cửa sổ ghi điện, theo giờ VN|
 |`activeTickets`|array|Có|Ticket có status khác `done`|
+|`activeTickets[].ticketID`|integer|Có|`TICKET.ticketID`|
+|`activeTickets[].ticketType`|enum|Có|`repair`, `complain`|
+|`activeTickets[].description`|string, nullable|Không|Child description|
+|`activeTickets[].status`|enum|Có|`need_action`, `in_progress`|
+|`activeTickets[].createDate`|timestamp|Có|ERD|
 |`pendingRequests`|array|Có|Request có status `pending`|
+|`pendingRequests[].requestID`|integer|Có|`REQUEST.requestID`|
+|`pendingRequests[].displayID`|string|Có|Backend sinh|
+|`pendingRequests[].type`|enum|Có|Loại request|
+|`pendingRequests[].createDate`|timestamp|Có|ERD|
+|`pendingRequests[].status`|enum|Có|`pending`|
 
 ```json
-{"success":true,"data":{"currentInvoice":{"invoiceID":9001,"totalBill":4093000,"status":"not_paid","isOverdue":false,"dueDate":"2026-10-10","breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0}},"electricityReminder":{"state":"due_not_uploaded","startDate":"2026-09-25","endDate":"2026-09-28"},"activeTickets":[],"pendingRequests":[]},"message":null}
+{"success":true,"data":{"currentInvoice":{"invoiceID":9001,"totalBill":4093000,"status":"not_paid","isOverdue":false,"dueDate":"2026-10-10","breakdown":{"room":3200000,"electrical":518000,"water":125000,"wifi":100000,"parking":150000,"other":0}},"electricityReminder":{"state":"due_not_uploaded","startDate":"2026-09-25","endDate":"2026-09-28"},"activeTickets":[],"pendingRequests":[]},"message":null}
 ```
 
 ---
@@ -245,7 +256,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 # 5. Tenant / Invoices
 
-> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`.
+> **ERD note:** Dùng `INVOICE.isRequestLate`. Electricity chỉ có `meterReading`; `electricalBill = consumpAmount (tự tính) × electricityUnitPrice`, và đơn giá đó được lưu lên `INVOICE.electricityUnitPrice` lúc tạo.
 
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
@@ -260,7 +271,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo invoice ID hoặc tháng/năm hiển thị|
+|`search`|string|Không|Tìm theo displayID|
 |`status`|enum|Không|`not_paid`, `pending`, `paid`|
 |`year`|integer|Không|Lọc năm|
 |`page`|integer|Không|Mặc định `1`|
@@ -271,6 +282,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`invoiceID`|integer|Có|`INVOICE.invoiceID`|
+|`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
 |`createDate`|timestamp|Có|`INVOICE.createDate`|
 |`dueDate`|date-only|Có|`INVOICE.dueDate`|
 |`totalBill`|integer|Có|`INVOICE.totalBill`|
@@ -291,6 +303,7 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`invoiceID`|integer|Có|ERD|
+|`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
 |`roomCode`|string|Có|Join room qua consumption|
 |`createDate`|timestamp|Có|ERD|
 |`paymentDate`|timestamp, nullable|Không|ERD|
@@ -298,12 +311,15 @@ Phiên bản này chốt API theo UI hiện tại. `RentFlowERD.png` là source 
 |`status`|enum|Có|ERD|
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
-|`meterReading`|integer|Có|Join `CONSUMPTION.meterReading`|
+|`meterReading`|integer|Có|Join `CONSUMPTION.meterReading` — chỉ số công tơ tích luỹ|
+|`lastReading`|integer|Có|Chỉ số của lần đọc liền trước cùng phòng, kỳ đầu tiên = 0|
+|`usage`|integer|Có|`meterReading - lastReading` — số kWh đã dùng trong kỳ|
+|`unitPrice`|integer|Có|`INVOICE.electricityUnitPrice`. Hoá đơn tạo trước 2026-09-20 chưa có field này nên suy ngược `electricalBill / usage`, = 0 khi `usage <= 0`|
 |`breakdown`|object|Có|room/electrical/water/wifi/parking/other bill|
 |`totalBill`|integer|Có|ERD|
 
 ```json
-{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000},"message":null}
+{"success":true,"data":{"invoiceID":9001,"roomCode":"A-101","createDate":"2026-09-29T01:20:00Z","paymentDate":null,"dueDate":"2026-10-10","status":"not_paid","isOverdue":false,"isRequestLate":false,"meterReading":148,"lastReading":6,"usage":142,"unitPrice":3500,"breakdown":{"roomBill":3200000,"electricalBill":518000,"waterBill":125000,"wifiBill":100000,"parkingBill":150000,"otherBill":0},"totalBill":4093000},"message":null}
 ```
 
 ## #10 — POST `/api/user/invoices/:invoiceID/paid-request`
@@ -340,7 +356,7 @@ Không có body.
 |---|---|---|---|
 |`invoiceID`|integer (path)|Có|Invoice xin trả trễ|
 
-Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
+Không có body. Backend chỉ tạo request `pending`; `INVOICE.isRequestLate` được set khi admin approve (#40).
 
 **Payload mẫu:** `{}`
 
@@ -363,10 +379,10 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |#|Method|Endpoint|Mô tả|Tham chiếu UI|
 |---|---|---|---|---|
 |12|GET|`/api/user/tickets`|Danh sách ticket của tenant|Tenant / Tickets|
-|13|GET|`/api/user/tickets/repair/options`|Facility của phòng để tạo repair|Create repair|
-|14|GET|`/api/user/tickets/complain/options`|Area và room để tạo complaint|Create complaint|
-|15|POST|`/api/user/tickets/repair`|Tạo repair ticket|Create repair|
-|16|POST|`/api/user/tickets/complain`|Tạo complaint ticket|Create complaint|
+|13|GET|`/api/user/tickets/repairs/options`|Facility của phòng để tạo repair|Create repair|
+|14|GET|`/api/user/tickets/complains/options`|Area và room để tạo complaint|Create complaint|
+|15|POST|`/api/user/tickets/repairs`|Tạo repair ticket|Create repair|
+|16|POST|`/api/user/tickets/complains`|Tạo complaint ticket|Create complaint|
 
 ## #12 — GET `/api/user/tickets`
 
@@ -374,26 +390,30 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm theo ticket ID, name hoặc description|
+|`search`|string|Không|Tìm theo display ID, description hoặc location|
 |`status`|enum|Không|`need_action`, `in_progress`, `done`|
-|`type`|enum|Không|`REPAIR`, `COMPLAIN`|
+|`type`|enum|Không|`repair`, `complain`|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
+
+> Chỉ trả ticket có `createDate` từ `CONTRACT.startDate` của kỳ thuê hiện tại trở đi.
 
 **Output item**
 
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|`TICKET.ticketID`|
-|`type`|enum|Có|Derived từ bảng con|
-|`ticketName`|string|Có|`TICKET.ticketName`|
+|`displayID`|string|Có|`<prefix>-<roomCode>-ddmmyy-<3 ký tự cuối của ticketID>`|
 |`description`|string|Có|Child description|
-|`location`|string|Có|Facility hoặc area/room label|
-|`createDate`|date-only|Có|ERD|
-|`resolveDate`|date-only, nullable|Không|ERD|
+|`location`|string|Có|Facility type (repair) hoặc area/room label (complain)|
+|`image`|string|Có|Ảnh của repair; complain trả chuỗi rỗng|
+|`roomCode`|string|Có|Phòng của tenant|
+|`ticketType`|enum|Có|`repair`, `complain` — derived từ bảng con|
+|`createDate`|timestamp|Có|ERD, ISO|
+|`resolveDate`|timestamp, nullable|Không|ERD, ISO|
 |`status`|enum|Có|ERD|
 
-## #13 — GET `/api/user/tickets/repair/options`
+## #13 — GET `/api/user/tickets/repairs/options`
 
 **Input/Params:** Không có; room lấy từ token.
 
@@ -405,7 +425,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`roomCode`|string|Có|Join ROOM|
 |`facilities`|array|Có|Danh sách `{ facilityID, typeID, typeName }` của room|
 
-## #14 — GET `/api/user/tickets/complain/options`
+## #14 — GET `/api/user/tickets/complains/options`
 
 **Input/Params:** Không có.
 
@@ -420,7 +440,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`areas[].rooms[].roomID`|integer|Có|`ROOM.roomID`|
 |`areas[].rooms[].roomCode`|string|Có|`ROOM.roomCode`|
 
-## #15 — POST `/api/user/tickets/repair`
+## #15 — POST `/api/user/tickets/repairs`
 
 **Input — multipart/form-data**
 
@@ -428,12 +448,12 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |---|---|---|---|
 |`facilityID`|integer|Có|Facility thuộc phòng tenant|
 |`description`|string|Có|Nội dung repair|
-|`facilityImage`|file|Có|Ảnh facility cần sửa|
+|`image`|file|Có|Ảnh facility cần sửa|
 
 **Payload mẫu**
 
 ```json
-{"facilityID":18,"description":"Bathroom tap is leaking","facilityImage":"<file>"}
+{"facilityID":18,"description":"Bathroom tap is leaking","image":"<file>"}
 ```
 
 **Output**
@@ -441,16 +461,16 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
-|`type`|enum|Có|`REPAIR`|
-|`ticketName`|string|Có|Backend sinh|
+|`type`|enum|Có|`repair`|
+|`ticketName`|string|Có|Backend sinh DisplayID|
 |`roomID`|integer|Có|Room của tenant|
 |`facilityID`|integer|Có|Facility được chọn|
 |`description`|string|Có|Nội dung repair|
 |`facilityImage`|string|Có|Path ảnh đã lưu|
-|`createDate`|date-only|Có|Ngày tạo|
+|`createDate`|timestamp|Có|Ngày tạo, ISO|
 |`status`|enum|Có|`need_action`|
 
-## #16 — POST `/api/user/tickets/complain`
+## #16 — POST `/api/user/tickets/complains`
 
 **Input — JSON**
 
@@ -469,8 +489,8 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|Ticket mới|
-|`type`|enum|Có|`COMPLAIN`|
-|`ticketName`|string|Có|Backend sinh|
+|`type`|enum|Có|`complain`|
+|`ticketName`|string|Có|displayID do Backend sinh|
 |`areaID`|integer|Có|Area được chọn|
 |`roomID`|integer, nullable|Không|Room optional|
 |`description`|string|Có|Nội dung complaint|
@@ -562,6 +582,7 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 |`tenant`|object|Có|`userID`, `fullName`|
 |`electricityUnitPrice`|integer|Có|Parameter|
 |`monthlyServices`|object|Có|Các phí cố định từ Parameter|
+|`terms.yearToExtend`|integer|Có|Parameter `yearToExtend` — số năm mỗi lần gia hạn, để tenant biết trước khi gửi request #23|
 
 ## #20 — GET `/api/user/contract/signature`
 
@@ -581,7 +602,16 @@ Không có body. Khi tạo request, backend set `INVOICE.isRequestLate=true`.
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`requestMoveoutDate`|date-only|Có|Ngày tenant dự kiến rời đi|
+|`requestMoveoutDate`|date-only|Có|Ngày tenant dự kiến rời đi, định dạng `YYYY-MM-DD`|
+
+**Rule** — backend từ chối 400 nếu ngày nằm ngoài khoảng cho phép:
+
+|Mốc|Giá trị|
+|---|---|
+|Sớm nhất|Hôm nay + 1 ngày (`MOVEOUT_NOTICE_DAYS`), cắt theo giờ VN|
+|Muộn nhất|`CONTRACT.expireDate`|
+
+Trả 409 nếu đã có move-out request đang `pending`, và 400 nếu room không ở trạng thái `rented`.
 
 **Output**
 
@@ -689,7 +719,7 @@ Chỉ cho gửi khi MOVEOUT_REQUEST đã approved; ngày rời đi derive từ r
 |`roomSummary.occupancyRate`|number|Có|`rented / total × 100`|
 |`paymentSummary`|object|Có|Count `paid`, `notPaid`, `overdue`|
 |`requestsNeedingApproval`|array|Có|Request pending mới nhất|
-|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất|
+|`ticketsNeedingAction`|array|Có|Ticket `need_action` mới nhất. Mỗi phần tử: `ticketID` (ObjectId, chỉ dùng cho route/API), `ticketName` (DisplayID để hiển thị), `type` (`repair`/`complain`, chữ thường như mọi endpoint ticket khác), `location`, `createDate`|
 
 ```json
 {"success":true,"data":{"roomSummary":{"availableNow":8,"rented":31,"availableSoon":3,"notAvailable":2,"total":44,"occupancyRate":70.5},"paymentSummary":{"paid":28,"notPaid":9,"overdue":3},"requestsNeedingApproval":[],"ticketsNeedingAction":[]},"message":null}
@@ -957,6 +987,7 @@ Không có body.
 |`search`|string|Không|Tìm fullName, phoneNumber, identityNo, roomCode|
 |`sex`|enum|Không|`male`, `female`, `other`|
 |`nationality`|string|Không|Lọc nationality|
+|`lease`|enum|Không|`active` (đang có contract `active`), `expired` (hết hạn hoặc chưa từng có)|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -972,7 +1003,7 @@ Không có body.
 |`sex`|enum|Có|ERD|
 |`nationality`|string|Có|ERD|
 |`por`|string|Có|`USER.PoR`|
-|`roomCode`|string, nullable|Không|Join active contract → ROOM|
+|`roomCode`|string, nullable|Không|Phòng của contract được trả về (active, không có thì latest); `null` khi user chưa từng có contract|
 |`contractID`|integer, nullable|Không|Active/latest contract|
 |`contractStatus`|enum, nullable|Không|`active`, `expired`|
 
@@ -993,9 +1024,10 @@ Không có body.
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm invoice ID, roomCode, tenant name|
+|`search`|string|Không|Tìm display ID, roomCode, tenant name|
 |`status`|enum|Không|`not_paid`, `pending`, `paid`|
 |`isRequestLate`|boolean|Không|Lọc request late payment|
+|`billingPeriod`|string|Không|Lọc theo kỳ tính tiền, dạng `YYYY-MM`|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -1004,8 +1036,10 @@ Không có body.
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`invoiceID`|integer|Có|ERD|
-|`tenantName`|string|Có|Join USER|
+|`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
+|`tenantName`|string, nullable|Có|Người thuê tại ngày phát hành hoá đơn|
 |`roomCode`|string|Có|Join ROOM|
+|`billingPeriod`|string|Có|Kỳ tính tiền `YYYY-MM`, từ CONSUMPTION|
 |`createDate`|timestamp|Có|ERD|
 |`dueDate`|date-only|Có|ERD|
 |`totalBill`|integer|Có|ERD|
@@ -1014,6 +1048,11 @@ Không có body.
 |`status`|enum|Có|ERD|
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
+
+Ngoài `items` và `pagination`, response trả thêm hai khối:
+
+- `billingPeriods`: mảng các kỳ có dữ liệu, mới nhất trước, dùng để dựng bộ lọc tháng. Tính trên toàn bộ invoice, không phụ thuộc filter nào, nên bộ lọc đứng yên khi admin đổi lựa chọn.
+- `summary`: `billingPeriod`, `billed`, `received`, `stillOwed` — tổng tiền của **kỳ mới nhất có dữ liệu**, kèm mã kỳ đó. `billingPeriod` là `null` và ba số bằng 0 khi chưa có invoice nào.
 
 ## #35 — GET `/api/admin/invoices/:invoiceID`
 
@@ -1028,8 +1067,10 @@ Không có body.
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`invoiceID`|integer|Có|ERD|
-|`tenant`|object|Có|`userID`, `fullName`|
+|`displayID`|string|Có|`roomcode-ddmmyy` ddmmyy - createdDate|
+|`tenant`|object, nullable|Có|Người thuê tại ngày phát hành hoá đơn|
 |`roomCode`|string|Có|Join ROOM|
+|`billingPeriod`|string|Có|Kỳ tính tiền `YYYY-MM`, từ CONSUMPTION|
 |`createDate`|timestamp|Có|ERD|
 |`paymentDate`|timestamp, nullable|Không|ERD|
 |`dueDate`|date-only|Có|ERD|
@@ -1037,6 +1078,9 @@ Không có body.
 |`isOverdue`|boolean|Có|Derived|
 |`isRequestLate`|boolean|Có|ERD|
 |`meterReading`|integer|Có|Chỉ số duy nhất từ CONSUMPTION|
+|`usageKwh`|integer|Có|Derived: chỉ số kỳ này trừ kỳ trước|
+|`electricityUnitPrice`|integer|Có|`INVOICE.electricityUnitPrice`, đơn giá tại thời điểm tạo hoá đơn|
+|`electricityUnitPriceIsApprox`|boolean|Có|Chỉ còn true với hoá đơn tạo trước 2026-09-20 mà usage = 0, phải fallback giá hiện tại|
 |`breakdown`|object|Có|Các bill component|
 |`totalBill`|integer|Có|ERD|
 |`received`|integer|Có|Derived|
@@ -1059,9 +1103,12 @@ Không có body.
 
 |Field|Type|Required|Description|
 |---|---|---|---|
-|`search`|string|Không|Tìm ticket ID, description, facility, area, room|
+|`search`|string|Không|Tìm display ID, description, location, roomCode|
 |`status`|enum|Không|`need_action`, `in_progress`, `done`|
-|`type`|enum|Không|`REPAIR`, `COMPLAIN`|
+|`type`|enum|Không|`repair`, `complain`|
+|`areaID`|string|Không|Lọc complain theo area|
+|`roomID`|string|Không|Lọc theo phòng tạo ticket|
+|`facilityID`|string|Không|Lọc repair theo thiết bị|
 |`page`|integer|Không|Mặc định `1`|
 |`limit`|integer|Không|Mặc định `12`, tối đa `100`|
 
@@ -1070,15 +1117,16 @@ Không có body.
 |Field|Type|Required|Description|
 |---|---|---|---|
 |`ticketID`|integer|Có|ERD|
-|`type`|enum|Có|Derived child table|
-|`ticketName`|string|Có|ERD|
+|`displayID`|string|Có|`<prefix>-<roomCode>-ddmmyy-<3 ký tự cuối của ticketID>`|
+|`ticketType`|enum|Có|`repair`, `complain` — derived từ bảng con|
 |`description`|string|Có|Child description|
-|`location`|string|Có|Facility hoặc area/room label|
+|`location`|string|Có|Facility type (repair) hoặc area/room label (complain)|
+|`image`|string|Có|Ảnh của repair; complain trả chuỗi rỗng|
 |`roomID`|integer|Có|Room account tạo ticket|
 |`roomCode`|string|Có|Join ROOM|
 |`accountID`|integer|Có|Join ACCOUNT qua room|
-|`createDate`|date-only|Có|ERD|
-|`resolveDate`|date-only, nullable|Không|ERD|
+|`createDate`|timestamp|Có|ERD, ISO|
+|`resolveDate`|timestamp, nullable|Không|ERD, ISO|
 |`status`|enum|Có|ERD|
 
 ## #37 — PATCH `/api/admin/tickets/:ticketID/status`
@@ -1168,12 +1216,12 @@ Chỉ cho `need_action → in_progress → done`; không bỏ bước hoặc chu
 
 |Type|Fields|
 |---|---|
-|`LATE_PAYMENT_REQUEST`|`invoiceID`|
-|`PAID_REQUEST`|`invoiceID`|
-|`EXTEND_REQUEST`|`contractID`, `yearToExtend` (derived Parameter)|
-|`MOVEOUT_REQUEST`|`contractID`, `requestMoveoutDate`|
+|`LATE_PAYMENT_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
+|`PAID_REQUEST`|`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`|
+|`EXTEND_REQUEST`|`contractID`, `contractDisplayID`, `contractExpireDate` (date-only, hạn **hiện tại** của hợp đồng), `contractStatus`, `yearToExtend` (derived Parameter)|
+|`MOVEOUT_REQUEST`|`contractID`, `contractDisplayID`, `contractExpireDate` (date-only), `contractStatus`, `requestMoveoutDate` (date-only)|
 |`CHECKOUT_REQUEST`|`contractID`, `finalImage`, `finalReading`|
-|`CONSUMP_REQUEST`|`image`, `reading`, `capturedAt`|
+|`CONSUMP_REQUEST`|`image`, `currentReading`, `previousReading`, `usage`, `capturedAt`; khi đã approved thêm tóm tắt hoá đơn được tạo (`invoiceID`, `invoiceDisplayID`, `invoiceTotalBill`, `invoiceDueDate`, `invoiceStatus`, `invoiceIsRequestLate`)|
 
 ```json
 {"success":true,"data":{"requestID":701,"type":"CONSUMP_REQUEST","room":{"roomID":101,"roomCode":"A-101"},"user":{"userID":51,"fullName":"Nguyễn Văn An"},"createDate":"2026-09-28","resolveDate":null,"status":"pending","details":{"image":"uploads/consumption/701.jpg","reading":148,"capturedAt":"2026-09-28T08:10:00Z"}},"message":null}
@@ -1191,10 +1239,10 @@ Không có body. Backend đọc type và thực hiện transaction tương ứng
 
 **Payload mẫu:** `{}`
 
-- `LATE_PAYMENT_REQUEST`: chỉ chuyển request sang approved; `isRequestLate` đã set khi tenant gửi.
+- `LATE_PAYMENT_REQUEST`: chuyển request sang approved và set `INVOICE.isRequestLate=true`; không đổi `dueDate` và `status` của invoice.
 - `PAID_REQUEST`: set invoice `paid`, `paymentDate=now`.
 - `EXTEND_REQUEST`: cộng `yearToExtend` vào `CONTRACT.expireDate`.
-- `MOVEOUT_REQUEST`: approve notice, mở điều kiện checkout.
+- `MOVEOUT_REQUEST`: approve notice, mở điều kiện checkout; `ROOM.status` sang `available_soon` và `ROOM.availableFrom` dời sang `requestMoveoutDate` (guest chỉ đọc `availableFrom` ở đúng trạng thái này).
 - `CHECKOUT_REQUEST`: xử lý final reading/image, expire contract và reset/deactivate account theo nghiệp vụ.
 - `CONSUMP_REQUEST`: tạo `CONSUMPTION` và invoice tương ứng; `roomBill` lấy từ `CONTRACT.rent` (active contract của room), không đọc `ROOM.price`.
 
@@ -1270,6 +1318,10 @@ Không cho sửa `id`/`name` — chỉ `value`. Field lạ khác trong body → 
  
 | `name` | Rule |
 |---|---|
+| `bankAccountHolder` | chuỗi, không rỗng |
+| `bankName` | chuỗi, không rỗng |
+| `bankAccountNumber` | 6–20 chữ số |
+| `bankQrImage` | path ảnh đã upload, bắt đầu bằng `/uploads/`. Chỉ ghi qua `POST /api/admin/parameters/bank-qr` (multipart, field `image`), không gõ tay. Chưa có ảnh thì KHÔNG tồn tại bản ghi — `PARAMETER.value` là required nên không lưu được chuỗi rỗng |
 | `electricityUnitPrice` | số, `> 0` |
 | `waterPrice` | số, `> 0` |
 | `wifiFee` | số, `>= 0` |
@@ -1365,6 +1417,8 @@ req.User lưu {accountID, roomID, contractID, userID, startDate(của Account)} 
 |`nationality`|string|Có|Quốc tịch|
 |`por`|string|Có|Place of residence|
 |`password`|string|Có|Plain input; backend lưu password hash|
+|`confirmPassword`|string|Có|Plain input; check với password|
+|`confirmInfo`|string|Có|"true" or "false" -> chỉ true mới đi tiếp|
 
 ```json
 {"fullName":"Nguyễn Văn An","dob":"2002-06-14","phoneNumber":"0901234567","identityNo":"001202000001","sex":"male","nationality":"Vietnamese","por":"Hà Nội", "password": "my-new-pass"}

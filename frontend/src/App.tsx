@@ -1,62 +1,179 @@
-import { useState } from 'react'
+import { useEffect, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router";
 
-import { Header, Footer, Sidebar, type SidebarNavItem } from '@/components/layout'
+import {
+  Footer,
+  Header,
+  Sidebar,
+  type SidebarNavItem,
+} from "@/components/layout";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
-
-type AppRole = 'guest' | 'user' | 'admin'
+} from "@/components/ui/sheet";
+import { ROUTES } from "@/router/routes";
+import { getGuestProperty } from "@/shared/api/guest/parameters.api";
+import { useAuth } from "@/shared/auth/useAuth";
+import type { GuestProperty } from "@/shared/types/guest/room";
 
 const userNavigation: SidebarNavItem[] = [
-  { id: 'home', label: 'Home', active: true },
-  { id: 'electricity', label: 'Electricity' },
-  { id: 'invoices', label: 'Invoices' },
-  { id: 'requests', label: 'Requests' },
-  { id: 'tickets', label: 'Tickets' },
-  { id: 'profile', label: 'Profile & lease' },
-]
+  {
+    id: "dashboard",
+    label: "Home",
+    to: ROUTES.user.dashboard,
+    group: "Overview",
+    end: true,
+  },
+  {
+    id: "electricity",
+    label: "Electricity",
+    to: ROUTES.user.electricity,
+    group: "Manage",
+  },
+  {
+    id: "invoices",
+    label: "Invoices",
+    to: ROUTES.user.invoices,
+  },
+  {
+    id: "requests",
+    label: "Requests",
+    to: ROUTES.user.requests,
+  },
+  {
+    id: "tickets",
+    label: "Tickets",
+    to: ROUTES.user.tickets,
+  },
+  {
+    id: "profile",
+    label: "Profile & lease",
+    to: ROUTES.user.profile,
+    group: "Account",
+  },
+];
 
 const adminNavigation: SidebarNavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', active: true },
-  { id: 'rooms', label: 'Rooms & leases' },
-  { id: 'users', label: 'Users' },
-  { id: 'invoices', label: 'Invoices' },
-  { id: 'tickets', label: 'Tickets' },
-  { id: 'approvals', label: 'Approvals' },
-]
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    to: ROUTES.admin.dashboard,
+    group: "Overview",
+    end: true,
+  },
+  {
+    id: "rooms",
+    label: "Rooms & leases",
+    to: ROUTES.admin.rooms,
+    group: "Management",
+  },
+  {
+    id: "users",
+    label: "Users",
+    to: ROUTES.admin.users,
+  },
+  {
+    id: "invoices",
+    label: "Invoices",
+    to: ROUTES.admin.invoices,
+  },
+  {
+    id: "requests",
+    label: "Requests",
+    to: ROUTES.admin.requests,
+  },
+  {
+    id: "tickets",
+    label: "Tickets",
+    to: ROUTES.admin.tickets,
+  },
+  {
+    id: "parameters",
+    label: "Parameters",
+    to: ROUTES.admin.parameters,
+    group: "Settings",
+  },
+  {
+    id: "property",
+    label: "Property",
+    to: ROUTES.admin.property,
+  },
+];
 
 function App() {
-  const [isNavigationOpen, setIsNavigationOpen] = useState(false)
+  const { account, session, signOut } = useAuth();
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [property, setProperty] = useState<GuestProperty | null>(null);
 
-  // Temporary until authentication provides the current account and role.
-  const role = 'user' as AppRole
-  const isSignedIn = role === 'user' || role === 'admin'
-  const isAdmin = role === 'admin'
-  const navigationItems = isAdmin ? adminNavigation : userNavigation
-  const userName = isAdmin ? 'Nguyễn Thị Bình' : 'Đỗ Minh Khoa'
-  const userDescription = isAdmin
-    ? 'Owner · full workspace access'
-    : 'Room B-204 account'
+  // The property endpoint is public, so the same call serves every header
+  // variant. A failure just leaves the block out rather than blocking the app.
+  useEffect(() => {
+    let isActive = true;
+
+    getGuestProperty()
+      .then((loaded) => {
+        if (isActive) setProperty(loaded);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isUserRoute = location.pathname.startsWith(ROUTES.user.root);
+  const isAdminRoute = location.pathname.startsWith(ROUTES.admin.root);
+  const isAuthRoute =
+    location.pathname === ROUTES.auth.login ||
+    location.pathname.startsWith("/first-login");
+
+  const isSignedInRoute = isUserRoute || isAdminRoute;
+
+  const headerVariant = isSignedInRoute
+    ? "signed-in"
+    : isAuthRoute
+      ? "auth"
+      : "guest";
+
+  const navigationItems = isAdminRoute ? adminNavigation : userNavigation;
+
+  // A tenant's username is their room code (the backend keeps the two in
+  // sync), so it is the useful label; roomID is an opaque database id.
+  const userName = session?.fullName ?? account?.username ?? "";
+  const userDescription = isAdminRoute
+    ? "Property owner"
+    : account?.username
+      ? `Room ${account.username}`
+      : "Tenant";
 
   return (
-    <div className="flex min-h-svh flex-col bg-page">
+    <div className="flex h-svh flex-col overflow-hidden bg-page">
       <Header
-        variant={isSignedIn ? 'signed-in' : 'guest'}
-        userName={isSignedIn ? userName : undefined}
+        variant={headerVariant}
+        propertyName={property?.propertyName}
+        propertyMeta={property?.address}
+        userName={isSignedInRoute ? userName : undefined}
+        onLogin={() => navigate(ROUTES.auth.login)}
+        onLogout={() => {
+          signOut();
+          navigate(ROUTES.auth.login, { replace: true });
+        }}
         onMenuClick={
-          isSignedIn ? () => setIsNavigationOpen(true) : undefined
+          isSignedInRoute ? () => setIsNavigationOpen(true) : undefined
         }
       />
 
-      <div className="flex flex-1 items-stretch">
-        {isSignedIn ? (
-          <div className="hidden w-[214px] shrink-0 md:block">
+      <div className="flex min-h-0 flex-1 items-stretch">
+        {isSignedInRoute ? (
+          <div className="hidden w-[280px] shrink-0 md:block">
             <Sidebar
-              title={isAdmin ? 'Owner' : 'Tenant'}
+              title={isAdminRoute ? "Owner" : "Tenant"}
               items={navigationItems}
               userName={userName}
               userDescription={userDescription}
@@ -64,12 +181,14 @@ function App() {
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1" aria-label="Page content" />
+        <main className="min-w-0 flex-1 overflow-y-auto" aria-label="Page content">
+          <Outlet />
+        </main>
       </div>
 
       <Footer />
 
-      {isSignedIn ? (
+      {isSignedInRoute ? (
         <Sheet open={isNavigationOpen} onOpenChange={setIsNavigationOpen}>
           <SheetContent
             side="left"
@@ -79,8 +198,9 @@ function App() {
               <SheetTitle>Navigation</SheetTitle>
               <SheetDescription>RentFlow primary navigation</SheetDescription>
             </SheetHeader>
+
             <Sidebar
-              title={isAdmin ? 'Owner' : 'Tenant'}
+              title={isAdminRoute ? "Owner" : "Tenant"}
               items={navigationItems}
               userName={userName}
               userDescription={userDescription}
@@ -91,7 +211,7 @@ function App() {
         </Sheet>
       ) : null}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

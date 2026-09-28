@@ -3,7 +3,7 @@ import { InvoiceStatus } from './enums.js';
 
 /** INVOICE: hóa đơn tổng hợp tiền phòng + điện/nước/wifi/gửi xe/khác. */
 export interface IInvoice extends Document {
-  comsumptionID: Types.ObjectId; // ref Consumption (giữ nguyên tên field theo ERD)
+  consumptionID: Types.ObjectId; // ref Consumption (giữ nguyên tên field theo ERD)
   roomBill: number;
   totalBill: number;
   electricalBill: number;
@@ -11,6 +11,8 @@ export interface IInvoice extends Document {
   wifiBill: number;
   parkingBill: number;
   otherBill: number;
+  /** Đơn giá điện tại thời điểm tạo. Thiếu ở hoá đơn tạo trước 2026-09-20. */
+  electricityUnitPrice?: number;
   createdDate: Date;
   paymentDate?: Date;
   dueDate: Date;
@@ -22,7 +24,7 @@ export interface IInvoice extends Document {
 
 const InvoiceSchema = new Schema<IInvoice>(
   {
-    comsumptionID: {
+    consumptionID: {
       type: Schema.Types.ObjectId,
       ref: 'Consumption',
       required: true,
@@ -35,6 +37,9 @@ const InvoiceSchema = new Schema<IInvoice>(
     wifiBill: { type: Number, required: true, min: 0, default: 0 },
     parkingBill: { type: Number, required: true, min: 0, default: 0 },
     otherBill: { type: Number, required: true, min: 0, default: 0 },
+    // Cố ý không required và không default: undefined = hoá đơn cũ chưa có field này,
+    // khác hẳn với đơn giá thật bằng 0.
+    electricityUnitPrice: { type: Number, min: 0 },
     createdDate: { type: Date, required: true, default: Date.now },
     paymentDate: { type: Date },
     dueDate: { type: Date, required: true },

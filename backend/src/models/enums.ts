@@ -2,6 +2,7 @@ export enum ParameterName {
   ELECTRICITY_UNIT_PRICE = 'electricityUnitPrice',
   WATER_PRICE = 'waterPrice',
   WIFI_FEE = 'wifiFee',
+  PARKING_FEE = 'parkingFee',
   OTHER_FEES = 'otherFees',
   METER_READING_START_DAY = 'meterReadingStartDay',
   METER_READING_END_DAY = 'meterReadingEndDay',
@@ -14,6 +15,10 @@ export enum ParameterName {
   PROPERTY_NAME = 'propertyName',
   ADMIN_EMAIL = 'adminEmail',
   CONTRACT_PLACEHOLDER = 'contractPlaceholder',
+  BANK_ACCOUNT_HOLDER = 'bankAccountHolder',
+  BANK_NAME = 'bankName',
+  BANK_ACCOUNT_NUMBER = 'bankAccountNumber',
+  BANK_QR_IMAGE = 'bankQrImage',
 }
 
 export enum Sex {
@@ -47,9 +52,14 @@ export enum ContractStatus {
 
 export enum InvoiceStatus {
   NOT_PAID = 'not_paid',
-  PENDING = 'pending',
   PAID = 'paid',
 }
+
+export enum TicketType {
+  COMPLAIN = 'complain',
+  REPAIR = 'repair'
+}
+
 
 export enum TicketStatus {
   NEED_ACTION = 'need_action',
